@@ -1,0 +1,25 @@
+#compdef asym
+
+
+_asym() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    _arguments '1: :->command' \
+               '2: :->script'
+
+    case $state in
+    command)
+        _arguments "1:Command:($(asym list))"
+    ;;
+
+    *)
+       typeset -a _asym_scripts
+       _asym_scripts=($(asym $words[2] list))
+       compadd "$@" $_asym_scripts[@]
+    ;;
+    esac
+}
+
+
+_asym $@
