@@ -47,6 +47,10 @@ else:
     def _str(n):
         return str(n, encoding='ascii')
 
+# want input to return a string. On python2 this is raw_input!
+if sys.version_info[0] <= 2:
+    input = raw_input
+
 
 if _numcolors >= 16:
     for i, k in enumerate("krgybmcw"):
@@ -243,14 +247,16 @@ def print_progress(text, r, nl=None):
 
 def ask_question_string(question):
     write_color('%s ? #*w%s ' % (_mc, question), file=sys.stderr)
-    return input()
+    ans = input()
+    return ans
+
 
 
 def ask_question_yesno(question, default=None):
     if default == 'yes':    hint = '[Y/n]'
     elif default == 'no':   hint = '[y/N]'
     else:                   hint = '[y/n]'
-    while(True):
+    while True:
         val = ask_question_string(question + ' ' + hint)
         val = val.strip().lower()
         if val == 'y':              return 'yes'
