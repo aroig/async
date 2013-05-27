@@ -225,9 +225,13 @@ def print_status(text=None, flag=None, nl=None):
 
 def print_progress(text, r, nl=None):
     width = get_line_width()
-    ewidth = 9
-    mwidth = round(0.6*width)
-    bwidth = width - mwidth - ewidth
+
+    mwidth = int(width * 6 / 10)
+    if mwidth < 50:
+        mwidth = 50
+
+    bwidth = width - mwidth - 7
+    # 7 = 4 (percent number) + 1 (space) + 2 ([])
 
     if nl == None:
         if re.match("^.*\n\s*$", text, re.MULTILINE): nl = True
@@ -236,7 +240,7 @@ def print_progress(text, r, nl=None):
     if text: text = text.strip()
 
     barstr = int(r*bwidth)*'#' + (bwidth-int(r*bwidth))*'='
-    fmt = '\r {0:<%s} [{1}] {2:3d}%%' % mwidth
+    fmt = '\r {0:<%s} [{1}] {2:3d}%%' % (mwidth - 2)
 
     if nl: fmt = fmt + '\n'
     else: fmt = fmt + '\r'
