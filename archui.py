@@ -226,7 +226,7 @@ def print_status(text=None, flag=None, nl=None):
 def print_progress(text, r, nl=None):
     width = get_line_width()
     ewidth = 9
-    mwidth = int(0.6*width)
+    mwidth = round(0.6*width)
     bwidth = width - mwidth - ewidth
 
     if nl == None:
