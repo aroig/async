@@ -230,7 +230,7 @@ def print_progress(text, r, nl=None):
     if mwidth < 50:
         mwidth = 50
 
-    mwidth = mwidth + 2
+    mwidth = mwidth + 1
 
     bwidth = width - mwidth - 7
     # 7 = 4 (percent number) + 1 (space) + 2 ([])
