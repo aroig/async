@@ -21,7 +21,7 @@
 from async.directories import UnisonDir, AnnexDir, LocalDir
 
 
-class HostError(Exception)
+class HostError(Exception):
     def __init__(self, msg=None):
         super(self, HostError).__init__(msg)
 

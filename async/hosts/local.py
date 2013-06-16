@@ -21,7 +21,7 @@
 from async.hosts.base import BaseHost
 
 
-class SyncError(Exception)
+class SyncError(Exception):
     def __init__(self, msg=None):
         super(self, SyncError).__init__(msg)
 

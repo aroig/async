@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from async.directories.unison import UnisonDir
-from async.directories.rsybc import RsyncDir
+from async.directories.rsync import RsyncDir
 from async.directories.annex import AnnexDir
 from async.directories.local import LocalDir
 

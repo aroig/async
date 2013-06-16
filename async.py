@@ -73,10 +73,7 @@ if opts.dirs:
 
 try:
     # parse config
-    conf = AsyncConfig(os.path.expandvars('$XDG_CONFIG_HOME/async/'))
-
-    print(conf.host)
-    sys.exit(0)
+    conf = AsyncConfig(os.path.expandvars('$HOME/.config/async/'))
 
     # UI settings
     if opts.debug: ui.set_debug()

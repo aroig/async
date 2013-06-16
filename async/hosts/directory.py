@@ -59,7 +59,7 @@ class DirectoryHost(BaseHost):
         """Sets the state of the host"""
         if state in set(['mounted', 'online']):
             try:
-                cmd.mount(self.path):
+                cmd.mount(self.path)
             except:
                 ui.error("Can't mount %s" % self.path)
 
@@ -84,20 +84,20 @@ class DirectoryHost(BaseHost):
 
         # rsync
         for k, p in self.rsync_dirs.items():
-            tgt = os.path.join(self.path, p):
-            src = os.path.join(self.local, p):
+            tgt = os.path.join(self.path, p)
+            src = os.path.join(self.local, p)
             cmd.rsync(src, tgt)
 
 
         # git annex sync
         for k, p in self.annex_sync_dirs.items():
-            src = os.path.join(self.local, p):
+            src = os.path.join(self.local, p)
             cmd.git(['annex', 'sync', k])
 
 
         # git annex get
         for k, p in self.annex_get_dirs.items():
-            src = os.path.join(self.local, p):
+            src = os.path.join(self.local, p)
             cmd.git(['annex', 'get', k])
 
 

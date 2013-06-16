@@ -23,16 +23,19 @@ import glob
 
 from ConfigParser import ConfigParser
 
-class AsyncConfigError(Exception)
+class AsyncConfigError(Exception):
     def __init__(self, msg=None):
-        super(self, AsyncConfigError).__init__(msg)
+        super(AsyncConfigError, self).__init__(msg)
 
 
 def parse_string(s):
+    if s == None: return None
     return s.strip()
 
 
 def parse_bool(s):
+    if s == None: return None
+
     val = s.strip().lower()
     if val in set(['on', 'true', '1', 'yes']): return True
     elif val in set(['off', 'false', '0', 'no']): return False
@@ -40,17 +43,20 @@ def parse_bool(s):
 
 
 def parse_path(s):
+    if s == None: return None
     return os.path.expandvars(os.path.expanduser(s.strip()))
 
 
 def parse_list(s, parse_val=parse_string):
-    return [parse_val(it) for it in s.plit(',')]
+    if s == None: return []
+    return [parse_val(it) for it in s.split(',')]
 
 
 def parse_dict(s, parse_val=parse_string):
+    if s == None: return {}
     dic = {}
 
-    for it in s.plit(','):
+    for it in s.split(','):
         spl = it.strip().split(':')
         if len(spl) > 2:
             raise AsyncConfigError("Can't parse keyval string: %s" % s)
@@ -77,10 +83,10 @@ def parse_dict_path(s):
 
 
 class AsyncConfig(ConfigParser):
-    instance_re = re.compile(r'^\s*instance\s*([^"]*|"[^"]*")\s*$')
-    remote_re = re.compile(r'^\s*remote\s*([^"]*|"[^"]*")\s*$')
-    host_re = re.compile(r'^\s*host\s*([^"]*|"[^"]*")\s*$')
-    directory_re = re.compile(r'^\s*directory\s*([^"]*|"[^"]*")\s*$')
+    instance_re = re.compile(r'^\s*instance\s+([^"]*|"[^"]*")\s*$')
+    remote_re = re.compile(r'^\s*remote\s+([^"]*|"[^"]*")\s*$')
+    host_re = re.compile(r'^\s*host\s+([^"]*|"[^"]*")\s*$')
+    directory_re = re.compile(r'^\s*directory\s+([^"]*|"[^"]*")\s*$')
 
 
     # default values and parsing functions
@@ -129,21 +135,24 @@ class AsyncConfig(ConfigParser):
 
     ASYNC_FIELDS={
         'color'           : ('yes', parse_bool),     # color UI
+        'logfile'         : (None, parse_path),      # color UI
     }
 
 
     def _parse_config(self, sec, fields, defaults):
-        for k, pair in ASyncConfig.INSTANCE_FIELDS.items():
-            defval = defaults.get(k, None) or pair[0]
+        dic = {}
+        for k, pair in fields.items():
             func = pair[1]
-            val = self.get(sec, k) or defval
-            dic[k] = func(val)
+
+            if self.has_option(sec, k): val = func(self.get(sec, k))
+            else:                       val = func(defaults.get(k, None)) or pair[0]
+            dic[k] = val
 
         return dic
 
 
     def __init__(self, cfgdir):
-        super(AsyncConfig, self).__init__(AsyncConfig.DEFAULTS)
+        ConfigParser.__init__(self)
         self.read(glob.glob(os.path.join(cfgdir, '*.conf')))
 
         self.host = {}
@@ -162,28 +171,28 @@ class AsyncConfig(ConfigParser):
 
         # parse sections
         for sec in self.sections():
-            m = instance_re.match(sec)
+            m = self.instance_re.match(sec)
             if m:
                 name = m.group(1).strip('"')
                 self.instance[name] = self._parse_config(sec, AsyncConfig.INSTANCE_FIELDS, instance_defaults)
                 self.instance[name]['name'] = name
                 continue
 
-            m = directory_re.match(sec)
+            m = self.directory_re.match(sec)
             if m:
                 name = m.group(1).strip('"')
                 self.directory[name] = self._parse_config(sec, AsyncConfig.DIRECTORY_FIELDS, directory_defaults)
                 self.directory[name]['name'] = name
                 continue
 
-            m = remote_re.match(sec)
+            m = self.remote_re.match(sec)
             if m:
                 name = m.group(1).strip('"')
                 self.remote[name] = self._parse_config(sec, AsyncConfig.REMOTE_FIELDS, remote_defaults)
                 self.remote[name]['name'] = name
                 continue
 
-            m = host_re.match(sec)
+            m = self.host_re.match(sec)
             if m:
                 name = m.group(1).strip('"')
                 self.host[name] = self._parse_config(sec, AsyncConfig.HOST_FIELDS, host_defaults)
@@ -192,21 +201,21 @@ class AsyncConfig(ConfigParser):
 
 
         # postprocess sections.
-        for k, val in self.hosts.items():
+        for k, val in self.host.items():
             name = val['instance']
             if name:
-                if name in self.instances:
-                    val['instance'] = self.instances[name]
+                if name in self.instance:
+                    val['instance'] = self.instance[name]
                 else:
                     raise AsyncConfigError("Unknown instance: %s" % name)
 
             dirs = val['dirs']
             if dirs:
                 for k in dirs:
-                    if not k in self.directories:
+                    if not k in self.directory:
                         raise AsyncConfigError("Unknown directory: %s" % d)
 
-                val['dirs'] = {k: self.directories[k] for k in dirs}
+                val['dirs'] = {k: self.directory[k] for k in dirs}
 
 
 
