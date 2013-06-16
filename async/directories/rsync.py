@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 #
-# hypathia - A tool to sync calibre to my ebook reader.
-# Copyright 2012 Abdó Roig-Maranges <abdo.roig@gmail.com>
+# async - A tool to manage and sync different machines
+# Copyright 2012,2013 Abdó Roig-Maranges <abdo.roig@gmail.com>
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -17,14 +17,23 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
-import os
-import time
-import subprocess
-import sys
-import paramiko
-import glob
-import shutil
+from async.directories.base import BaseDir
+
+class RsyncDir(BaseDir):
+
+    def __init__(self, basepath, conf):
+        super(RsyncDir, self).__init__(basepath, conf)
+
+
+    # Interface
+    # ----------------------------------------------------------------
+
+    def sync(self, local, remote, opts):
+        raise NotImplementedError
+
+
+    def setup(self, host, opts):
+        raise NotImplementedError
 
 
 

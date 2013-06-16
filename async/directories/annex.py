@@ -17,20 +17,23 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.hosts.ssh import SshHost
+from async.directories.base import BaseDir
 
-class Ec2Host(SshHost):
-    """An ec2 instance"""
+class AnnexDir(BaseDir):
 
-    def __init__(self, conf):
+    def __init__(self, basepath, conf):
+        super(AnnexDir, self).__init__(basepath, conf)
 
-        # base config
-        super(Ec2Host, self).__init__(conf)
 
-        self.type = 'ec2'
+    # Interface
+    # ----------------------------------------------------------------
 
-        # ssh related config
-        self.hostname         = conf['hostname']         # the hostname
+    def sync(self, local, remote, opts):
+        raise NotImplementedError
+
+
+    def setup(self, host, opts):
+        raise NotImplementedError
 
 
 

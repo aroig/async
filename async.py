@@ -23,23 +23,33 @@ import re
 import os
 
 from optparse import OptionParser
-from configparser import ConfigParser
 
 from async import __version__
-from async import Host
-from async import ui
+from async.config import AsyncConfig
+
+import async.archui as ui
+from async import get_host, get_localhost
 
 
 
 # Main stuff
 #------------------------
 
-usage = """Usage: %prog [options]
+usage = """Usage: %prog [options] cmd host
 """
 parser = OptionParser(usage=usage)
 
 parser.add_option("-b", "--batch", dest="batch", action="store_true", default=False,
                   help="Asks no questions.")
+
+parser.add_option("-s", "--slow", action="store_true", default=False, dest="slow",
+                  help="Disables fastcheck, checking every file. Much slower.")
+
+parser.add_option("-f", "--force", action="store", type="string", default=None, dest="force",
+                  help="Values: up, down. Forces to transfer everything up or down.")
+
+parser.add_option("-d", "--dirs", action="store", type="string", default=None, dest="dirs",
+                  help="Only sync the dirs given as a comma separated list.")
 
 parser.add_option("--dryrun", dest="dryrun", action="store_true", default=False,
                   help="Dry run.")
@@ -57,70 +67,79 @@ if opts.version:
     print(__version__)
     sys.exit(0)
 
+if opts.dirs:
+    opts.dirs = [d.strip() for d in opts.dirs.split(',')]
+
 
 try:
     # parse config
-    conf = ConfigParser()
-    conf.read([os.path.expandvars('$XDG_CONFIG_HOME/async/async.conf')])
+    conf = AsyncConfig(os.path.expandvars('$XDG_CONFIG_HOME/async/'))
+
+    print(conf.host)
+    sys.exit(0)
 
     # UI settings
     if opts.debug: ui.set_debug()
-    ui.use_color(conf.getboolean('async', 'color'))
+    ui.use_color(conf.async['color'])
 
     # If the output is not a terminal, remove the colors
     if not sys.stdout.isatty(): ui.use_color(False)
 
     # extract command and hostname
-    cmd      = args[0]
-    hostname = args[1]
-    args     = args[2:]
+    cmd = args[0]
 
+    # get local and remote hosts
+    remote = get_host(args[1], conf)
+    local = get_localhost(conf)
 
-    host = Host(hostname, conf)
-
+    args = args[2:]
+    ret = 0
     if cmd == "status":
-        if len(args) == 0:    host.status(opts=opts)
+        if len(args) == 0:    ret = host.print_status(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
-        if len(args) == 0:    host.sync(opts=opts)
+        if len(args) == 0:    ret = local.sync(remote=remote, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "upgrade":
-        if len(args) == 0:    host.upgrade(opts=opts)
+        if len(args) == 0:    ret = host.upgrade(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":
-        if len(args) == 0:    host.start(opts=opts)
+        if len(args) == 0:    ret = host.start(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "stop":
-        if len(args) == 0:    host.stop(opts=opts)
+        if len(args) == 0:    ret = host.stop(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
-    elif cmd == "login":
-        if len(args) == 0:    host.login(opts=opts)
+    elif cmd == "shell":
+        if len(args) == 0:    ret = host.shell(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "mount":
-        if len(args) == 0:    host.mount(opts=opts)
+        if len(args) == 0:    ret = host.mount(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "umount":
-        if len(args) == 0:    host.umount(opts=opts)
+        if len(args) == 0:    ret = host.umount(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     else:
         ui.print_error("Unknown command %s" % cmd)
+        sys.exit(1)
+
+    sys.exit(ret)
 
 
 except KeyboardInterrupt:
     print("")
-    sys.exit()
+    sys.exit(0)
 
 except EOFError:
     print("")
-    sys.exit()
+    sys.exit(1)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

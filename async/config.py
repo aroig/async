@@ -1,0 +1,213 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+#
+# async - A tool to manage and sync different machines
+# Copyright 2012,2013 Abdó Roig-Maranges <abdo.roig@gmail.com>
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import re
+import glob
+
+from ConfigParser import ConfigParser
+
+class AsyncConfigError(Exception)
+    def __init__(self, msg=None):
+        super(self, AsyncConfigError).__init__(msg)
+
+
+def parse_string(s):
+    return s.strip()
+
+
+def parse_bool(s):
+    val = s.strip().lower()
+    if val in set(['on', 'true', '1', 'yes']): return True
+    elif val in set(['off', 'false', '0', 'no']): return False
+    else: raise ValueError("Unrecognized boolean value: %s" % s)
+
+
+def parse_path(s):
+    return os.path.expandvars(os.path.expanduser(s.strip()))
+
+
+def parse_list(s, parse_val=parse_string):
+    return [parse_val(it) for it in s.plit(',')]
+
+
+def parse_dict(s, parse_val=parse_string):
+    dic = {}
+
+    for it in s.plit(','):
+        spl = it.strip().split(':')
+        if len(spl) > 2:
+            raise AsyncConfigError("Can't parse keyval string: %s" % s)
+            break
+        elif len(spl) == 0:
+            continue
+
+        if len(spl) == 2:  val=spl[1].strip()
+        else:              val=spl[0].strip()
+
+        if parse_val:      val = parse_val(val)
+
+        if len(spl) == 2:  key=spl[0].strip()
+        else:              key=val
+
+        dic[key] = val
+
+    return dic
+
+
+def parse_dict_path(s):
+    return parse_dict(s, parse_path)
+
+
+
+class AsyncConfig(ConfigParser):
+    instance_re = re.compile(r'^\s*instance\s*([^"]*|"[^"]*")\s*$')
+    remote_re = re.compile(r'^\s*remote\s*([^"]*|"[^"]*")\s*$')
+    host_re = re.compile(r'^\s*host\s*([^"]*|"[^"]*")\s*$')
+    directory_re = re.compile(r'^\s*directory\s*([^"]*|"[^"]*")\s*$')
+
+
+    # default values and parsing functions
+
+    HOST_FIELDS={
+        'dirs'           : ([], parse_list),
+        'nosync'         : ([], parse_list),
+        'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
+        'trust'          : ('no', parse_bool),
+        'hostname'       : (None, parse_string),
+        'path'           : (None, parse_path),
+        'type'           : (None, parse_string),
+        'instance'       : (None, parse_string),
+}
+
+    INSTANCE_FIELDS={
+        'ec2_ami'        : (None, parse_string),
+        'ec2_owner'      : (None, parse_string),
+        'ec2_region'     : (None, parse_string),
+
+        'ssh_key'        : (None, parse_path),
+        'aws_key'        : (None, parse_path),
+        'luks_key'       : (None, parse_path),
+
+        'ec2_keypair'    : (None, parse_string),
+        'ec2_security_group' : (None, parse_string),
+
+        'attach'         : ({}, parse_dict),
+        'luks'           : ({}, parse_dict),
+        'mounts'         : ({}, parse_dict),
+
+        'hostname'       : (None, parse_string),
+        'zone'           : (None, parse_string),
+        'user'           : (None, parse_string),
+}
+
+    REMOTE_FIELDS={}
+
+    DIRECTORY_FIELDS={
+        'perms'           : ('700', parse_string),   # directory perms
+        'type'            : (None, parse_string),    # sync method
+        'symlink'         : (None, parse_path),      # the directory is a symlink to this target
+        'setup_hool'      : (None, parse_path),      # script to run on setup
+        'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
+}
+
+    ASYNC_FIELDS={
+        'color'           : ('yes', parse_bool),     # color UI
+    }
+
+
+    def _parse_config(self, sec, fields, defaults):
+        for k, pair in ASyncConfig.INSTANCE_FIELDS.items():
+            defval = defaults.get(k, None) or pair[0]
+            func = pair[1]
+            val = self.get(sec, k) or defval
+            dic[k] = func(val)
+
+        return dic
+
+
+    def __init__(self, cfgdir):
+        super(AsyncConfig, self).__init__(AsyncConfig.DEFAULTS)
+        self.read(glob.glob(os.path.join(cfgdir, '*.conf')))
+
+        self.host = {}
+        self.remote = {}
+        self.instance = {}
+        self.directory = {}
+        self.async = {}
+
+        host_defaults = dict(self.items('host_defaults'))
+        remote_defaults = dict(self.items('remote_defaults'))
+        directory_defaults = dict(self.items('directory_defaults'))
+        instance_defaults = dict(self.items('instance_defaults'))
+
+        # parse async settings
+        self.async = self._parse_config('async', AsyncConfig.ASYNC_FIELDS, {})
+
+        # parse sections
+        for sec in self.sections():
+            m = instance_re.match(sec)
+            if m:
+                name = m.group(1).strip('"')
+                self.instance[name] = self._parse_config(sec, AsyncConfig.INSTANCE_FIELDS, instance_defaults)
+                self.instance[name]['name'] = name
+                continue
+
+            m = directory_re.match(sec)
+            if m:
+                name = m.group(1).strip('"')
+                self.directory[name] = self._parse_config(sec, AsyncConfig.DIRECTORY_FIELDS, directory_defaults)
+                self.directory[name]['name'] = name
+                continue
+
+            m = remote_re.match(sec)
+            if m:
+                name = m.group(1).strip('"')
+                self.remote[name] = self._parse_config(sec, AsyncConfig.REMOTE_FIELDS, remote_defaults)
+                self.remote[name]['name'] = name
+                continue
+
+            m = host_re.match(sec)
+            if m:
+                name = m.group(1).strip('"')
+                self.host[name] = self._parse_config(sec, AsyncConfig.HOST_FIELDS, host_defaults)
+                self.host[name]['name'] = name
+                continue
+
+
+        # postprocess sections.
+        for k, val in self.hosts.items():
+            name = val['instance']
+            if name:
+                if name in self.instances:
+                    val['instance'] = self.instances[name]
+                else:
+                    raise AsyncConfigError("Unknown instance: %s" % name)
+
+            dirs = val['dirs']
+            if dirs:
+                for k in dirs:
+                    if not k in self.directories:
+                        raise AsyncConfigError("Unknown directory: %s" % d)
+
+                val['dirs'] = {k: self.directories[k] for k in dirs}
+
+
+
+# vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
