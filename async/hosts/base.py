@@ -31,6 +31,8 @@ class BaseHost(object):
     STATES = ['offline', 'online', 'mounted']
 
     def __init__(self, conf):
+        super(BaseHost, self).__init__()
+
         self.type = None
         self.state = None
 
@@ -41,11 +43,13 @@ class BaseHost(object):
         # directories
         self.dirs = {}
         for k, d in conf['dirs'].items():
-            self.dirs[k] = self.get_directory(d)
+            self.dirs[k] = self.get_directory(d, unison_as_rsync=conf['unison_as_rsync'])
 
 
-    def get_directory(self, dconf):
+    def get_directory(self, dconf, unison_as_rsync=False):
         typ = dconf['type']
+        if unison_as_rsync and typ == 'unison': typ = 'rsync'
+
         if typ == 'unison':   return UnisonDir(basepath=self.path, conf=dconf)
         elif typ == 'rsync':  return RsyncDir(basepath=self.path, conf=dconf)
         elif typ == 'annex':  return AnnexDir(basepath=self.path, conf=dconf)
@@ -69,6 +73,24 @@ class BaseHost(object):
         return func() == status
 
 
+    def switch_state(self, msg, tgtstate, silent=False, dryrun=False):
+        """Switches host state to tgtstate"""
+        try:
+            if not silent: ui.print_status(text=msg, flag="BUSY")
+            if not dryrun: self.set_state(tgtstate)
+            if not silent: ui.print_status(flag="DONE", nl=True)
+
+        except HostError:
+            if not silent: ui.print_status(flag="FAIL", nl=True)
+
+
+    def df(path):
+        """Run df on the remote and return a tuple of integers (size, available)"""
+        dfout = self.run_cmd('df "%s"' % path, catchout=True)
+        device, size, used, available, percent, mountpoint = output.split("\n")[1].split()
+        return (int(size), int(available))
+
+
 
     # Interface
     # ----------------------------------------------------------------
@@ -78,37 +100,37 @@ class BaseHost(object):
         return self.type
 
 
-    def start(self, opts):
+    def start(self, silent=False, dryrun=False):
         """Starts the host"""
         if self.get_state() in set(['offline']):
-            self.set_state('online')
+            self.switch_state("Starting %s" % (self.name), 'online', silent=silent, dryrun=dryrun)
 
 
-    def stop(self, opts):
+    def stop(self, silent=False, dryrun=False):
         """Stops the host"""
         if not self.get_state() in set(['offline']):
-            self.set_state('offline')
+            self.switch_state("Stopping %s" % (self.name), 'offline', silent=silent, dryrun=dryrun)
 
 
-    def mount(self, opts):
+    def mount(self, silent=False, dryrun=False):
         """Mounts the partitions on host"""
         if not self.get_state() in set(['mounted']):
-            self.set_state('mounted')
+            self.switch_state("Mounting devices for %s" % (self.name), 'mounted', silent=silent, dryrun=dryrun)
 
 
-    def umount(self, opts):
+    def umount(self, silent=False, dryrun=False):
         """Umounts the partitions on host"""
         if self.get_state() in set(['mounted']):
-            self.set_state('online')
+            self.switch_state("Umounting devices for %s" % (self.name), 'online', silent=silent, dryrun=dryrun)
 
 
-    def print_status(self, opts):
+    def print_status(self):
         status = self.get_info()
 
         ui.print_status("Status of #m%s#t" % self.name)
 
         for k, val in status.items():
-            ui.print_color('#*w%s:#t %s' % (k, val))
+            ui.print_color('    #*w%s:#t %s' % (k, val))
 
 
     def shell(self, opts):
@@ -132,19 +154,15 @@ class BaseHost(object):
         """Gets a dictionary with host state parameters"""
         raise NotImplementedError
 
-    def sync_dir(self, conf, opts):
-        """Synchronize a local directory with host"""
-        raise NotImplementedError
-
-    def run_cmd(self, path, cmd):
+    def run_cmd(self, cmd, tgtpath=None, catchout=False):
         """Run a shell command in a given path at host"""
         raise NotImplementedError
 
-    def run_script(self, scrpath, path):
+    def run_script(self, scr_path):
         """Run script on a local path on the host"""
         raise NotImplementedError
 
-    def interactive_shell(self, opts):
+    def interactive_shell(self):
         """Opens an interactive shell to host"""
         raise NotImplementedError
 

@@ -23,21 +23,19 @@ import os
 import re
 
 
-def unison(prf, args=[], force=None, silent=True):
+def unison(args=[], silent=True):
     unison_cmd = 'unison'
     unison_args = [] + args
 
     with open('/dev/null', 'w') as devnull:
         if silent: out = devnull
         else:      out = None
-        subprocess.check_call([unison_cmd] + unison_args + [prf], stderr=out, stdout=out)
+        subprocess.check_call([unison_cmd] + unison_args, stderr=out, stdout=out)
 
 
-def rsync(src, tgt, delete=True, silent=True):
+def rsync(src, tgt, args=[], silent=True):
     rsync_cmd = 'rsync'
-
-    if delete:         rsync_args = ['--delete']
-    else:              rsync_args = []
+    rsync_args = args
 
     with open('/dev/null', 'w') as devnull:
         if silent: out = devnull
@@ -78,6 +76,14 @@ def ssh(host, args=[]):
     ssh_cmd = 'ssh'
     ssh_args = args
     subprocess.check_call([ssh_cmd] + ssh_args)
+
+
+def mount(path):
+    subprocess.check_call(['mount', path])
+
+
+def umount(path):
+    subprocess.check_call(['umount', path])
 
 
 def cat_pager(fname):

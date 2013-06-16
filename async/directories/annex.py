@@ -19,6 +19,8 @@
 
 from async.directories.base import BaseDir
 
+import async.cmd as cmd
+
 class AnnexDir(BaseDir):
 
     def __init__(self, basepath, conf):
@@ -29,7 +31,14 @@ class AnnexDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, opts):
-        raise NotImplementedError
+        src = local.dirs[self.name].path
+        tgt = remote.dirs[self.name].path
+
+        local.run_cmd('git annex sync "%s"' % remote.name, path=src)
+
+        # TODO: if get, do a local and remote get
+        # local.run_cmd('git annex get --from="%s"' % remote.name, path=src)
+        # remote.run_cmd('git annex get --from="%s"' % local.name, path=tgt)
 
 
     def setup(self, host, opts):

@@ -94,11 +94,12 @@ class AsyncConfig(ConfigParser):
         'dirs'           : ([], parse_list),
         'nosync'         : ([], parse_list),
         'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
-        'trust'          : ('no', parse_bool),
 
         'hostname'       : (None, parse_string),
         'user'           : (None, parse_string),
         'ssh_key'        : (None, parse_path),
+        'ssh_trust'      : ('no', parse_bool),
+        'unison_as_rsync': ('false', parse_bool),
 
         'path'           : (None, parse_path),
         'type'           : (None, parse_string),

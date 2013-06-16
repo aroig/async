@@ -29,26 +29,23 @@ class DirectoryHost(BaseHost):
     def __init__(self, conf):
 
         # base config
-        super(SshHost, self).__init__(conf)
+        super(DirectoryHost, self).__init__(conf=conf)
 
         self.type = 'directory'
 
-        self.path             = conf['host_path']        # base path for the host
+        self.check = conf['check']
 
 
 
-    # Interface
+    # Implementation
     # ----------------------------------------------------------------
 
-    def get_state(self, silent=True):
+    def get_state(self):
         """Queries the state of the host"""
 
         self.state = 'mounted'
-        for p in self.mount_check:
+        for p in self.check:
             if not os.path.exists(os.path.join(self.path, p)):
-                if not silent:
-                    ui.error("Host %s not mounted. Can't find %s" %
-                             (self.name, os.path.join(self.path, p)))
                 self.state = 'offline'
                 break
         return self.state
@@ -74,31 +71,33 @@ class DirectoryHost(BaseHost):
             self.state = 'offline'
 
 
+    def get_info(self):
+        """Gets a dictionary with host state parameters"""
+        info = {}
 
-    # synchronization
-    def sync(self, opts):
-        """Syncs local machine to this host"""
-        if self.state() != 'mounted':
-            ui.error("Host at %s not mounted")
-            return
+        size, available = self.df(self.path)
+        info['size'] = size
+        info['free'] = available
+        info['state'] = self.get_state()
 
-        # rsync
-        for k, p in self.rsync_dirs.items():
-            tgt = os.path.join(self.path, p)
-            src = os.path.join(self.local, p)
-            cmd.rsync(src, tgt)
+        return info
 
 
-        # git annex sync
-        for k, p in self.annex_sync_dirs.items():
-            src = os.path.join(self.local, p)
-            cmd.git(['annex', 'sync', k])
+    def run_cmd(self, cmd, tgtpath=None, catchout=False):
+        """Run a shell command in a given path at host"""
+        path = tgtpath or self.path
+        return cmd.bash_cmd(tgtdir=path, cmd=cmd, catchout=catchout)
 
 
-        # git annex get
-        for k, p in self.annex_get_dirs.items():
-            src = os.path.join(self.local, p)
-            cmd.git(['annex', 'get', k])
+    def run_script(self, scrpath, path):
+        """Run script on a local path on the host"""
+        raise NotImplementedError
+
+
+    def interactive_shell(self):
+        """Opens an interactive shell to host"""
+        cmd.shell(self.path)
+
 
 
 

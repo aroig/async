@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from async.hosts.base import BaseHost
+from async.hosts.directory import DirectoryHost
 
 
 class SyncError(Exception):
@@ -26,7 +26,12 @@ class SyncError(Exception):
         super(self, SyncError).__init__(msg)
 
 
-class LocalHost(BaseHost):
+class SetupError(Exception):
+    def __init__(self, msg=None):
+        super(self, SetupError).__init__(msg)
+
+
+class LocalHost(DirectoryHost):
     """Represents the localhost. Does not sync, only useful for initial setup and status."""
 
     STATES = ['offline', 'online', 'mounted']
@@ -42,20 +47,23 @@ class LocalHost(BaseHost):
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, remote, opts):
+    def sync(self, remote, silent=False, dryrun=False, dirs=None, opts=None):
         """Syncs local machine to this host"""
         failed = []
 
         num = len(dirs)
-        for i, k in enumerate(self.dirs.keys()):
-            ui.print_enum(i, num, "syncing #y%s#t" % d['name'])
-            if k in remote.dirs.keys():
-                try:
-                    self.dirs[k].sync(self, remote, opts)
+        for i, k in enumerate(sorted(self.dirs.keys())):
+            if not k in remote.dirs.keys() or (dirs and not k in dirs):
+                continue
 
-                except SyncError as err:
-                    ui.print_error("synchronization failed. %s" % str(err))
-                    failed.append(d['name'])
+            if not silent: ui.print_enum(i, num, "syncing #y%s#t" % d['name'])
+
+            try:
+                if not dryrun: self.dirs[k].sync(self, remote, opts=opts)
+
+            except SyncError as err:
+                ui.print_error("synchronization failed. %s" % str(err))
+                failed.append(d['name'])
 
         if len(failed) > 0:
             ui.print_error("synchronization failed on: %s" % ', '.join(failed))
@@ -64,16 +72,29 @@ class LocalHost(BaseHost):
             return 0
 
 
-    def setup(self, opts):
+    def setup(self, silent=False, dryrun=False, dirs=None, opts=None):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
-        # TODO
-        pass
+        failed = []
 
+        num = len(dirs)
+        for i, k in enumerate(sorted(self.dirs.keys())):
+            if dirs and not k in dirs:
+                continue
 
+            if not silent: ui.print_enum(i, num, "setup #y%s#t" % d['name'])
 
-    # Abstract methods
-    # ----------------------------------------------------------------
+            try:
+                if not dryrun: self.dirs[k].setup(self, opts=opts)
 
+            except SetupError as err:
+                ui.print_error("setup failed. %s" % str(err))
+                failed.append(d['name'])
+
+        if len(failed) > 0:
+            ui.print_error("setup failed on: %s" % ', '.join(failed))
+            return 1
+        else:
+            return 0
 
 
 

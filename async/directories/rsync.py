@@ -19,6 +19,8 @@
 
 from async.directories.base import BaseDir
 
+import async.cmd as cmd
+
 class RsyncDir(BaseDir):
 
     def __init__(self, basepath, conf):
@@ -29,7 +31,9 @@ class RsyncDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, opts):
-        raise NotImplementedError
+        src = local.dirs[self.name].path
+        tgt = '%s:%s' % (remote.hostname, remote.dirs[self.name].path)
+        cmd.rsync(src, tgt, args=['--delete'], silent=False)
 
 
     def setup(self, host, opts):

@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import paramiko
 
 import async.archui as ui
@@ -46,11 +47,13 @@ class SshHost(BaseHost):
 
         self.type = 'ssh'
 
+        self.check = conf['check']
+
         # ssh related config
         self.hostname         = conf['hostname']         # the hostname
         self.user             = conf['user']             # the user on the remote
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
-        self.trust            = conf['trust']
+        self.ssh_trust        = conf['ssh_trust']
 
         # ssh
         self.ssh = paramiko.SSHClient()
@@ -83,26 +86,26 @@ class SshHost(BaseHost):
             raise SshError("Can't disconnect from host: %s" % self.hostname)
 
 
-    def ssh_cmd(self, cmd):
+    def ssh_cmd(self, tgtdir, cmd, catchout=False):
         """Executes a command on skynet via ssh and returns the output."""
 
         if self.ssh_status() == 'closed': self.connect_ssh()
 
+        # TODO: what about stderr?
         if self.ssh_status() == 'open':
-            stdin, stdout, stderr = self.ssh.exec_command(cmd)
-            return stdout.read()
+            stdin, stdout, stderr = self.ssh.exec_command('cd "%s" && %s' % (tgtdir, cmd))
+            rawout = stdout.read()
+            if catchout: return rawout
+            else:        sys.stdout.write(rawout)
 
 
-
-
-    # Interface
+    # Implementation
     # ----------------------------------------------------------------
 
-    def get_state(self, silent=True):
+    def get_state(self):
         """Queries the state of the host"""
         # TODO
         pass
-
 
 
     def set_state(self, state):
@@ -111,32 +114,32 @@ class SshHost(BaseHost):
         pass
 
 
-    # synchronization
-    def sync(self, opts):
-        """Syncs local machine to this host"""
-        if self.state() != 'mounted':
-            ui.error("Host at %s not mounted")
-            return
+    def get_info(self):
+        """Gets a dictionary with host state parameters"""
+        info = {}
 
-        # rsync
-        for k, p in self.rsync_dirs.items():
-            tgt = os.path.join(self.path, p)
-            src = os.path.join(self.local, p)
-            cmd.rsync(src, tgt)
+        size, available = self.df(self.path)
+        info['size'] = size
+        info['free'] = available
+        info['state'] = self.get_state()
+
+        return info
 
 
-        # git annex sync
-        for k, p in self.annex_sync_dirs.items():
-            src = os.path.join(self.local, p)
-            cmd.git(['annex', 'sync', k])
+    def run_cmd(self, cmd, tgtpath=None, catchout=False):
+        """Run a shell command in a given path at host"""
+        path = tgtpath or self.path
+        return self.ssh_cmd(tgtdir=path, cmd=cmd, catchout=catchout)
 
 
-        # git annex get
-        for k, p in self.annex_get_dirs.items():
-            src = os.path.join(self.local, p)
-            cmd.git(['annex', 'get', k])
+    def run_script(self, scr_path):
+        """Run script on a local path on the host"""
+        raise NotImplementedError
 
 
+    def interactive_shell(self):
+        """Opens an interactive shell to host"""
+        cmd.ssh(host=self.hostname)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

@@ -29,7 +29,7 @@ class LocalDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, opts):
-        raise NotImplementedError
+        return
 
 
     def setup(self, host, opts):

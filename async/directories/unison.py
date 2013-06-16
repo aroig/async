@@ -19,6 +19,9 @@
 
 from async.directories.base import BaseDir
 
+import async.cmd as cmd
+import async.archui as ui
+
 class UnisonDir(BaseDir):
 
     def __init__(self, basepath, conf):
@@ -29,7 +32,42 @@ class UnisonDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, opts):
-        raise NotImplementedError
+        src = local.path
+
+        if remote.type == 'ssh':
+            tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path))
+            tgtalias = 'ssh://%s/%s/' % (remote.name, remote.path)
+        else:
+            tgt = remote.path
+            tgtalias = remote.path
+
+        sshargs = []
+
+        if remote.ssh_trust:
+            sshargs = sshargs + ['-o LogLevel=quiet',
+                                 '-o UserKnownHostsFile=/dev/null',
+                                 '-o StrictHostKeyChecking=no']
+
+        if remote.ssh_key: sshargs = sshargs + ['-i', remote.ssh_key]
+
+        args = ['-root', src,
+                '-root', tgt,
+                '-rootalias', '%s -> %s' % (tgt, tgtalias),
+                '-path', self.relpath,
+                '-follow', 'Path %s' % self.relpath]
+
+        if opts.auto:  args = args + ['-auto']
+        if opts.slow:  args = args + ['-fastcheck' 'false']
+        if opts.batch: args = args + ['-batch']
+
+        if opts.force == 'up':   args = args + ['-force', src]
+        if opts.force == 'down': args = args + ['-force', tgt]
+
+        if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
+
+        ui.print_debug('unison %s' % ' '.join(args))
+        cmd.unison(args=args, silent=False)
+
 
 
     def setup(self, host, opts):

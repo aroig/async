@@ -23,6 +23,7 @@ class BaseDir(object):
 
     def __init__(self, basepath, conf):
         self.name = conf['name']
+        self.relpath = conf['path']
         self.path = os.path.join(basepath, conf['path'])
 
 

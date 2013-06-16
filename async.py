@@ -45,6 +45,9 @@ parser.add_option("-b", "--batch", dest="batch", action="store_true", default=Fa
 parser.add_option("-s", "--slow", action="store_true", default=False, dest="slow",
                   help="Disables fastcheck, checking every file. Much slower.")
 
+parser.add_option("-a", "--auto", action="store_true", default=False, dest="auto",
+                  help="Assume default action if there are no conflicts.")
+
 parser.add_option("-f", "--force", action="store", type="string", default=None, dest="force",
                   help="Values: up, down. Forces to transfer everything up or down.")
 
