@@ -97,7 +97,7 @@ try:
     args = args[2:]
     ret = 0
     if cmd == "status":
-        if len(args) == 0:    ret = remote.print_status(opts=opts)
+        if len(args) == 0:    ret = remote.print_status()
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
@@ -105,23 +105,23 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":
-        if len(args) == 0:    ret = remote.start(opts=opts)
+        if len(args) == 0:    ret = remote.start()
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "stop":
-        if len(args) == 0:    ret = remote.stop(opts=opts)
+        if len(args) == 0:    ret = remote.stop()
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
-        if len(args) == 0:    ret = remote.shell(opts=opts)
+        if len(args) == 0:    ret = remote.shell()
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "mount":
-        if len(args) == 0:    ret = remote.mount(opts=opts)
+        if len(args) == 0:    ret = remote.mount()
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "umount":
-        if len(args) == 0:    ret = remote.umount(opts=opts)
+        if len(args) == 0:    ret = remote.umount()
         else:                 ui.print_error("Too many arguments.")
 
 

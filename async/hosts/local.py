@@ -56,7 +56,8 @@ class LocalHost(DirectoryHost):
             if not k in remote.dirs.keys() or (dirs and not k in dirs):
                 continue
 
-            if not silent: ui.print_enum(i, num, "syncing #y%s#t" % d['name'])
+            d = remote.dirs[k]
+            if not silent: ui.print_enum(i, num, "syncing #y%s#t (%s)" % (d.name, d.type))
 
             try:
                 if not dryrun: self.dirs[k].sync(self, remote, opts=opts)
@@ -81,7 +82,8 @@ class LocalHost(DirectoryHost):
             if dirs and not k in dirs:
                 continue
 
-            if not silent: ui.print_enum(i, num, "setup #y%s#t" % d['name'])
+            d = remote.dirs[k]
+            if not silent: ui.print_enum(i, num, "setup #y%s#t (%s)" % (d.name, d.type))
 
             try:
                 if not dryrun: self.dirs[k].setup(self, opts=opts)

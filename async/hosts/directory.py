@@ -36,7 +36,6 @@ class DirectoryHost(BaseHost):
         self.check = conf['check']
 
 
-
     # Implementation
     # ----------------------------------------------------------------
 
@@ -44,6 +43,11 @@ class DirectoryHost(BaseHost):
         """Queries the state of the host"""
 
         self.state = 'mounted'
+
+        if not os.path.exists(self.path):
+            self.state = 'offline'
+            return self.state
+
         for p in self.check:
             if not os.path.exists(os.path.join(self.path, p)):
                 self.state = 'offline'
@@ -51,23 +55,14 @@ class DirectoryHost(BaseHost):
         return self.state
 
 
-
     def set_state(self, state):
         """Sets the state of the host"""
-        if state in set(['mounted', 'online']):
-            try:
-                cmd.mount(self.path)
-            except:
-                ui.error("Can't mount %s" % self.path)
-
+        if state in set(['mounted']):
+            self.mount_devices(self.mounts)
             self.state = 'mounted'
 
-        elif state in set(['offline']):
-            try:
-                cmd.umount(self.path)
-            except:
-                ui.error("Can't umount %s" % self.path)
-
+        elif state in set(['offline', 'online']):
+            self.umount_devices(self.mounts)
             self.state = 'offline'
 
 
@@ -75,18 +70,19 @@ class DirectoryHost(BaseHost):
         """Gets a dictionary with host state parameters"""
         info = {}
 
-        size, available = self.df(self.path)
-        info['size'] = size
-        info['free'] = available
         info['state'] = self.get_state()
+        if info['state'] in set(['online', 'mounted']):
+            size, available = self.df(self.path)
+            info['size'] = size
+            info['free'] = available
 
         return info
 
 
-    def run_cmd(self, cmd, tgtpath=None, catchout=False):
+    def run_cmd(self, c, tgtpath=None, catchout=False):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
-        return cmd.bash_cmd(tgtdir=path, cmd=cmd, catchout=catchout)
+        return cmd.bash_cmd(tgtdir=path, cmd=c, catchout=catchout)
 
 
     def run_script(self, scrpath, path):

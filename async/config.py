@@ -101,7 +101,9 @@ class AsyncConfig(ConfigParser):
         'ssh_trust'      : ('no', parse_bool),
         'unison_as_rsync': ('false', parse_bool),
 
+        'mounts'         : ({}, parse_dict),
         'path'           : (None, parse_path),
+        'check'          : ([], parse_list),
         'type'           : (None, parse_string),
         'instance'       : (None, parse_string),
 }

@@ -18,8 +18,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from async.directories import UnisonDir, AnnexDir, LocalDir
-
+from async.directories import UnisonDir, RsyncDir, AnnexDir, LocalDir
+import async.archui as ui
 
 class HostError(Exception):
     def __init__(self, msg=None):
@@ -39,6 +39,7 @@ class BaseHost(object):
         # name and path
         self.name = conf['name']
         self.path = conf['path']
+        self.mounts = conf['mounts']
 
         # directories
         self.dirs = {}
@@ -84,12 +85,49 @@ class BaseHost(object):
             if not silent: ui.print_status(flag="FAIL", nl=True)
 
 
-    def df(path):
-        """Run df on the remote and return a tuple of integers (size, available)"""
-        dfout = self.run_cmd('df "%s"' % path, catchout=True)
-        device, size, used, available, percent, mountpoint = output.split("\n")[1].split()
-        return (int(size), int(available))
+    def bytes2human(self, n, format="%(value)3.2f %(symbol)s"):
+        """
+        >>> bytes2human(10000)
+        '9 Kb'
+        >>> bytes2human(100001221)
+        '95 Mb'
+        """
+        symbols = ('b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb', 'Zb', 'Yb')
+        prefix = {}
+        for i, s in enumerate(symbols[1:]):
+            prefix[s] = 1 << (i+1)*10
+        for symbol in reversed(symbols[1:]):
+            if n >= prefix[symbol]:
+                value = float(n) / prefix[symbol]
+                return format % locals()
+        return format % dict(symbol=symbols[0], value=n)
 
+
+    # Commands
+    # ----------------------------------------------------------------
+
+    def mount_devices(self, mounts):
+        for dev, mp in mounts.items():
+            try:
+                self.run_cmd('mount "%s"' % mp, tgtpath='/')
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't mount %s" % mp)
+
+
+    def umount_devices(self, mounts):
+        for dev, mp in mounts.items():
+            try:
+                self.run_cmd('umount "%s"' % mp, tgtpath='/')
+
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't umount %s" % mp)
+
+
+    def df(self, path):
+        """Run df on the remote and return a tuple of integers (size, available)"""
+        out = self.run_cmd('df "%s"' % path, catchout=True)
+        device, size, used, available, percent, mountpoint = out.split("\n")[1].split()
+        return (int(size), int(available))
 
 
     # Interface
@@ -125,17 +163,22 @@ class BaseHost(object):
 
 
     def print_status(self):
-        status = self.get_info()
+        info = self.get_info()
 
         ui.print_status("Status of #m%s#t" % self.name)
 
-        for k, val in status.items():
-            ui.print_color('    #*w%s:#t %s' % (k, val))
+        if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+        if 'size' in info:  ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
+        if 'free' in info:  ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
 
 
-    def shell(self, opts):
+    def shell(self):
         """Opens a shell to host"""
-        self.interactive_shell(opts)
+        if not self.get_state() in set(['mounted']):
+            ui.print_error("Not mounted")
+            return
+
+        self.interactive_shell()
 
 
 
@@ -154,7 +197,7 @@ class BaseHost(object):
         """Gets a dictionary with host state parameters"""
         raise NotImplementedError
 
-    def run_cmd(self, cmd, tgtpath=None, catchout=False):
+    def run_cmd(self, c, tgtpath=None, catchout=False):
         """Run a shell command in a given path at host"""
         raise NotImplementedError
 

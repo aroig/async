@@ -35,7 +35,7 @@ class UnisonDir(BaseDir):
         src = local.path
 
         if remote.type == 'ssh':
-            tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path))
+            tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path)
             tgtalias = 'ssh://%s/%s/' % (remote.name, remote.path)
         else:
             tgt = remote.path

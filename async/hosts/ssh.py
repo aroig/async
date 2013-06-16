@@ -126,10 +126,10 @@ class SshHost(BaseHost):
         return info
 
 
-    def run_cmd(self, cmd, tgtpath=None, catchout=False):
+    def run_cmd(self, c, tgtpath=None, catchout=False):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
-        return self.ssh_cmd(tgtdir=path, cmd=cmd, catchout=catchout)
+        return self.ssh_cmd(tgtdir=path, cmd=c, catchout=catchout)
 
 
     def run_script(self, scr_path):

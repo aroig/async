@@ -64,12 +64,12 @@ def bash_cmd(tgtdir, cmd, silent=False, catchout=False):
             raw = subprocess.check_output([bash_cmd, '-c', cmd], stderr=out, cwd=tgtdir)
             return raw
         else:
-            subprocess.check_call([git_cmd] + args, stderr=out, stdout=out, cwd=tgtdir)
+            subprocess.check_call([bash_cmd, '-c', cmd], stderr=out, stdout=out, cwd=tgtdir)
 
 
 def shell(tgtdir):
-    shell_cmd = os.environ.get('$SHELL')
-    subprocess.check_call('shell_cmd', cwd=tgtdir)
+    shell_cmd = os.environ.get('SHELL')
+    subprocess.check_call([shell_cmd], cwd=tgtdir)
 
 
 def ssh(host, args=[]):
