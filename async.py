@@ -86,43 +86,47 @@ try:
     cmd = args[0]
 
     # get local and remote hosts
+    local = get_localhost(conf)
+
     if len(args) > 1:  remote = get_host(args[1], conf)
     else:              remote = None
-    local = get_localhost(conf)
 
     args = args[2:]
     ret = 0
     if cmd == "status":
-        if len(args) == 0:    ret = host.print_status(opts=opts)
+        if len(args) == 0:    ret = remote.print_status(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
         if len(args) == 0:    ret = local.sync(remote=remote, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
-    elif cmd == "upgrade":
-        if len(args) == 0:    ret = host.upgrade(opts=opts)
-        else:                 ui.print_error("Too many arguments.")
-
     elif cmd == "start":
-        if len(args) == 0:    ret = host.start(opts=opts)
+        if len(args) == 0:    ret = remote.start(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "stop":
-        if len(args) == 0:    ret = host.stop(opts=opts)
+        if len(args) == 0:    ret = remote.stop(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
-        if len(args) == 0:    ret = host.shell(opts=opts)
+        if len(args) == 0:    ret = remote.shell(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "mount":
-        if len(args) == 0:    ret = host.mount(opts=opts)
+        if len(args) == 0:    ret = remote.mount(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "umount":
-        if len(args) == 0:    ret = host.umount(opts=opts)
+        if len(args) == 0:    ret = remote.umount(opts=opts)
         else:                 ui.print_error("Too many arguments.")
+
+
+
+    elif cmd == "upgrade":
+        if len(args) == 0:    ret = remote.upgrade(opts=opts)
+        else:                 ui.print_error("Too many arguments.")
+
 
     else:
         ui.print_error("Unknown command %s" % cmd)

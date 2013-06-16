@@ -42,6 +42,9 @@ def get_host(hostname, conf):
             ui.print_error("Unknown host type %s (%s)" % (typ, hostname))
             sys.exit(1)
 
+    elif hostname == 'localhost':
+        return get_localhost(conf)
+
     else:
         ui.print_error("Unknown host: %s" % hostname)
         sys.exit(1)
