@@ -33,7 +33,7 @@ class LocalHost(BaseHost):
     def __init__(self, conf):
 
         # base config
-        super(SshHost, self).__init__(conf)
+        super(LocalHost, self).__init__(conf)
 
         self.type = 'local'
 

@@ -86,7 +86,8 @@ try:
     cmd = args[0]
 
     # get local and remote hosts
-    remote = get_host(args[1], conf)
+    if len(args) > 1:  remote = get_host(args[1], conf)
+    else:              remote = None
     local = get_localhost(conf)
 
     args = args[2:]

@@ -35,7 +35,6 @@ def parse_string(s):
 
 def parse_bool(s):
     if s == None: return None
-
     val = s.strip().lower()
     if val in set(['on', 'true', '1', 'yes']): return True
     elif val in set(['off', 'false', '0', 'no']): return False
@@ -96,7 +95,11 @@ class AsyncConfig(ConfigParser):
         'nosync'         : ([], parse_list),
         'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
         'trust'          : ('no', parse_bool),
+
         'hostname'       : (None, parse_string),
+        'user'           : (None, parse_string),
+        'ssh_key'        : (None, parse_path),
+
         'path'           : (None, parse_path),
         'type'           : (None, parse_string),
         'instance'       : (None, parse_string),
@@ -144,9 +147,11 @@ class AsyncConfig(ConfigParser):
         for k, pair in fields.items():
             func = pair[1]
 
-            if self.has_option(sec, k): val = func(self.get(sec, k))
-            else:                       val = func(defaults.get(k, None)) or pair[0]
-            dic[k] = val
+            if self.has_option(sec, k): val = self.get(sec, k)
+            else:                       val = defaults.get(k, None)
+
+            if val:  dic[k] = func(val)
+            else:    dic[k] = pair[0]
 
         return dic
 

@@ -26,9 +26,9 @@ import socket
 
 
 def get_host(hostname, conf):
-    if hostname in conf.hosts:
-        hconf = conf.hosts[hostname]
-        typ = conf.hosts[hostname]['type']
+    if hostname in conf.host:
+        hconf = conf.host[hostname]
+        typ = conf.host[hostname]['type']
         if typ == 'ec2':
             return Ec2Host(conf=hconf)
 
@@ -51,7 +51,7 @@ def get_host(hostname, conf):
 def get_localhost(conf):
     localhostname = socket.getfqdn()
     local = None
-    for k, h in conf.hosts.items():
+    for k, h in conf.host.items():
         if h['hostname'] == localhostname:
             return LocalHost(conf.host[k])
 

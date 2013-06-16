@@ -34,8 +34,9 @@ class BaseHost(object):
         self.type = None
         self.state = None
 
-        # the name
+        # name and path
         self.name = conf['name']
+        self.path = conf['path']
 
         # directories
         self.dirs = {}
@@ -44,7 +45,7 @@ class BaseHost(object):
 
 
     def get_directory(self, dconf):
-        typ = conf['type']
+        typ = dconf['type']
         if typ == 'unison':   return UnisonDir(basepath=self.path, conf=dconf)
         elif typ == 'rsync':  return RsyncDir(basepath=self.path, conf=dconf)
         elif typ == 'annex':  return AnnexDir(basepath=self.path, conf=dconf)
