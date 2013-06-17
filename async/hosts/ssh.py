@@ -71,6 +71,9 @@ class SshHost(BaseHost):
             self.ssh_args = self.ssh_args + ['-i %s' % remote.ssh_key]
 
 
+    # Utilities
+    # ----------------------------------------------------------------
+
 
     # Ssh
     # ----------------------------------------------------------------
@@ -113,6 +116,17 @@ class SshHost(BaseHost):
 
     # Implementation
     # ----------------------------------------------------------------
+
+    def host(self):
+        """Returns the hostname."""
+        return self.hostname
+
+    def ip(self):
+        """Returns the ip"""
+        # TODO: sure?
+        addr, port = self.ssh.get_transport().getpeername()
+        return addr
+
 
     def get_state(self):
         """Queries the state of the host"""

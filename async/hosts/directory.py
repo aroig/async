@@ -58,11 +58,11 @@ class DirectoryHost(BaseHost):
     def set_state(self, state):
         """Sets the state of the host"""
         if state in set(['mounted']):
-            self.mount_devices(self.mounts)
+            self.mount_devices()
             self.state = 'mounted'
 
         elif state in set(['offline', 'online']):
-            self.umount_devices(self.mounts)
+            self.umount_devices()
             self.state = 'offline'
 
 

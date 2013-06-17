@@ -97,11 +97,15 @@ class AsyncConfig(ConfigParser):
 
         'hostname'       : (None, parse_string),
         'user'           : (None, parse_string),
+
         'ssh_key'        : (None, parse_path),
         'ssh_trust'      : ('no', parse_bool),
         'unison_as_rsync': ('false', parse_bool),
 
         'mounts'         : ({}, parse_dict),
+        'luks'           : ({}, parse_dict),
+        'luks_key'       : (None, parse_path),
+
         'path'           : (None, parse_path),
         'check'          : ([], parse_list),
         'type'           : (None, parse_string),
@@ -209,15 +213,17 @@ class AsyncConfig(ConfigParser):
                 continue
 
 
-        # postprocess sections.
+        # match instance to ec2 hosts
         for k, val in self.host.items():
-            name = val['instance']
-            if name:
-                if name in self.instance:
+            if val['type'] == 'ec2':
+                if k in self.instance:
                     val['instance'] = self.instance[name]
                 else:
-                    raise AsyncConfigError("Unknown instance: %s" % name)
+                    raise AsyncConfigError("Unknown instance for host: %s" % name)
 
+
+        # attach dirs data to hosts
+        for k, val in self.host.items():
             dirs = val['dirs']
             if dirs:
                 for k in dirs:

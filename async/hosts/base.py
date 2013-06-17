@@ -39,7 +39,10 @@ class BaseHost(object):
         # name and path
         self.name = conf['name']
         self.path = conf['path']
+
         self.mounts = conf['mounts']
+        self.luks = conf['luks']
+        self.luks_key = self.read_luks_keys(conf['luks_key'])
 
         # directories
         self.dirs = {}
@@ -103,24 +106,57 @@ class BaseHost(object):
         return format % dict(symbol=symbols[0], value=n)
 
 
+    def read_luks_keys(self, path):
+        """Reads luks keys from a file. each line is formatted as id:key"""
+        keys = {}
+        with open(path, 'r') as fd:
+            for line in fd:
+                m = re.match(r'^(.*):(.*)$')
+                if m: keys[m.group(1).strip()] = m.group(2).strip()
+
+        return keys
+
+
     # Commands
     # ----------------------------------------------------------------
 
-    def mount_devices(self, mounts):
-        for dev, mp in mounts.items():
+    def mount_devices(self):
+        # open luks partitions
+        for dev, name in self.luks.items():
+            passphrase = self.luks_key[name]
+
+            try:
+                self.run_cmd('sudo sh -c "echo -n %s | cryptsetup --key-file=- luksOpen %s %s"' % \
+                             (passphrase, dev, name))
+
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't open luks partition %s" % name)
+
+        # mount devices
+        for dev, mp in self.mounts.items():
             try:
                 self.run_cmd('mount "%s"' % mp, tgtpath='/')
             except subprocess.CalledProcessError:
                 ui.print_error("Can't mount %s" % mp)
 
 
-    def umount_devices(self, mounts):
-        for dev, mp in mounts.items():
+    def umount_devices(self):
+        # umount devices
+        for dev, mp in self.mounts.items():
             try:
                 self.run_cmd('umount "%s"' % mp, tgtpath='/')
 
             except subprocess.CalledProcessError:
                 ui.print_error("Can't umount %s" % mp)
+
+        # close luks partitions
+        for dev, name in self.luks.items():
+            try:
+                self.run_cmd('sudo cryptsetup luksClose %s' % name)
+
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't close luks partition %s" % name)
+
 
 
     def df(self, path):

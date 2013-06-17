@@ -29,9 +29,42 @@ class Ec2Host(SshHost):
 
         self.type = 'ec2'
 
-        # ssh related config
-        self.hostname         = conf['hostname']         # the hostname
+        self.ec2_ami = conf['instance']['ec2_ami']
+        self.ec2_itype = conf['instance']['ec2_itype']
+        self.ec2_region = conf['instance']['ec2_region']
+        self.ec2_owner = conf['instance']['ec2_owner']
 
+        self.attach = conf['instance']['attach']
+
+    # Utilities
+    # ----------------------------------------------------------------
+
+
+
+    # Interface
+    # ----------------------------------------------------------------
+
+    def terminate(self, silent=False, dryrun=False):
+        """Stops the host"""
+        if not self.get_state() in set(['terminated']):
+            self.switch_state("Terminating %s" % (self.name), 'terminated', silent=silent, dryrun=dryrun)
+
+
+
+    # Implementation
+    # ----------------------------------------------------------------
+
+    def get_state(self):
+        """Queries the state of the host"""
+        raise NotImplementedError
+
+    def set_state(self, state):
+        """Sets the state of the host"""
+        raise NotImplementedError
+
+    def get_info(self):
+        """Gets a dictionary with host state parameters"""
+        raise NotImplementedError
 
 
 
