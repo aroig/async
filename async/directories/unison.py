@@ -43,13 +43,7 @@ class UnisonDir(BaseDir):
             tgtalias = remote.path
 
         sshargs = []
-
-        if remote.ssh_trust:
-            sshargs = sshargs + ['-o LogLevel=quiet',
-                                 '-o UserKnownHostsFile=/dev/null',
-                                 '-o StrictHostKeyChecking=no']
-
-        if remote.ssh_key: sshargs = sshargs + ['-i', remote.ssh_key]
+        sshargs = sshargs + remote.ssh_args
 
         args = ['-root', src,
                 '-root', tgt,

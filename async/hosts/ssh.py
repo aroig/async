@@ -55,10 +55,21 @@ class SshHost(BaseHost):
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
-        # ssh
         self.ssh = paramiko.SSHClient()
-        if self.trust:
+        self.ssh_args = []
+        if self.ssh_trust:
             self.ssh.set_missing_host_key_policy(AlwaysAcceptPolicy())
+
+            self.ssh_args = self.ssh_args + ['-o LogLevel=quiet',
+                                             '-o UserKnownHostsFile=/dev/null',
+                                             '-o StrictHostKeyChecking=no']
+
+        else:
+            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        if self.ssh_key:
+            self.ssh_args = self.ssh_args + ['-i %s' % remote.ssh_key]
+
 
 
     # Ssh
@@ -94,9 +105,10 @@ class SshHost(BaseHost):
         # TODO: what about stderr?
         if self.ssh_status() == 'open':
             stdin, stdout, stderr = self.ssh.exec_command('cd "%s" && %s' % (tgtdir, cmd))
-            rawout = stdout.read()
-            if catchout: return rawout
-            else:        sys.stdout.write(rawout)
+
+            if catchout: return stdout.read()
+            else:
+                for line in stdout: sys.stdout.write(line)
 
 
     # Implementation
