@@ -30,10 +30,7 @@ class DirectoryHost(BaseHost):
 
         # base config
         super(DirectoryHost, self).__init__(conf=conf)
-
         self.type = 'directory'
-
-        self.check = conf['check']
 
 
     # Implementation
@@ -42,28 +39,23 @@ class DirectoryHost(BaseHost):
     def get_state(self):
         """Queries the state of the host"""
 
-        self.state = 'mounted'
+        if self.check_devices():  self.state = 'mounted'
+        else:                     self.state = 'offline'
 
-        if not os.path.exists(self.path):
-            self.state = 'offline'
-            return self.state
-
-        for p in self.check:
-            if not os.path.exists(os.path.join(self.path, p)):
-                self.state = 'offline'
-                break
         return self.state
 
 
     def set_state(self, state):
         """Sets the state of the host"""
+        # mount
         if state in set(['mounted']):
             self.mount_devices()
-            self.state = 'mounted'
+            self.state = self.get_state()
 
+        # umount
         elif state in set(['offline', 'online']):
             self.umount_devices()
-            self.state = 'offline'
+            self.state = self.get_state()
 
 
     def get_info(self):
@@ -71,7 +63,7 @@ class DirectoryHost(BaseHost):
         info = {}
 
         info['state'] = self.get_state()
-        if info['state'] in set(['online', 'mounted']):
+        if info['state'] in set(['mounted']):
             size, available = self.df(self.path)
             info['size'] = size
             info['free'] = available

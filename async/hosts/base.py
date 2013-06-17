@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import subprocess
 
 from async.directories import UnisonDir, RsyncDir, AnnexDir, LocalDir
 import async.archui as ui
@@ -41,16 +42,22 @@ class BaseHost(object):
         self.path = conf['path']
 
         # mounts
+        self.check = conf['check']
         self.mounts = conf['mounts']
         self.luks = conf['luks']
         self.ecryptfs = conf['ecryptfs']
-        self.vol_keys = self.read_keys(conf['vol_keys'])
+
+        if conf['vol_keys']: self.vol_keys = self.read_keys(conf['vol_keys'])
+        else:                self.vol_keys = {}
 
         # directories
         self.dirs = {}
         for k, d in conf['dirs'].items():
             self.dirs[k] = self.get_directory(d, unison_as_rsync=conf['unison_as_rsync'])
 
+
+    # Utilities
+    # ----------------------------------------------------------------
 
     def get_directory(self, dconf, unison_as_rsync=False):
         typ = dconf['type']
@@ -63,10 +70,6 @@ class BaseHost(object):
         else:
             raise HostError("Unknown directory type %s" % typ)
 
-
-
-    # Utilities
-    # ----------------------------------------------------------------
 
     def wait_for(self, status, func, timeout=120):
         """Waits until func returns status. A timeout in seconds can be specified"""
@@ -141,7 +144,7 @@ class BaseHost(object):
             except subprocess.CalledProcessError:
                 ui.print_error("Can't mount %s" % mp)
 
-        # ecryptfs
+        # mount ecryptfs
         for cryp, mp in self.ecryptfs.items():
             passphrase = self.volume_keys[mp]
 
@@ -159,6 +162,14 @@ class BaseHost(object):
 
 
     def umount_devices(self):
+        # umount ecryptfs
+        for cryp, mp in self.ecryptfs.items():
+            try:
+                self.run_cmd('umount "%s"' % mp, tgtpath='/')
+
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't umount ecryptfs directory %s" % mp)
+
         # umount devices
         for dev, mp in self.mounts.items():
             try:
@@ -175,14 +186,43 @@ class BaseHost(object):
             except subprocess.CalledProcessError:
                 ui.print_error("Can't close luks partition %s" % name)
 
-        # ecryptfs
-        for cryp, mp in self.ecryptfs.items():
-            try:
-                self.run_cmd('umount "%s"' % mp, tgtpath='/')
 
-            except subprocess.CalledProcessError:
-                ui.print_error("Can't umount ecryptfs directory %s" % mp)
+    def check_devices(self):
+        """Checks whether all devices are properly mounted, and path checks are ok"""
+        # detect if some mountpoint is mising
+        for dev, mt in self.mounts.items():
+            if not self.check_path_mountpoint(mt):
+                ui.print_debug("path %s is not mounted" % mt)
+                return False
 
+        # check whether basepath exists
+        if not self.check_path_exists(self.path):
+            self.state = 'offline'
+            ui.print_debug("path %s does nit exist" % self.path)
+            return False
+
+        # additional path checks
+        for p in self.check:
+            path = os.path.join(self.path, p)
+            if not self.path_exists(path):
+                ui.print_debug("path %s does nit exist" % path)
+                return False
+
+        return True
+
+
+    def check_path_mountpoint(self, path):
+        """Returns true if path is a mountpoint"""
+        ret = self.run_cmd('mountpoint -q "%s"; echo $?' % path,
+                           tgtpath='/', catchout=True)
+        return ret.strip() == '0'
+
+
+    def check_path_exists(self, path):
+        """Returns true if given path exists"""
+        ret = self.run_cmd('[ -e "%s" ]; echo $?' % path,
+                           tgtpath='/',  catchout=True)
+        return ret.strip() == '0'
 
 
     def df(self, path):
@@ -230,6 +270,10 @@ class BaseHost(object):
         ui.print_status("Status of #m%s#t" % self.name)
 
         if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+
+        if 'host' in info:  ui.print_color('    #*whost:#t %s' % info['host'])
+        if 'ip' in info:    ui.print_color('      #*wip:#t %s' % info['ip'])
+
         if 'size' in info:  ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
         if 'free' in info:  ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
 

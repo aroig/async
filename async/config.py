@@ -212,9 +212,9 @@ class AsyncConfig(ConfigParser):
         for k, val in self.host.items():
             if val['type'] == 'ec2':
                 if k in self.instance:
-                    val['instance'] = self.instance[name]
+                    val['instance'] = self.instance[k]
                 else:
-                    raise AsyncConfigError("Unknown instance for host: %s" % name)
+                    raise AsyncConfigError("Unknown instance for host: %s" % k)
 
 
         # attach dirs data to hosts

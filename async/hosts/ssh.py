@@ -86,7 +86,7 @@ class SshHost(BaseHost):
 
     def ssh_connect(self):
         # TODO: if trusthost=False, check host keys
-        self.ssh.connect(hostname=self.hostname, username=self.user,
+        self.ssh.connect(hostname=self.hostname, username=self.user, timeout=10,
                          key_filename=self.ssh_key, look_for_keys=False)
 
         if not self.wait_for('open', self.ssh_status):
@@ -130,8 +130,13 @@ class SshHost(BaseHost):
 
     def get_state(self):
         """Queries the state of the host"""
-        # TODO
-        pass
+        try:
+            self.ssh_connect()
+        except SshError:
+            return 'offline'
+
+        # TODO: Check whether stuff is mounted
+        return 'online'
 
 
     def set_state(self, state):
@@ -144,10 +149,15 @@ class SshHost(BaseHost):
         """Gets a dictionary with host state parameters"""
         info = {}
 
-        size, available = self.df(self.path)
-        info['size'] = size
-        info['free'] = available
         info['state'] = self.get_state()
+        if info['state'] in set(['mounted', 'online']):
+            info['host'] = self.host()
+            info['ip'] = self.ip()
+
+        if info['state'] in set(['mounted']):
+            size, available = self.df(self.path)
+            info['size'] = size
+            info['free'] = available
 
         return info
 
