@@ -20,23 +20,33 @@
 from async.directories.base import BaseDir
 
 import async.cmd as cmd
+import async.archui as ui
 
 class RsyncDir(BaseDir):
 
     def __init__(self, basepath, conf):
         super(RsyncDir, self).__init__(basepath, conf)
-
+        self.type='rsync'
 
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts):
-        src = local.dirs[self.name].path
-        tgt = '%s:%s' % (remote.hostname, remote.dirs[self.name].path)
-        cmd.rsync(src, tgt, args=['--delete'], silent=False)
+    def sync(self, local, remote, opts=None, dryrun=False):
+        src = '%s/' % local.dirs[self.name].path
+
+        if remote.type == 'ssh':
+            tgt = '%s:%s/' % (remote.hostname, remote.dirs[self.name].path)
+        else:
+            tgt = '%s/' % remote.dirs[self.name].path
 
 
-    def setup(self, host, opts):
+        args = ['-avq', '--delete']
+
+        ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
+        if not dryrun: cmd.rsync(src, tgt, args=args, silent=False)
+
+
+    def setup(self, host, opts=None, dryrun=False):
         raise NotImplementedError
 
 

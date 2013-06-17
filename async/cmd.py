@@ -37,10 +37,17 @@ def rsync(src, tgt, args=[], silent=True):
     rsync_cmd = 'rsync'
     rsync_args = args
 
+    if src[-1] != '/': A = '%s/' % src
+    else:              A = src
+
+    if tgt[-1] != '/': B = '%s/' % tgt
+    else:              B = tgt
+
+
     with open('/dev/null', 'w') as devnull:
         if silent: out = devnull
         else:      out = None
-        subprocess.check_call([rsync_cmd, '-avq'] + rsync_args + [src + '/', tgt + '/'], stderr=out, stdout=out)
+        subprocess.check_call([rsync_cmd] + rsync_args + [A, B], stderr=out, stdout=out)
 
 
 def git(tgtdir, args, silent=False, catchout=False):

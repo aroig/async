@@ -30,11 +30,11 @@ class BaseDir(object):
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts):
+    def sync(self, local, remote, opts=None, dryrun=False):
         raise NotImplementedError
 
 
-    def setup(self, host, opts):
+    def setup(self, host, opts=None, dryrun=False):
         raise NotImplementedError
 
 

@@ -19,20 +19,22 @@
 
 from async.directories.base import BaseDir
 
+import async.archui as ui
+
 class LocalDir(BaseDir):
 
     def __init__(self, basepath, conf):
         super(LocalDir, self).__init__(basepath, conf)
-
+        self.type='local'
 
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts):
+    def sync(self, local, remote, opts=None, dryrun=False):
         return
 
 
-    def setup(self, host, opts):
+    def setup(self, host, opts=None, dryrun=False):
         raise NotImplementedError
 
 

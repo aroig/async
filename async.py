@@ -79,7 +79,7 @@ try:
     conf = AsyncConfig(os.path.expandvars('$HOME/.config/async/'))
 
     # UI settings
-    if opts.debug: ui.set_debug()
+    if opts.debug: ui.set_debug(1)
     ui.use_color(conf.async['color'])
 
     # If the output is not a terminal, remove the colors
@@ -101,29 +101,28 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
-        if len(args) == 0:    ret = local.sync(remote=remote, opts=opts)
+        if len(args) == 0:    ret = local.sync(remote=remote, opts=opts, dryrun=opts.dryrun)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":
-        if len(args) == 0:    ret = remote.start()
+        if len(args) == 0:    ret = remote.start(dryrun=opts.dryrun)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "stop":
-        if len(args) == 0:    ret = remote.stop()
+        if len(args) == 0:    ret = remote.stop(dryrun=opts.dryrun)
+        else:                 ui.print_error("Too many arguments.")
+
+    elif cmd == "mount":
+        if len(args) == 0:    ret = remote.mount(dryrun=opts.dryrun)
+        else:                 ui.print_error("Too many arguments.")
+
+    elif cmd == "umount":
+        if len(args) == 0:    ret = remote.umount(dryrun=opts.dryrun)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
         if len(args) == 0:    ret = remote.shell()
         else:                 ui.print_error("Too many arguments.")
-
-    elif cmd == "mount":
-        if len(args) == 0:    ret = remote.mount()
-        else:                 ui.print_error("Too many arguments.")
-
-    elif cmd == "umount":
-        if len(args) == 0:    ret = remote.umount()
-        else:                 ui.print_error("Too many arguments.")
-
 
 
     elif cmd == "upgrade":

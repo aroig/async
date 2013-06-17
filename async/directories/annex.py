@@ -20,28 +20,31 @@
 from async.directories.base import BaseDir
 
 import async.cmd as cmd
+import async.archui as ui
 
 class AnnexDir(BaseDir):
 
     def __init__(self, basepath, conf):
         super(AnnexDir, self).__init__(basepath, conf)
-
+        self.type='annex'
 
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts):
+    def sync(self, local, remote, opts=None, dryrun=False):
         src = local.dirs[self.name].path
         tgt = remote.dirs[self.name].path
 
-        local.run_cmd('git annex sync "%s"' % remote.name, path=src)
+        c = 'git annex sync "%s"' % remote.name
+        ui.print_debug(c)
+        if not dryrun: local.run_cmd(c, path=src)
 
         # TODO: if get, do a local and remote get
         # local.run_cmd('git annex get --from="%s"' % remote.name, path=src)
         # remote.run_cmd('git annex get --from="%s"' % local.name, path=tgt)
 
 
-    def setup(self, host, opts):
+    def setup(self, host, opts=None, dryrun=False):
         raise NotImplementedError
 
 
