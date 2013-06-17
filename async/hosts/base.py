@@ -82,17 +82,6 @@ class BaseHost(object):
         return func() == status
 
 
-    def switch_state(self, msg, tgtstate, silent=False, dryrun=False):
-        """Switches host state to tgtstate"""
-        try:
-            if not silent: ui.print_status(text=msg, flag="BUSY")
-            if not dryrun: self.set_state(tgtstate)
-            if not silent: ui.print_status(flag="DONE", nl=True)
-
-        except HostError:
-            if not silent: ui.print_status(flag="FAIL", nl=True)
-
-
     def bytes2human(self, n, format="%(value)3.2f %(symbol)s"):
         """
         >>> bytes2human(10000)
@@ -122,7 +111,7 @@ class BaseHost(object):
         return keys
 
 
-    # Commands
+    # Filesystem manipulations
     # ----------------------------------------------------------------
 
     def mount_devices(self):
@@ -198,10 +187,11 @@ class BaseHost(object):
         # check whether basepath exists
         if not self.check_path_exists(self.path):
             self.state = 'offline'
-            ui.print_debug("path %s does nit exist" % self.path)
+            ui.print_debug("path %s does not exist" % self.path)
             return False
 
         # additional path checks
+        # TODO: sure I want this here?
         for p in self.check:
             path = os.path.join(self.path, p)
             if not self.path_exists(path):
@@ -232,6 +222,7 @@ class BaseHost(object):
         return (int(size), int(available))
 
 
+
     # Interface
     # ----------------------------------------------------------------
 
@@ -242,26 +233,26 @@ class BaseHost(object):
 
     def start(self, silent=False, dryrun=False):
         """Starts the host"""
-        if self.get_state() in set(['offline']):
-            self.switch_state("Starting %s" % (self.name), 'online', silent=silent, dryrun=dryrun)
+        if self.STATES.index(self.state) < self.STATES.index('online'):
+            self.set_state('online', silent=silent, dryrun=dryrun)
 
 
     def stop(self, silent=False, dryrun=False):
         """Stops the host"""
-        if not self.get_state() in set(['offline']):
-            self.switch_state("Stopping %s" % (self.name), 'offline', silent=silent, dryrun=dryrun)
+        if self.STATES.index(self.state) >= self.STATES.index('online'):
+            self.set_state('offline', silent=silent, dryrun=dryrun)
 
 
     def mount(self, silent=False, dryrun=False):
         """Mounts the partitions on host"""
-        if not self.get_state() in set(['mounted']):
-            self.switch_state("Mounting devices for %s" % (self.name), 'mounted', silent=silent, dryrun=dryrun)
+        if self.STATES.index(self.state) < self.STATES.index('mounted'):
+            self.set_state('mounted', silent=silent, dryrun=dryrun)
 
 
     def umount(self, silent=False, dryrun=False):
         """Umounts the partitions on host"""
-        if self.get_state() in set(['mounted']):
-            self.switch_state("Umounting devices for %s" % (self.name), 'online', silent=silent, dryrun=dryrun)
+        if self.STATES.index(self.state) >= self.STATES.index('mounted'):
+            self.set_state('online', silent=silent, dryrun=dryrun)
 
 
     def print_status(self):
@@ -287,16 +278,61 @@ class BaseHost(object):
         self.interactive_shell()
 
 
+    def connect(self):
+        """Establishes a connection and initialized data"""
+        pass
+
+
+    def set_state(self, state, silent=False, dryrun=False):
+        """Sets the host to the given state, passing through all the states in between."""
+        self.state = self.get_state()
+
+        if not state in self.STATES:
+            raise HostError("Unknown state %s" % state)
+
+        cur = self.STATES.index(self.state)
+        new = self.STATES.index(state)
+
+        if cur < new:
+            for i in range(cur, new, 1):
+                st = self.STATES[i+1]
+                self.switch_state_with_message(state=st, msg="Entering state %s" % st,
+                                               silent=silent, dryrun=dryrun)
+        elif cur > new:
+            for i in range(cur, new, -1):
+                st = self.STATES[i]
+                self.switch_state_with_message(state=st, msg="Leaving state %s" % st,
+                                               silent=silent, dryrun=dryrun)
+        self.state = self.get_state()
+
+
+
+    # State transitions
+    # ----------------------------------------------------------------
+
+    def switch_state_with_message(self, state, msg, silent=False, dryrun=False):
+        try:
+            if not silent: ui.print_status(text=msg, flag="BUSY")
+            if not dryrun: self.enter_state(state)
+            if not silent: ui.print_status(flag="DONE", nl=True)
+
+        except HostError:
+            if not silent: ui.print_status(flag="FAIL", nl=True)
+            raise
+
+    def enter_state(self, state):
+        raise NotImplementedError
+
+    def leave_state(self, state):
+        raise NotImplementedError
+
+
 
     # Abstract methods
     # ----------------------------------------------------------------
 
     def get_state(self):
         """Queries the state of the host"""
-        raise NotImplementedError
-
-    def set_state(self, state):
-        """Sets the state of the host"""
         raise NotImplementedError
 
     def get_info(self):
@@ -307,14 +343,14 @@ class BaseHost(object):
         """Run a shell command in a given path at host"""
         raise NotImplementedError
 
-    def run_script(self, scr_path):
-        """Run script on a local path on the host"""
-        raise NotImplementedError
-
     def interactive_shell(self):
         """Opens an interactive shell to host"""
         raise NotImplementedError
 
+    # TODO: I should be able to implement this with run_cmd
+    def run_script(self, scr_path):
+        """Run script on a local path on the host"""
+        raise NotImplementedError
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

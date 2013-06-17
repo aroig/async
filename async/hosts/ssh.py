@@ -40,6 +40,7 @@ class AlwaysAcceptPolicy(paramiko.MissingHostKeyPolicy):
 
 class SshHost(BaseHost):
     """A remote ssh host"""
+
     def __init__(self, conf):
 
         # base config
@@ -55,6 +56,25 @@ class SshHost(BaseHost):
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
+        self.load_ssh()
+
+
+    # Utilities
+    # ----------------------------------------------------------------
+
+    def wake_on_lan(self):
+        # TODO
+        pass
+
+    def power_off(self):
+        # TODO
+        pass
+
+
+    # Ssh
+    # ----------------------------------------------------------------
+
+    def load_ssh(self):
         self.ssh = paramiko.SSHClient()
         self.ssh_args = []
         if self.ssh_trust:
@@ -71,17 +91,9 @@ class SshHost(BaseHost):
             self.ssh_args = self.ssh_args + ['-i %s' % remote.ssh_key]
 
 
-    # Utilities
-    # ----------------------------------------------------------------
-
-
-    # Ssh
-    # ----------------------------------------------------------------
-
-    def ssh_status(self):
-        """Returns the status of the ssh connection."""
-        if self.ssh.get_transport() and self.ssh.get_transport().is_authenticated(): return 'open'
-        else:                                                                        return 'closed'
+    def check_ssh(self):
+        """Returns true if ssh connection is live and authenticated"""
+        return self.ssh.get_transport() and self.ssh.get_transport().is_authenticated()
 
 
     def ssh_connect(self):
@@ -89,37 +101,64 @@ class SshHost(BaseHost):
         self.ssh.connect(hostname=self.hostname, username=self.user, timeout=10,
                          key_filename=self.ssh_key, look_for_keys=False)
 
-        if not self.wait_for('open', self.ssh_status):
+        if not self.wait_for(True, self.check_ssh):
             raise SshError("Can't connect to host: %s" % self.hostname)
 
 
     def ssh_disconnect(self):
         self.ssh.close()
 
-        if not self.wait_for('closed', self.ssh_status):
+        if not self.wait_for(False, self.check_ssh):
             raise SshError("Can't disconnect from host: %s" % self.hostname)
 
 
-    def ssh_cmd(self, tgtdir, cmd, catchout=False):
-        """Executes a command on skynet via ssh and returns the output."""
+    # State transitions
+    # ----------------------------------------------------------------
 
-        if self.ssh_status() == 'closed': self.connect_ssh()
+    def enter_state(self, state):
+        if state == 'offline':
+            pass
 
-        # TODO: what about stderr?
-        if self.ssh_status() == 'open':
-            stdin, stdout, stderr = self.ssh.exec_command('cd "%s" && %s' % (tgtdir, cmd))
+        elif state == 'online':
+            self.wake_on_lan()
 
-            if catchout: return stdout.read()
-            else:
-                for line in stdout: sys.stdout.write(line)
+        elif state == 'mounted':
+            self.mount_devices()
+
+        else:
+            raise HostError("Unknown state %s" % state)
+
+
+    def leave_state(self, state):
+        if state == 'offline':
+            pass
+
+        elif state == 'online':
+            self.power_off()
+
+        elif state == 'mounted':
+            self.umount_devices()
+
+        else:
+            raise HostError("Unknown state %s" % state)
+
 
 
     # Implementation
     # ----------------------------------------------------------------
 
+    def connect(self):
+        """Establishes a connection and initialized data"""
+        try:
+            self.ssh_connect()
+        except SshError:
+            ui.print_error("Can't connect to host")
+
+
     def host(self):
         """Returns the hostname."""
         return self.hostname
+
 
     def ip(self):
         """Returns the ip"""
@@ -130,19 +169,11 @@ class SshHost(BaseHost):
 
     def get_state(self):
         """Queries the state of the host"""
-        try:
-            self.ssh_connect()
-        except SshError:
+        if self.check_ssh():
+            if self.check_devices(): return 'mounted'
+            else:                    return 'online'
+        else:
             return 'offline'
-
-        # TODO: Check whether stuff is mounted
-        return 'online'
-
-
-    def set_state(self, state):
-        """Sets the state of the host"""
-        # TODO
-        pass
 
 
     def get_info(self):
@@ -165,7 +196,14 @@ class SshHost(BaseHost):
     def run_cmd(self, c, tgtpath=None, catchout=False):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
-        return self.ssh_cmd(tgtdir=path, cmd=c, catchout=catchout)
+
+        # TODO: what about stderr?
+        stdin, stdout, stderr = self.ssh.exec_command('cd "%s" && %s' % (path, c))
+
+        if catchout:
+            return stdout.read()
+        else:
+            for line in stdout: sys.stdout.write(line)
 
 
     def run_script(self, scr_path):

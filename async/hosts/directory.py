@@ -33,6 +33,37 @@ class DirectoryHost(BaseHost):
         self.type = 'directory'
 
 
+    # State transitions
+    # ----------------------------------------------------------------
+
+    def enter_state(self, state):
+        if state == 'offline':
+            pass
+
+        elif state == 'online':
+            pass
+
+        elif state == 'mounted':
+            self.mount_devices()
+
+        else:
+            raise HostError("Unknown state %s" % state)
+
+
+    def leave_state(self, state):
+        if state == 'offline':
+            pass
+
+        elif state == 'online':
+            pass
+
+        elif state == 'mounted':
+            self.umount_devices()
+
+        else:
+            raise HostError("Unknown state %s" % state)
+
+
     # Implementation
     # ----------------------------------------------------------------
 
@@ -43,19 +74,6 @@ class DirectoryHost(BaseHost):
         else:                     self.state = 'offline'
 
         return self.state
-
-
-    def set_state(self, state):
-        """Sets the state of the host"""
-        # mount
-        if state in set(['mounted']):
-            self.mount_devices()
-            self.state = self.get_state()
-
-        # umount
-        elif state in set(['offline', 'online']):
-            self.umount_devices()
-            self.state = self.get_state()
 
 
     def get_info(self):

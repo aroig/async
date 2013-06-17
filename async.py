@@ -91,8 +91,11 @@ try:
     # get local and remote hosts
     local = get_localhost(conf)
 
-    if len(args) > 1:  remote = get_host(args[1], conf)
-    else:              remote = None
+    if len(args) > 1:
+        remote = get_host(args[1], conf)
+        remote.connect()
+    else:
+        remote = None
 
     args = args[2:]
     ret = 0
