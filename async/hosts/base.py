@@ -40,9 +40,11 @@ class BaseHost(object):
         self.name = conf['name']
         self.path = conf['path']
 
+        # mounts
         self.mounts = conf['mounts']
         self.luks = conf['luks']
-        self.luks_key = self.read_luks_keys(conf['luks_key'])
+        self.ecryptfs = conf['ecryptfs']
+        self.vol_keys = self.read_keys(conf['vol_keys'])
 
         # directories
         self.dirs = {}
@@ -106,12 +108,12 @@ class BaseHost(object):
         return format % dict(symbol=symbols[0], value=n)
 
 
-    def read_luks_keys(self, path):
-        """Reads luks keys from a file. each line is formatted as id:key"""
+    def read_keys(self, path):
+        """Reads keys from a file. each line is formatted as id = key"""
         keys = {}
         with open(path, 'r') as fd:
             for line in fd:
-                m = re.match(r'^(.*):(.*)$')
+                m = re.match(r'^(.*)=(.*)$')
                 if m: keys[m.group(1).strip()] = m.group(2).strip()
 
         return keys
@@ -123,7 +125,7 @@ class BaseHost(object):
     def mount_devices(self):
         # open luks partitions
         for dev, name in self.luks.items():
-            passphrase = self.luks_key[name]
+            passphrase = self.volume_keys[name]
 
             try:
                 self.run_cmd('sudo sh -c "echo -n %s | cryptsetup --key-file=- luksOpen %s %s"' % \
@@ -138,6 +140,22 @@ class BaseHost(object):
                 self.run_cmd('mount "%s"' % mp, tgtpath='/')
             except subprocess.CalledProcessError:
                 ui.print_error("Can't mount %s" % mp)
+
+        # ecryptfs
+        for cryp, mp in self.ecryptfs.items():
+            passphrase = self.volume_keys[mp]
+
+            try:
+                raw = self.run_cmd('sudo sh -c "echo -n %s | ecryptfs-add-passphrase -"', catchout=True)
+                sig = re.search("\[(.*?)\]", raw).group(1)
+                options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
+                          "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
+                          "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
+
+                self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt %s' % (options, cryp, mp))
+
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't mount ecryptfs directory %s" % mp)
 
 
     def umount_devices(self):
@@ -156,6 +174,14 @@ class BaseHost(object):
 
             except subprocess.CalledProcessError:
                 ui.print_error("Can't close luks partition %s" % name)
+
+        # ecryptfs
+        for cryp, mp in self.ecryptfs.items():
+            try:
+                self.run_cmd('umount "%s"' % mp, tgtpath='/')
+
+            except subprocess.CalledProcessError:
+                ui.print_error("Can't umount ecryptfs directory %s" % mp)
 
 
 

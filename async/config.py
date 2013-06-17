@@ -104,7 +104,8 @@ class AsyncConfig(ConfigParser):
 
         'mounts'         : ({}, parse_dict),
         'luks'           : ({}, parse_dict),
-        'luks_key'       : (None, parse_path),
+        'ecryptfs'       : ({}, parse_dict),
+        'vol_keys'       : (None, parse_path),
 
         'path'           : (None, parse_path),
         'check'          : ([], parse_list),
@@ -117,18 +118,12 @@ class AsyncConfig(ConfigParser):
         'ec2_owner'      : (None, parse_string),
         'ec2_region'     : (None, parse_string),
 
-        'ssh_key'        : (None, parse_path),
-        'aws_key'        : (None, parse_path),
-        'luks_key'       : (None, parse_path),
-
         'ec2_keypair'    : (None, parse_string),
         'ec2_security_group' : (None, parse_string),
 
-        'attach'         : ({}, parse_dict),
-        'luks'           : ({}, parse_dict),
-        'mounts'         : ({}, parse_dict),
+        'aws_keys'       : (None, parse_path),
+        'volumes'        : ({}, parse_dict),
 
-        'hostname'       : (None, parse_string),
         'zone'           : (None, parse_string),
         'user'           : (None, parse_string),
 }
