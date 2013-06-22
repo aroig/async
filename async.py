@@ -35,7 +35,29 @@ from async import get_remote_host, get_local_host
 # Main stuff
 #------------------------
 
-usage = """Usage: %prog [options] cmd host
+usage = """Usage: %prog [options] <cmd> <host>
+
+Commands:
+  status:     %prog status <host>
+              Print host status.
+
+  sync:       %prog sync <host>
+              Sync host.
+
+  shell:      %prog shell <host>
+              Launch a shell on host.
+
+  start:      %prog start <host>
+              Start the host.
+
+  stop:       %prog start <host>
+              Stop the host.
+
+  mount:      %prog mount <host>
+              Mount devices on host.
+
+  umount:     %prog umount <host>
+              Umount devices on host.
 """
 parser = OptionParser(usage=usage)
 
