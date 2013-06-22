@@ -34,7 +34,6 @@ class BaseHost(object):
     def __init__(self, conf):
         super(BaseHost, self).__init__()
 
-        self.type = None
         self.state = None
 
         # name and path
@@ -238,9 +237,15 @@ class BaseHost(object):
     # Interface
     # ----------------------------------------------------------------
 
+    @property
     def type(self):
-        """Returns the type of host"""
-        return self.type
+        """Returns the type of host as a string"""
+        if isinstance(self, DirectoryHost): return "directory"
+        elif isinstance(self, Ec2Host):     return "ec2"
+        elif isinstance(self, SshHost):     return "ssh"
+        elif isinstance(self, LocalHost):   return "local"
+        else:
+            raise DirError("Unknown host class %s" % str(type(self)))
 
 
     def start(self, silent=False, dryrun=False):

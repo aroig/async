@@ -23,10 +23,10 @@ import async.cmd as cmd
 import async.archui as ui
 
 class AnnexDir(BaseDir):
-
+    """Directory synced via git annex"""
     def __init__(self, basepath, conf):
         super(AnnexDir, self).__init__(basepath, conf)
-        self.type='annex'
+
 
     # Interface
     # ----------------------------------------------------------------

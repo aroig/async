@@ -42,11 +42,7 @@ class SshHost(BaseHost):
     """A remote ssh host"""
 
     def __init__(self, conf):
-
-        # base config
         super(SshHost, self).__init__(conf)
-
-        self.type = 'ssh'
 
         self.check = conf['check']
 

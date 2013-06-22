@@ -35,8 +35,6 @@ class Ec2Host(SshHost):
         # base config
         super(Ec2Host, self).__init__(conf)
 
-        self.type = 'ec2'
-
         # ec2 config
         self.ec2_ami = conf['instance']['ec2_ami']
         self.ec2_itype = conf['instance']['ec2_itype']

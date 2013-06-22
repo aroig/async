@@ -17,16 +17,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir
+from async.directories.base import BaseDir, DirError
 
 import async.cmd as cmd
 import async.archui as ui
 
 class UnisonDir(BaseDir):
-
+    """Directory synced via unison"""
     def __init__(self, basepath, conf):
         super(UnisonDir, self).__init__(basepath, conf)
-        self.type='unison'
 
 
     # Interface
@@ -35,12 +34,16 @@ class UnisonDir(BaseDir):
     def sync(self, local, remote, opts=None, dryrun=False):
         src = local.path
 
-        if remote.type == 'ssh':
+        if isinstance(remote, hosts.SshHost):
             tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path)
             tgtalias = 'ssh://%s/%s/' % (remote.name, remote.path)
-        else:
+
+        elif isinstance(remote, hosts.DirectoryHost):
             tgt = remote.path
             tgtalias = remote.path
+
+        else:
+            raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
         sshargs = []
         sshargs = sshargs + remote.ssh_args

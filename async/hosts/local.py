@@ -25,10 +25,10 @@ class SyncError(Exception):
     def __init__(self, msg=None):
         super(self, SyncError).__init__(msg)
 
-
 class SetupError(Exception):
     def __init__(self, msg=None):
         super(self, SetupError).__init__(msg)
+
 
 
 class LocalHost(DirectoryHost):
@@ -36,11 +36,7 @@ class LocalHost(DirectoryHost):
 
     STATES = ['offline', 'online', 'mounted']
     def __init__(self, conf):
-
-        # base config
         super(LocalHost, self).__init__(conf)
-
-        self.type = 'local'
 
 
 

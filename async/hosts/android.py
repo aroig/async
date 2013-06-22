@@ -23,11 +23,8 @@ class AndroidHost(DirectoryHost):
     """An android device as a locally mounted directory"""
 
     def __init__(self, conf):
-
-        # base config
         super(AndroidHost, self).__init__(conf)
 
-        self.type = 'android'
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

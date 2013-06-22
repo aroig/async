@@ -19,6 +19,11 @@
 
 import os
 
+class DirError(Exception):
+    def __init__(self, msg=None):
+        super(self, DirError).__init__(msg)
+
+
 class BaseDir(object):
 
     def __init__(self, basepath, conf):
@@ -29,6 +34,17 @@ class BaseDir(object):
 
     # Interface
     # ----------------------------------------------------------------
+
+    @property
+    def type(self):
+        """Returns the type of the directory as a string"""
+        if isinstance(self, AnnexDir):    return 'annex'
+        elif isinstance(self, UnisonDir): return 'unison'
+        elif isinstance(self, RsyncDir):  return 'rsync'
+        elif isinstance(self, LocalDir):  return 'local'
+        else:
+            raise DirError("Unknown directory class %s" % str(type(self)))
+
 
     def sync(self, local, remote, opts=None, dryrun=False):
         raise NotImplementedError

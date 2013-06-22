@@ -27,10 +27,7 @@ from async.hosts.base import BaseHost
 class DirectoryHost(BaseHost):
     """Host representing a local directory. A USB mountpoint, for instance"""
     def __init__(self, conf):
-
-        # base config
         super(DirectoryHost, self).__init__(conf=conf)
-        self.type = 'directory'
 
 
     # State transitions
