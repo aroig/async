@@ -63,7 +63,7 @@ class UnisonDir(BaseDir):
 
         if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
 
-        ui.print_debug('unison %s' % ' '.join(args))
+        ui.print_message('unison %s' % ' '.join(args))
         if not dryrun: cmd.unison(args=args, silent=silent)
 
 

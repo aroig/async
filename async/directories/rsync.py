@@ -47,7 +47,7 @@ class RsyncDir(BaseDir):
         else:
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
-        ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
+        ui.print_message('rsync %s %s %s' % (' '.join(args), src, tgt))
         try:
             if not dryrun: cmd.rsync(src, tgt, args=args, silent=silent)
         except subprocess.CalledProcessError as err:

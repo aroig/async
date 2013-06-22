@@ -36,7 +36,7 @@ class AnnexDir(BaseDir):
         tgt = remote.dirs[self.name].path
 
         c = 'git annex sync "%s"' % remote.name
-        ui.print_debug(c)
+        ui.print_message(c)
         if not dryrun: local.run_cmd(c, tgtpath=src)
 
         # TODO: if get, do a local and remote get
