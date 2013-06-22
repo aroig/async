@@ -56,13 +56,16 @@ class LocalHost(DirectoryHost):
                 ui.print_error("synchronization failed")
                 failed.append(d.name)
 
-            print("")
+            ui.print_color("")
 
-        if len(failed) > 0:
-            ui.print_error("synchronization failed on: %s" % ', '.join(failed))
-            return 1
-        else:
+        if len(failed) == 0:
+            ui.print_color("Synchronization #*gsuceeded#t.\n")
             return 0
+
+        elif len(failed) > 0:
+            ui.print_color("Synchronization #*rfailed#t.\n")
+            ui.print_color("  directories: %s" % ', '.join(failed))
+            return 1
 
 
     def setup(self, silent=False, dryrun=False, dirs=None, opts=None):
@@ -84,12 +87,16 @@ class LocalHost(DirectoryHost):
                 ui.print_error("setup failed")
                 failed.append(d.name)
 
-        if len(failed) > 0:
-            ui.print_error("setup failed on: %s" % ', '.join(failed))
-            return 1
-        else:
+            ui.print_color("")
+
+        if len(failed) == 0:
+            ui.print_color("Setup #*gsuceeded#t.\n")
             return 0
 
+        elif len(failed) > 0:
+            ui.print_color("Setup #*rfailed#t.\n")
+            ui.print_color("  directories: %s" % ', '.join(failed))
+            return 1
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
