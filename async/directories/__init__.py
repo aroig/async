@@ -22,6 +22,16 @@ from async.directories.rsync import RsyncDir
 from async.directories.annex import AnnexDir
 from async.directories.local import LocalDir
 
+def get_directory(dconf, unison_as_rsync=False):
+    typ = dconf['type']
+    if unison_as_rsync and typ == 'unison': typ = 'rsync'
+
+    if typ == 'unison':   return UnisonDir(basepath=self.path, conf=dconf)
+    elif typ == 'rsync':  return RsyncDir(basepath=self.path, conf=dconf)
+    elif typ == 'annex':  return AnnexDir(basepath=self.path, conf=dconf)
+    elif typ == 'local':  return LocalDir(basepath=self.path, conf=dconf)
+    else:
+        raise HostError("Unknown directory type %s" % typ)
 
 
 

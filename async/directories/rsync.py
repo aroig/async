@@ -18,8 +18,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from async.directories.base import BaseDir, DirError
+from async.hosts import SshHost, DirectoryHost
 
-import async.hosts as hosts
 import async.cmd as cmd
 import async.archui as ui
 
@@ -36,10 +36,10 @@ class RsyncDir(BaseDir):
         src = '%s/' % local.dirs[self.name].path
         args = ['-avq', '--delete']
 
-        if isinstance(remote, hosts.SshHost):
+        if isinstance(remote, SshHost):
             tgt = '%s:%s/' % (remote.hostname, remote.dirs[self.name].path)
 
-        elif isinstance(remote, hosts.DirectoryHost):
+        elif isinstance(remote, DirectoryHost):
             tgt = '%s/' % remote.dirs[self.name].path
 
         else:

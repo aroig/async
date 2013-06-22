@@ -19,7 +19,6 @@
 
 import subprocess
 
-from async.directories import UnisonDir, RsyncDir, AnnexDir, LocalDir
 import async.archui as ui
 
 class HostError(Exception):
@@ -32,6 +31,8 @@ class BaseHost(object):
     STATES = ['offline', 'online', 'mounted']
 
     def __init__(self, conf):
+        from async.directories import get_directory
+
         super(BaseHost, self).__init__()
 
         self.state = None
@@ -52,23 +53,11 @@ class BaseHost(object):
         # directories
         self.dirs = {}
         for k, d in conf['dirs'].items():
-            self.dirs[k] = self.get_directory(d, unison_as_rsync=conf['unison_as_rsync'])
+            self.dirs[k] = get_directory(d, unison_as_rsync=conf['unison_as_rsync'])
 
 
     # Utilities
     # ----------------------------------------------------------------
-
-    def get_directory(self, dconf, unison_as_rsync=False):
-        typ = dconf['type']
-        if unison_as_rsync and typ == 'unison': typ = 'rsync'
-
-        if typ == 'unison':   return UnisonDir(basepath=self.path, conf=dconf)
-        elif typ == 'rsync':  return RsyncDir(basepath=self.path, conf=dconf)
-        elif typ == 'annex':  return AnnexDir(basepath=self.path, conf=dconf)
-        elif typ == 'local':  return LocalDir(basepath=self.path, conf=dconf)
-        else:
-            raise HostError("Unknown directory type %s" % typ)
-
 
     def wait_for(self, status, func, timeout=120):
         """Waits until func returns status. A timeout in seconds can be specified"""
