@@ -25,7 +25,7 @@ import async.archui as ui
 import socket
 
 
-def get_host(hostname, conf):
+def get_remote_host(hostname, conf):
     if hostname in conf.host:
         hconf = conf.host[hostname]
         typ = conf.host[hostname]['type']
@@ -51,7 +51,7 @@ def get_host(hostname, conf):
 
 
 
-def get_localhost(conf):
+def get_local_host(conf):
     localhostname = socket.getfqdn()
     local = None
     for k, h in conf.host.items():

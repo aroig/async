@@ -28,7 +28,7 @@ from async import __version__
 from async.config import AsyncConfig
 
 import async.archui as ui
-from async import get_host, get_localhost
+from async import get_remote_host, get_local_host
 
 
 
@@ -89,10 +89,10 @@ try:
     cmd = args[0]
 
     # get local and remote hosts
-    local = get_localhost(conf)
+    local = get_local_host(conf)
 
     if len(args) > 1:
-        remote = get_host(args[1], conf)
+        remote = get_remote_host(args[1], conf)
         remote.connect()
     else:
         remote = None
@@ -104,7 +104,7 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
-        if len(args) == 0:    ret = local.sync(remote=remote, opts=opts, dryrun=opts.dryrun)
+        if len(args) == 0:    ret = local.sync(remote=remote, dryrun=opts.dryrun, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":
