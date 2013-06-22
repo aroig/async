@@ -31,7 +31,7 @@ class UnisonDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts=None, dryrun=False):
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         src = local.path
 
         if isinstance(remote, hosts.SshHost):
@@ -64,11 +64,11 @@ class UnisonDir(BaseDir):
         if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
 
         ui.print_debug('unison %s' % ' '.join(args))
-        if not dryrun: cmd.unison(args=args, silent=False)
+        if not dryrun: cmd.unison(args=args, silent=silent)
 
 
 
-    def setup(self, host, opts=None, dryrun=False):
+    def setup(self, host, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 

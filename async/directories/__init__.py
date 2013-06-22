@@ -22,6 +22,8 @@ from async.directories.rsync import RsyncDir
 from async.directories.annex import AnnexDir
 from async.directories.local import LocalDir
 
+from async.directories.base import DirError, SyncError, SetupError
+
 def get_directory(path, dconf, unison_as_rsync=False):
     typ = dconf['type']
     if unison_as_rsync and typ == 'unison': typ = 'rsync'

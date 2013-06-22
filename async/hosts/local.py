@@ -19,16 +19,9 @@
 
 
 from async.hosts.directory import DirectoryHost
+from async.directories import SyncError, SetupError
+
 import async.archui as ui
-
-class SyncError(Exception):
-    def __init__(self, msg=None):
-        super(self, SyncError).__init__(msg)
-
-class SetupError(Exception):
-    def __init__(self, msg=None):
-        super(self, SetupError).__init__(msg)
-
 
 
 class LocalHost(DirectoryHost):
@@ -43,12 +36,13 @@ class LocalHost(DirectoryHost):
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, remote, silent=False, dryrun=False, dirs=None, opts=None):
+    def sync(self, remote, silent=False, dryrun=False, opts=None):
         """Syncs local machine to this host"""
         failed = []
-        if dirs == None: dirs = list(self.dirs.keys())
+        if opts.dirs: dirs = opts.dirs
+        else:         dirs = list(self.dirs.keys())
 
-        keys = [k for k in self.dirs.keys() if k in set(dirs) and k in remote.dirs.keys()]
+        keys = sorted(set(self.dirs.keys()) & set(dirs) & set(remote.dirs.keys()))
         num = len(keys)
 
         for i, k in enumerate(sorted(keys)):
@@ -56,11 +50,13 @@ class LocalHost(DirectoryHost):
             if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
 
             try:
-                self.dirs[k].sync(self, remote, opts=opts, dryrun=dryrun)
+                self.dirs[k].sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
 
             except SyncError as err:
-                ui.print_error("synchronization failed. %s" % str(err))
-                failed.append(d['name'])
+                ui.print_error("synchronization failed")
+                failed.append(d.name)
+
+            print("")
 
         if len(failed) > 0:
             ui.print_error("synchronization failed on: %s" % ', '.join(failed))
@@ -82,11 +78,11 @@ class LocalHost(DirectoryHost):
             if not silent: ui.print_enum(i+1, num, "setup #*y%s#t (%s)" % (d.name, d.type))
 
             try:
-                self.dirs[k].setup(self, opts=opts, dryrun=dryrun)
+                self.dirs[k].setup(self, silent=silent, dryrun=dryrun, opts=opts)
 
             except SetupError as err:
-                ui.print_error("setup failed. %s" % str(err))
-                failed.append(d['name'])
+                ui.print_error("setup failed")
+                failed.append(d.name)
 
         if len(failed) > 0:
             ui.print_error("setup failed on: %s" % ', '.join(failed))

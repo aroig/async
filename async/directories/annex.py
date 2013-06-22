@@ -31,20 +31,20 @@ class AnnexDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts=None, dryrun=False):
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         src = local.dirs[self.name].path
         tgt = remote.dirs[self.name].path
 
         c = 'git annex sync "%s"' % remote.name
         ui.print_debug(c)
-        if not dryrun: local.run_cmd(c, path=src)
+        if not dryrun: local.run_cmd(c, tgtpath=src)
 
         # TODO: if get, do a local and remote get
-        # local.run_cmd('git annex get --from="%s"' % remote.name, path=src)
-        # remote.run_cmd('git annex get --from="%s"' % local.name, path=tgt)
+        # local.run_cmd('git annex get --from="%s"' % remote.name, tgtpath=src)
+        # remote.run_cmd('git annex get --from="%s"' % local.name, tgtpath=tgt)
 
 
-    def setup(self, host, opts=None, dryrun=False):
+    def setup(self, host, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 

@@ -21,7 +21,15 @@ import os
 
 class DirError(Exception):
     def __init__(self, msg=None):
-        super(self, DirError).__init__(msg)
+        super(DirError, self).__init__(msg)
+
+class SyncError(Exception):
+    def __init__(self, msg=None):
+        super(SyncError, self).__init__(msg)
+
+class SetupError(Exception):
+    def __init__(self, msg=None):
+        super(SetupError, self).__init__(msg)
 
 
 class BaseDir(object):
@@ -38,6 +46,7 @@ class BaseDir(object):
     @property
     def type(self):
         """Returns the type of the directory as a string"""
+        from async.directories import AnnexDir, UnisonDir, RsyncDir, LocalDir
         if isinstance(self, AnnexDir):    return 'annex'
         elif isinstance(self, UnisonDir): return 'unison'
         elif isinstance(self, RsyncDir):  return 'rsync'
@@ -46,11 +55,11 @@ class BaseDir(object):
             raise DirError("Unknown directory class %s" % str(type(self)))
 
 
-    def sync(self, local, remote, opts=None, dryrun=False):
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 
-    def setup(self, host, opts=None, dryrun=False):
+    def setup(self, host, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 

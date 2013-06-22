@@ -177,7 +177,6 @@ class BaseHost(object):
 
         # check whether basepath exists
         if not self.check_path_exists(self.path):
-            self.state = 'offline'
             ui.print_debug("path %s does not exist" % self.path)
             return False
 
@@ -229,6 +228,7 @@ class BaseHost(object):
     @property
     def type(self):
         """Returns the type of host as a string"""
+        from async.hosts import DirectoryHost, Ec2Host, SshHost, LocalHost
         if isinstance(self, DirectoryHost): return "directory"
         elif isinstance(self, Ec2Host):     return "ec2"
         elif isinstance(self, SshHost):     return "ssh"

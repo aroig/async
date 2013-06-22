@@ -17,11 +17,13 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir, DirError
+from async.directories.base import BaseDir, DirError, SyncError, SetupError
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd
 import async.archui as ui
+
+import subprocess
 
 class RsyncDir(BaseDir):
     """Directory synced via rsync"""
@@ -32,9 +34,9 @@ class RsyncDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
-    def sync(self, local, remote, opts=None, dryrun=False):
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         src = '%s/' % local.dirs[self.name].path
-        args = ['-avq', '--delete']
+        args = ['-avz', '--delete']
 
         if isinstance(remote, SshHost):
             tgt = '%s:%s/' % (remote.hostname, remote.dirs[self.name].path)
@@ -46,10 +48,13 @@ class RsyncDir(BaseDir):
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
         ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
-        if not dryrun: cmd.rsync(src, tgt, args=args, silent=False)
+        try:
+            if not dryrun: cmd.rsync(src, tgt, args=args, silent=silent)
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
 
 
-    def setup(self, host, opts=None, dryrun=False):
+    def setup(self, host, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 

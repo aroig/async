@@ -64,6 +64,14 @@ class DirectoryHost(BaseHost):
     # Implementation
     # ----------------------------------------------------------------
 
+    def connect(self):
+        """Establishes a connection and initialized data"""
+        try:
+            self.get_state()
+        except SshError:
+            ui.print_error("Can't connect to host")
+
+
     def get_state(self):
         """Queries the state of the host"""
 

@@ -239,6 +239,7 @@ class Ec2Host(SshHost):
     def get_state(self):
         """Queries the state of the host"""
         # TODO
+        # NOTE: must change self.state
         pass
 
 

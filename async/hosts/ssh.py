@@ -147,6 +147,7 @@ class SshHost(BaseHost):
         """Establishes a connection and initialized data"""
         try:
             self.ssh_connect()
+            self.get_state()
         except SshError:
             ui.print_error("Can't connect to host")
 
@@ -166,10 +167,11 @@ class SshHost(BaseHost):
     def get_state(self):
         """Queries the state of the host"""
         if self.check_ssh():
-            if self.check_devices(): return 'mounted'
-            else:                    return 'online'
+            if self.check_devices(): self.state = 'mounted'
+            else:                    self.state = 'online'
         else:
-            return 'offline'
+            self.state = 'offline'
+        return self.state
 
 
     def get_info(self):
