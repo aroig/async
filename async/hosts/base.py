@@ -115,6 +115,8 @@ class BaseHost(object):
     # ----------------------------------------------------------------
 
     def mount_devices(self):
+        """Mounts local devices on the host. Takes care of luks and ecryptfs partitions.
+           The order is: open luks, mount devices, setup ecryptfs partitions."""
         # open luks partitions
         for dev, name in self.luks.items():
             passphrase = self.volume_keys[name]
@@ -134,6 +136,7 @@ class BaseHost(object):
                 ui.print_error("Can't mount %s" % mp)
 
         # mount ecryptfs
+        # TODO: needs testing
         for cryp, mp in self.ecryptfs.items():
             passphrase = self.volume_keys[mp]
 
@@ -232,25 +235,25 @@ class BaseHost(object):
 
 
     def start(self, silent=False, dryrun=False):
-        """Starts the host"""
+        """Starts the host if not running"""
         if self.STATES.index(self.state) < self.STATES.index('online'):
             self.set_state('online', silent=silent, dryrun=dryrun)
 
 
     def stop(self, silent=False, dryrun=False):
-        """Stops the host"""
+        """Stops the host if running"""
         if self.STATES.index(self.state) >= self.STATES.index('online'):
             self.set_state('offline', silent=silent, dryrun=dryrun)
 
 
     def mount(self, silent=False, dryrun=False):
-        """Mounts the partitions on host"""
+        """Mounts partitions on host, starting it if necessary"""
         if self.STATES.index(self.state) < self.STATES.index('mounted'):
             self.set_state('mounted', silent=silent, dryrun=dryrun)
 
 
     def umount(self, silent=False, dryrun=False):
-        """Umounts the partitions on host"""
+        """Umounts partitions on host if mounted"""
         if self.STATES.index(self.state) >= self.STATES.index('mounted'):
             self.set_state('online', silent=silent, dryrun=dryrun)
 
