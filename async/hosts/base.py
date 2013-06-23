@@ -17,13 +17,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import subprocess
+import time
 
 import async.archui as ui
 
 class HostError(Exception):
     def __init__(self, msg=None):
-        super(self, HostError).__init__(msg)
+        super(HostError, self).__init__(msg)
 
 
 
@@ -93,7 +95,7 @@ class BaseHost(object):
         keys = {}
         with open(path, 'r') as fd:
             for line in fd:
-                m = re.match(r'^(.*)=(.*)$')
+                m = re.match(r'^(.*)=(.*)$', line)
                 if m: keys[m.group(1).strip()] = m.group(2).strip()
 
         return keys
@@ -107,63 +109,60 @@ class BaseHost(object):
            The order is: open luks, mount devices, setup ecryptfs partitions."""
         # open luks partitions
         for dev, name in self.luks.items():
-            passphrase = self.volume_keys[name]
-
-            try:
-                self.run_cmd('sudo sh -c "echo -n %s | cryptsetup --key-file=- luksOpen %s %s"' % \
-                             (passphrase, dev, name))
-
-            except subprocess.CalledProcessError:
+            passphrase = self.vol_keys[name]
+            ret = self.run_cmd('sudo sh -c "echo -n %s | cryptsetup --key-file=- luksOpen %s %s"; echo $?' % \
+                               (passphrase, dev, name),
+                               tgtpath='/', catchout=True)
+            if ret.strip() != '0':
                 ui.print_error("Can't open luks partition %s" % name)
+                raise HostError("Can't open luks partition")
 
         # mount devices
         for dev, mp in self.mounts.items():
-            try:
-                self.run_cmd('mount "%s"' % mp, tgtpath='/')
-            except subprocess.CalledProcessError:
+            ret = self.run_cmd('mount "%s"; echo $?' % mp,
+                               tgtpath='/', catchout=True)
+            if ret.strip() != '0':
                 ui.print_error("Can't mount %s" % mp)
+                raise HostError("Can't mount")
 
         # mount ecryptfs
         # TODO: needs testing
         for cryp, mp in self.ecryptfs.items():
-            passphrase = self.volume_keys[mp]
+            passphrase = self.vol_keys[mp]
 
-            try:
-                raw = self.run_cmd('sudo sh -c "echo -n %s | ecryptfs-add-passphrase -"', catchout=True)
-                sig = re.search("\[(.*?)\]", raw).group(1)
-                options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
-                          "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
-                          "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
+            raw = self.run_cmd('sudo sh -c "echo -n %s | ecryptfs-add-passphrase -"', catchout=True)
+            sig = re.search("\[(.*?)\]", raw).group(1)
+            options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
+                      "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
+                      "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
 
-                self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt %s' % (options, cryp, mp))
-
-            except subprocess.CalledProcessError:
+            ret = self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt "%s"; echo $?' % (options, cryp, mp),
+                               tgtpath='/', catchout=True)
+            if ret.strip() != '0':
                 ui.print_error("Can't mount ecryptfs directory %s" % mp)
+                raise HostError("Can't mount ecryptfs")
 
 
     def umount_devices(self):
         # umount ecryptfs
         for cryp, mp in self.ecryptfs.items():
-            try:
-                self.run_cmd('umount "%s"' % mp, tgtpath='/')
-
-            except subprocess.CalledProcessError:
+            ret = self.run_cmd('umount "%s"; echo $?' % mp,
+                               tgtpath='/', catchout=True)
+            if ret.strip() != '0':
                 ui.print_error("Can't umount ecryptfs directory %s" % mp)
 
         # umount devices
         for dev, mp in self.mounts.items():
-            try:
-                self.run_cmd('umount "%s"' % mp, tgtpath='/')
-
-            except subprocess.CalledProcessError:
+            ret = self.run_cmd('umount "%s"; echo $?' % mp,
+                               tgtpath='/', catchout=True)
+            if ret.strip() != '0':
                 ui.print_error("Can't umount %s" % mp)
 
         # close luks partitions
         for dev, name in self.luks.items():
-            try:
-                self.run_cmd('sudo cryptsetup luksClose %s' % name)
-
-            except subprocess.CalledProcessError:
+            ret = self.run_cmd('sudo cryptsetup luksClose %s; echo $?' % name,
+                               tgtpath='/', catchout=True)
+            if ret.strip() != '0':
                 ui.print_error("Can't close luks partition %s" % name)
 
 
@@ -257,22 +256,32 @@ class BaseHost(object):
 
     def umount(self, silent=False, dryrun=False):
         """Umounts partitions on host if mounted"""
+        newstate = self.STATES[self.STATES.index('mounted') - 1]
         if self.STATES.index(self.state) >= self.STATES.index('mounted'):
-            self.set_state('online', silent=silent, dryrun=dryrun)
+            self.set_state(newstate, silent=silent, dryrun=dryrun)
 
 
     def print_status(self):
         info = self.get_info()
 
         ui.print_status("Status of #m%s#t" % self.name)
+        ui.print_color("")
 
         if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+
+        if 'ami_name' in info and 'ami_id' in info:
+            ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'], info['ami_name']))
+        if 'instance' in info and 'itype' in info:
+            ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
+        if 'block' in info:
+            ui.print_color('   #*wblock:#t %s' % ', '.join(info['block']))
 
         if 'host' in info:  ui.print_color('    #*whost:#t %s' % info['host'])
         if 'ip' in info:    ui.print_color('      #*wip:#t %s' % info['ip'])
 
         if 'size' in info:  ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
         if 'free' in info:  ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
+        ui.print_color("")
 
 
     def shell(self):
@@ -301,14 +310,19 @@ class BaseHost(object):
 
         if cur < new:
             for i in range(cur, new, 1):
-                st = self.STATES[i+1]
-                self.switch_state_with_message(state=st, msg="Entering state %s" % st,
-                                               silent=silent, dryrun=dryrun)
+                def func():
+                    self.enter_state(self.STATES[i+1])
+
+                self.run_with_message(func=func, msg="Entering state %s" % self.STATES[i+1],
+                                      silent=silent, dryrun=dryrun)
         elif cur > new:
             for i in range(cur, new, -1):
-                st = self.STATES[i]
-                self.switch_state_with_message(state=st, msg="Leaving state %s" % st,
-                                               silent=silent, dryrun=dryrun)
+                def func():
+                    self.leave_state(self.STATES[i])
+
+                self.run_with_message(func=func, msg="Leaving state %s" % self.STATES[i],
+                                      silent=silent, dryrun=dryrun)
+
         self.state = self.get_state()
 
 
@@ -316,10 +330,10 @@ class BaseHost(object):
     # State transitions
     # ----------------------------------------------------------------
 
-    def switch_state_with_message(self, state, msg, silent=False, dryrun=False):
+    def run_with_message(self, func, msg, silent=False, dryrun=False):
         try:
             if not silent: ui.print_status(text=msg, flag="BUSY")
-            if not dryrun: self.enter_state(state)
+            if not dryrun: func()
             if not silent: ui.print_status(flag="DONE", nl=True)
 
         except HostError:

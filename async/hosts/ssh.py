@@ -29,7 +29,7 @@ from async.hosts.base import BaseHost
 
 class SshError(Exception):
     def __init__(self, msg=None):
-        super(self, SshError).__init__(msg)
+        super(SshError, self).__init__(msg)
 
 
 class AlwaysAcceptPolicy(paramiko.MissingHostKeyPolicy):
@@ -42,12 +42,13 @@ class SshHost(BaseHost):
     """A remote ssh host"""
 
     def __init__(self, conf):
+        ui.print_debug("begin SshHost.__init__")
         super(SshHost, self).__init__(conf)
 
         self.check = conf['check']
 
         # ssh related config
-        self.hostname         = conf['hostname']         # the hostname
+        self._hostname         = conf['hostname']         # the hostname
         self.user             = conf['user']             # the user on the remote
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
@@ -84,7 +85,7 @@ class SshHost(BaseHost):
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         if self.ssh_key:
-            self.ssh_args = self.ssh_args + ['-i %s' % remote.ssh_key]
+            self.ssh_args = self.ssh_args + ['-i %s' % self.ssh_key]
 
 
     def check_ssh(self):
@@ -94,8 +95,12 @@ class SshHost(BaseHost):
 
     def ssh_connect(self):
         # TODO: if trusthost=False, check host keys
-        self.ssh.connect(hostname=self.hostname, username=self.user, timeout=10,
-                         key_filename=self.ssh_key, look_for_keys=False)
+        try:
+            self.ssh.connect(hostname=self.hostname, username=self.user, timeout=10,
+                             key_filename=self.ssh_key, look_for_keys=False)
+
+        except:
+            raise SshError("Can't connect to host: %s" % self.hostname)
 
         if not self.wait_for(True, self.check_ssh):
             raise SshError("Can't connect to host: %s" % self.hostname)
@@ -139,24 +144,12 @@ class SshHost(BaseHost):
             raise HostError("Unknown state %s" % state)
 
 
-
-    # Implementation
-    # ----------------------------------------------------------------
-
-    def connect(self):
-        """Establishes a connection and initialized data"""
-        try:
-            self.ssh_connect()
-            self.get_state()
-        except SshError:
-            ui.print_error("Can't connect to host")
+    @property
+    def hostname(self):
+        return self._hostname
 
 
-    def host(self):
-        """Returns the hostname."""
-        return self.hostname
-
-
+    @property
     def ip(self):
         """Returns the ip"""
         # TODO: sure?
@@ -164,24 +157,39 @@ class SshHost(BaseHost):
         return addr
 
 
+    # Implementation
+    # ----------------------------------------------------------------
+
+    def connect(self):
+        """Establishes a connection and initialized data"""
+        ui.print_debug("begin SshHost.connect")
+        try:
+            self.ssh_connect()
+
+        except SshError:
+            pass
+
+        self.get_state()
+
+
     def get_state(self):
         """Queries the state of the host"""
-        if self.check_ssh():
-            if self.check_devices(): self.state = 'mounted'
-            else:                    self.state = 'online'
-        else:
-            self.state = 'offline'
+        ui.print_debug("begin SshHost.get_state")
+        self.state = 'offline'
+        if self.check_ssh():                                 self.state = 'online'
+        if self.state == 'online' and self.check_devices():  self.state = 'mounted'
         return self.state
 
 
     def get_info(self):
         """Gets a dictionary with host state parameters"""
+        ui.print_debug("begin SshHost.get_info")
         info = {}
 
         info['state'] = self.get_state()
         if info['state'] in set(['mounted', 'online']):
-            info['host'] = self.host()
-            info['ip'] = self.ip()
+            info['host'] = self.hostname
+            info['ip'] = self.ip
 
         if info['state'] in set(['mounted']):
             size, available = self.df(self.path)

@@ -114,8 +114,11 @@ try:
     local = get_local_host(conf)
 
     if len(args) > 1:
-        remote = get_remote_host(args[1], conf)
+        name = args[1]
+        ui.print_status(text="Connecting to %s" % name, flag="BUSY")
+        remote = get_remote_host(name, conf)
         remote.connect()
+        ui.print_status(flag="DONE", nl=True)
     else:
         remote = None
 

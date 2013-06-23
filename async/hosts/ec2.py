@@ -20,9 +20,13 @@
 from async.hosts.ssh import SshHost
 from boto import ec2
 
+import async.archui as ui
+import async.cmd as cmd
+
+
 class Ec2Error(Exception):
     def __init__(self, msg=None):
-        super(self, Ec2Error).__init__(msg)
+        super(Ec2Error, self).__init__(msg)
 
 
 class Ec2Host(SshHost):
@@ -31,6 +35,7 @@ class Ec2Host(SshHost):
     STATES = ['offline', 'online', 'attached', 'mounted']
 
     def __init__(self, conf):
+        ui.print_debug("begin Ec2Host.__init__")
 
         # base config
         super(Ec2Host, self).__init__(conf)
@@ -53,7 +58,7 @@ class Ec2Host(SshHost):
         if not self.conn:
             raise Ec2Error("Could not establish a connection with aws.")
 
-        self.load_volumes()
+        self.load_volumes(conf['instance']['volumes'])
         self.load_ami()
         self.load_instance()
 
@@ -62,28 +67,65 @@ class Ec2Host(SshHost):
     # ----------------------------------------------------------------
 
     def detach_volume(self, vol):
-        vol.detach()
-        # TODO: wait for it
+        try:
+            vol.detach()
+        except boto.exception.EC2ResponseError as err:
+            raise HostError(str(err))
+
+        def _state():
+            return vol.attachment_state()
+
+        self.wait_for('detached', _state)
 
 
     def attach_volume(self, vol, inst, dev):
-        vol.attach(inst, dev)
-        # TODO: wait for it
+        try:
+            vol.attach(inst, dev)
+        except boto.exception.EC2ResponseError as err:
+            raise HostError(str(err))
+
+        def _state():
+            return vol.attachment_state()
+
+        self.wait_for('detached', _state)
 
 
+    def start_instance(self, id):
+        try:
+            self.conn.start_instances([id])
+        except boto.exception.EC2ResponseError as err:
+            raise HostError(str(err))
+
+        def _state():
+            return self.instance.state
+
+        self.wait_for('running', _state)
 
 
-    # status functions
-    # ------------------------------------------------------
+    def stop_instance(self, id):
+        try:
+            self.conn.stop_instances([id])
+        except boto.exception.EC2ResponseError as err:
+            raise HostError(str(err))
+
+        def _state():
+            return self.instance.state
+
+        self.wait_for('stopped', _state)
+
 
     def create_instance(self):
         """Creates a new instance"""
-        res = self.conn.run_instances(min_count = 1, max_count = 1,
-                                      image_id = self.ami.id,
-                                      key_name = self.ec2_keypair,
-                                      security_groups = [self.ec2_security_group],
-                                      instance_type = self.ec2_itype,
-                                      placement = self.zone)
+        try:
+            res = self.conn.run_instances(min_count = 1, max_count = 1,
+                                          image_id = self.ami.id,
+                                          key_name = self.ec2_keypair,
+                                          security_groups = [self.ec2_security_group],
+                                          instance_type = self.ec2_itype,
+                                          placement = self.zone)
+
+        except boto.exception.EC2ResponseError as err:
+            raise HostError(str(err))
 
         if len(res.instances) == 0:
             raise Ec2Error("Something happened. Instance not launched.")
@@ -92,6 +134,10 @@ class Ec2Host(SshHost):
 
         self.instance = res.instances[0]
 
+
+
+    # status functions
+    # ------------------------------------------------------
 
     def load_instance(self):
         """Updates running instance"""
@@ -106,7 +152,7 @@ class Ec2Host(SshHost):
 
 
     def load_ami(self):
-        L = [a for a in self.conn.get_all_images(owners = self.ami_owner)
+        L = [a for a in self.conn.get_all_images(owners = self.ec2_owner)
              if self.ec2_ami == a.name]
         if len(L) == 0:
             raise Ec2Error("Ami %s not found" % self.ec2_ami)
@@ -116,10 +162,10 @@ class Ec2Host(SshHost):
             self.ami = L[0]
 
 
-    def load_volumes(self):
+    def load_volumes(self, conf):
         self.volumes = {}
-        for dev, vol in conf['instance']['volumes']:
-            L = self.conn.get_all_volumes(volume_ids = [col])
+        for dev, vol in conf.items():
+            L = self.conn.get_all_volumes(volume_ids = [vol])
             if len(L) == 0:
                 raise Ec2Error("Can't fine volume %s" % vol)
             elif len(L) >= 2:
@@ -152,11 +198,13 @@ class Ec2Host(SshHost):
         return attached
 
 
-    def host(self):
+    @property
+    def hostname(self):
         if self.instance: return self.instance.public_dns_name
         else:             return None
 
 
+    @property
     def ip(self):
         if self.instance: return self.instance.ip_address
         else:             return None
@@ -165,25 +213,28 @@ class Ec2Host(SshHost):
     # Interface
     # ----------------------------------------------------------------
 
-
     def launch(self, silent=False, dryrun=False):
         """Launches a new instance"""
         # TODO: call create_instance if no instance exists
+
 
     def terminate(self, silent=False, dryrun=False):
         """Terminates the current instance"""
         if self.STATES.index(self.state) > self.STATES.index('terminated'):
             self.set_state('terminated', silent=silent, dryrun=dryrun)
 
+
     def attach(self, silent=False, dryrun=False):
         """Attaches volumes"""
         if self.STATES.index(self.state) < self.STATES.index('attached'):
             self.set_state('attached', silent=silent, dryrun=dryrun)
 
+
     def detach(self, silent=False, dryrun=False):
         """Deataches volumes"""
+        newstate = self.STATES[self.STATES.index('attached') - 1]
         if self.STATES.index(self.state) >= self.STATES.index('attached'):
-            self.set_state('detached', silent=silent, dryrun=dryrun)
+            self.set_state(newstate, silent=silent, dryrun=dryrun)
 
 
     # State transitions
@@ -198,7 +249,7 @@ class Ec2Host(SshHost):
             pass
 
         elif state == 'online':
-            self.conn.start_instances([self.instance.id])
+            self.start_instance(self.instance.id)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
@@ -219,7 +270,7 @@ class Ec2Host(SshHost):
             self.conn.terminate_instances([self.instance.id])
 
         elif state == 'online':
-            self.conn.stop_instances([self.instance.id])
+            self.stop_instance(self.instance.id)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
@@ -238,13 +289,18 @@ class Ec2Host(SshHost):
 
     def get_state(self):
         """Queries the state of the host"""
-        # TODO
-        # NOTE: must change self.state
-        pass
+        self.state = 'terminated'
+        if self.state == 'terminated'   and self.instance != None: self.state = 'offline'
+        if self.state == 'offline'  and \
+           self.check_instance() and self.check_ssh():             self.state = 'online'
+        if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
+        if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
 
+        return self.state
 
     def get_info(self):
         """Gets a dictionary with host state parameters"""
+        ui.print_debug("begin Ec2Host.get_info")
 
         info = super(Ec2Host, self).get_info()
 
@@ -253,9 +309,11 @@ class Ec2Host(SshHost):
             info['ami_id'] = self.ami.id
 
         if self.instance:
-            info['instance'] = self.instance.status
+            info['instance'] = self.instance.state
             info['itype'] = self.instance.instance_type
+            info['block'] = list(self.instance.block_device_mapping.keys())
 
+        return info
 
 
     # backup

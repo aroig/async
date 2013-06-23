@@ -117,6 +117,7 @@ class AsyncConfig(ConfigParser):
         'ec2_ami'        : (None, parse_string),
         'ec2_owner'      : (None, parse_string),
         'ec2_region'     : (None, parse_string),
+        'ec2_itype'      : (None, parse_string),
 
         'ec2_keypair'    : (None, parse_string),
         'ec2_security_group' : (None, parse_string),
