@@ -55,7 +55,12 @@ class UnisonDir(BaseDir):
                 '-root', tgt,
                 '-rootalias', '%s -> %s' % (tgt, tgtalias),
                 '-path', self.relpath,
-                '-follow', 'Path %s' % self.relpath]
+                '-follow', 'Path %s' % self.relpath,
+                '-logfile', '/dev/null',
+            ]
+
+        args = args + ['-group']
+        args = args + ['-times']
 
         if opts.auto:  args = args + ['-auto']
         if opts.slow:  args = args + ['-fastcheck' 'false']
