@@ -29,6 +29,7 @@ class RsyncDir(BaseDir):
     """Directory synced via rsync"""
     def __init__(self, basepath, conf):
         super(RsyncDir, self).__init__(basepath, conf)
+        self.ignore = conf['ignore']
 
 
     # Interface
@@ -37,6 +38,9 @@ class RsyncDir(BaseDir):
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         src = '%s/' % local.dirs[self.name].path
         args = ['-avz', '--delete']
+
+        for p in self.ignore:
+            args = args + ['--exclude=%s' % p]
 
         if isinstance(remote, SshHost):
             tgt = '%s:%s/' % (remote.hostname, remote.dirs[self.name].path)

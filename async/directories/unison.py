@@ -32,6 +32,7 @@ class UnisonDir(BaseDir):
 
         self.unison_args = conf['unison_args']
         self.unison_profile = conf['unison_profile']
+        self.ignore = conf['ignore']
 
 
     # Interface
@@ -61,6 +62,9 @@ class UnisonDir(BaseDir):
                 '-follow', 'Path %s' % self.relpath,
                 '-logfile', '/dev/null',
             ] + self.unison_args
+
+        for p in self.ignore:
+            args = args + ['-ignore', 'Path %s' % p]
 
         if opts.auto:  args = args + ['-auto']
         if opts.slow:  args = args + ['-fastcheck' 'false']
