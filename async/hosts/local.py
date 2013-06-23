@@ -39,6 +39,7 @@ class LocalHost(DirectoryHost):
     def sync(self, remote, silent=False, dryrun=False, opts=None):
         """Syncs local machine to this host"""
         failed = []
+
         if opts.dirs: dirs = opts.dirs
         else:         dirs = list(self.dirs.keys())
 
@@ -49,12 +50,12 @@ class LocalHost(DirectoryHost):
                                                             datetime.now().strftime("%a %d %b %Y %H:%M")))
         ui.print_color("")
 
-        for i, k in enumerate(sorted(keys)):
+        for i, k in enumerate(keys):
             d = remote.dirs[k]
             if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
 
             try:
-                self.dirs[k].sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
+                d.sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
 
             except SyncError as err:
                 ui.print_error("synchronization failed")
@@ -72,20 +73,22 @@ class LocalHost(DirectoryHost):
             return 1
 
 
-    def setup(self, silent=False, dryrun=False, dirs=None, opts=None):
+    def setup(self, silent=False, dryrun=False, opts=None):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
         failed = []
-        if dirs == None: dirs = list(self.dirs.keys())
 
-        keys = [k for k in self.dirs.keys() if k in set(dirs) and k in remote.dirs.keys()]
+        if opts.dirs: dirs = opts.dirs
+        else:         dirs = list(self.dirs.keys())
+
+        keys = sorted(set(self.dirs.keys()) & set(dirs))
         num = len(keys)
 
-        for i, k in enumerate(sorted(self.dirs.keys())):
-            d = remote.dirs[k]
+        for i, k in enumerate(keys):
+            d = self.dirs[k]
             if not silent: ui.print_enum(i+1, num, "setup #*y%s#t (%s)" % (d.name, d.type))
 
             try:
-                self.dirs[k].setup(self, silent=silent, dryrun=dryrun, opts=opts)
+                d.setup(self, silent=silent, dryrun=dryrun, opts=opts)
 
             except SetupError as err:
                 ui.print_error("setup failed")

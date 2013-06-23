@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir
+from async.directories.base import BaseDir, DirError, SyncError, SetupError
 
 import async.cmd as cmd
 import async.archui as ui
@@ -35,13 +35,20 @@ class AnnexDir(BaseDir):
         src = local.dirs[self.name].path
         tgt = remote.dirs[self.name].path
 
-        c = 'git annex sync "%s"' % remote.name
-        ui.print_color(c)
-        if not dryrun: local.run_cmd(c, tgtpath=src)
+        try:
+            annex_args = ['sync', remote.name]
+            ui.print_color('git annex %s' % ' '.join(annex_args))
+            if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
 
-        # TODO: if get, do a local and remote get
-        # local.run_cmd('git annex get --from="%s"' % remote.name, tgtpath=src)
-        # remote.run_cmd('git annex get --from="%s"' % local.name, tgtpath=tgt)
+#            annex_args = ['get', '--from="%s"' % remote.name]
+#            ui.print_color('git annex %s' % ' '.join(annex_args))
+#            if not dryrun: cmd.annex(tgtdir=src, args=annex_args)
+
+             # TODO: run git annex get on the remote. Can't use cmd!!!
+
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
+
 
 
     def setup(self, host, silent=False, dryrun=False, opts=None):

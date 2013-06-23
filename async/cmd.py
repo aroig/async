@@ -22,15 +22,54 @@ import sys
 import os
 import re
 
+import async.archui as ui
+
+def print_rsync_line(line):
+    ui.write_color("  %s" % line)
+
+
+def print_unison_line(line):
+    ui.write_color("  %s" % line)
+
+
+def print_annex_line(line):
+    ui.write_color("  %s" % line)
+
+
+def run_stream(args, callback=None, cwd=None):
+    """Runs a process, streaming its stdout through a callback function"""
+    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=cwd)
+
+    # loop over output and detect lines ended with '\n'
+    b = 'a'
+    lineb = ''
+    stop = False
+    while len(b) > 0:
+        b = proc.stdout.read(1)
+        lineb = lineb + b
+
+        # catch end of line
+        if b == '\n':
+            if callback: callback(lineb)
+
+            lineb = ''
+            if stop: break
+
+    ret = proc.wait()
+    if ret:
+        raise subprocess.CalledProcessError(ret, ' '.join(args))
+
+    return 0
+
 
 def unison(args=[], silent=True):
     unison_cmd = 'unison'
     unison_args = [] + args
 
-    with open('/dev/null', 'w') as devnull:
-        if silent: out = devnull
-        else:      out = None
-        subprocess.check_call([unison_cmd] + unison_args, stderr=out, stdout=out)
+    if silent: func = None
+    else:      func = print_unison_line
+
+    run_stream([unison_cmd] + unison_args, callback=func)
 
 
 def rsync(src, tgt, args=[], silent=True):
@@ -43,11 +82,20 @@ def rsync(src, tgt, args=[], silent=True):
     if tgt[-1] != '/': B = '%s/' % tgt
     else:              B = tgt
 
+    if silent: func = None
+    else:      func = print_rsync_line
 
-    with open('/dev/null', 'w') as devnull:
-        if silent: out = devnull
-        else:      out = None
-        subprocess.check_call([rsync_cmd] + rsync_args + [A, B], stderr=out, stdout=out)
+    run_stream([rsync_cmd] + rsync_args + [A, B], callback=func)
+
+
+def annex(tgtdir, args=[], silent=True):
+    git_cmd = 'git'
+    git_args = ['annex'] + args
+
+    if silent: func = None
+    else:      func = print_annex_line
+
+    run_stream([git_cmd] + git_args, callback=func, cwd=tgtdir)
 
 
 def git(tgtdir, args, silent=False, catchout=False):
