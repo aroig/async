@@ -95,7 +95,7 @@ def umount(path):
 
 def cat_pager(fname):
     pager = os.environ.get('PAGER', 'less')
-    subprocess.call('cat "%s" | vimpager' % fname, shell=True)
+    subprocess.call('cat "%s" | %s' % (fname, pager), shell=True)
 
 
 
