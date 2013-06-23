@@ -138,6 +138,8 @@ class AsyncConfig(ConfigParser):
         'setup_hool'      : (None, parse_path),      # script to run on setup
         'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
         'check'           : ([], parse_list),
+        'unison_profile'  : (None, parse_string),
+        'unison_args'     : ([], parse_list),
 }
 
     ASYNC_FIELDS={

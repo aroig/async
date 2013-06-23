@@ -30,6 +30,9 @@ class UnisonDir(BaseDir):
     def __init__(self, basepath, conf):
         super(UnisonDir, self).__init__(basepath, conf)
 
+        self.unison_args = conf['unison_args']
+        self.unison_profile = conf['unison_profile']
+
 
     # Interface
     # ----------------------------------------------------------------
@@ -57,10 +60,7 @@ class UnisonDir(BaseDir):
                 '-path', self.relpath,
                 '-follow', 'Path %s' % self.relpath,
                 '-logfile', '/dev/null',
-            ]
-
-        args = args + ['-group']
-        args = args + ['-times']
+            ] + self.unison_args
 
         if opts.auto:  args = args + ['-auto']
         if opts.slow:  args = args + ['-fastcheck' 'false']
@@ -71,6 +71,7 @@ class UnisonDir(BaseDir):
 
         if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
 
+        args = args + [self.unison_profile]
         ui.print_color('unison %s' % ' '.join(args))
         try:
             if not dryrun: cmd.unison(args=args, silent=silent)
