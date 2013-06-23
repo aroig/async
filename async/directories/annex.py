@@ -37,7 +37,7 @@ class AnnexDir(BaseDir):
 
         try:
             annex_args = ['sync', remote.name]
-            ui.print_color('git annex %s' % ' '.join(annex_args))
+            ui.print_debug('git annex %s' % ' '.join(annex_args))
             if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
 
 #            annex_args = ['get', '--from="%s"' % remote.name]

@@ -76,7 +76,7 @@ class UnisonDir(BaseDir):
         if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
 
         args = args + [self.unison_profile]
-        ui.print_color('unison %s' % ' '.join(args))
+        ui.print_debug('unison %s' % ' '.join(args))
         try:
             if not dryrun: cmd.unison(args=args, silent=silent)
         except subprocess.CalledProcessError as err:
