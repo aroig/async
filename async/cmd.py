@@ -41,6 +41,8 @@ def print_annex_line(line):
 
 
 class StdoutWriter(Thread):
+    """Prints caracters in stream as they come, by when a line is completed uses '\r'
+       to rewrite it according to line_callback"""
     def __init__(self, stream, char_callback, line_callback):
         super(StdoutWriter, self).__init__()
         self.stream = stream
@@ -64,17 +66,20 @@ class StdoutWriter(Thread):
                 self.force_newline = False
                 if self.char_callback: self.char_callback(line)
 
-            # reset line and call callback to rewrite the line. we know there is no extra '\n'
-            # in the tty.
-            if b == '\n' or b == '\r':
-                line = line + b
+            line = line + b
+
+            # call line_callback to rewrite line.
+            if b == '\n':
                 if self.char_callback: self.char_callback('\r')
                 if self.line_callback: self.line_callback(line)
                 line = line0
                 if self.char_callback: self.char_callback(line)
 
+            # do not call line_callback
+            elif b == '\r':
+                if self.char_callback: self.char_callback('\r')
+
             else:
-                line = line + b
                 if self.char_callback: self.char_callback(b)
 
         self.stream.close()
@@ -128,6 +133,9 @@ def run_stream(args, callback=None, cwd=None):
 
     # wait until process finishes
     ret = proc.wait()
+
+    stdout_writer.join()
+    # TODO: kill stdin_reader
 
     if ret:
         raise subprocess.CalledProcessError(ret, ' '.join(args))
