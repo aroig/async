@@ -75,7 +75,9 @@ class Ec2Host(SshHost):
         def _state():
             return vol.attachment_state()
 
-        self.wait_for('detached', _state)
+        if not self.wait_for('detached', _state):
+            raise HostError("Timed out detaching")
+
 
 
     def attach_volume(self, vol, inst, dev):
@@ -85,9 +87,11 @@ class Ec2Host(SshHost):
             raise HostError(str(err))
 
         def _state():
+            vol.update()
             return vol.attachment_state()
 
-        self.wait_for('detached', _state)
+        if not self.wait_for('attached', _state):
+            raise HostError("Timed out attaching")
 
 
     def start_instance(self, id):
@@ -97,9 +101,11 @@ class Ec2Host(SshHost):
             raise HostError(str(err))
 
         def _state():
+            self.instance.update()
             return self.instance.state
 
-        self.wait_for('running', _state)
+        if not self.wait_for('running', _state):
+            raise HostError("Timed out starting instance")
 
 
     def stop_instance(self, id):
@@ -109,19 +115,21 @@ class Ec2Host(SshHost):
             raise HostError(str(err))
 
         def _state():
+            self.instance.update()
             return self.instance.state
 
-        self.wait_for('stopped', _state)
+        if not self.wait_for('stopped', _state):
+            raise HostError("Timed out stopping instance")
 
 
-    def create_instance(self):
+    def create_instance(self, itype):
         """Creates a new instance"""
         try:
             res = self.conn.run_instances(min_count = 1, max_count = 1,
                                           image_id = self.ami.id,
                                           key_name = self.ec2_keypair,
                                           security_groups = [self.ec2_security_group],
-                                          instance_type = self.ec2_itype,
+                                          instance_type = itype,
                                           placement = self.zone)
 
         except boto.exception.EC2ResponseError as err:
@@ -133,6 +141,14 @@ class Ec2Host(SshHost):
             raise Ec2Error("Something happened. Too many instances launced.")
 
         self.instance = res.instances[0]
+
+        def _state():
+            self.instance.update()
+            return self.instance.state
+
+        if not self.wait_for('running', _state):
+            raise HostError("Timed out launching instance")
+
 
 
 
@@ -176,14 +192,14 @@ class Ec2Host(SshHost):
 
     def check_ami(self):
         """Returns true if the ami is available"""
-        self.ami.update()
+        if self.ami: self.ami.update()
         if self.ami: return self.ami.state == 'available'
         else:        return False
 
 
     def check_instance(self):
         """Returns true if there is an instance running"""
-        self.instance.update()
+        if self.instance: self.instance.update()
         if self.instance: return self.instance.state == 'running'
         else:             return False
 
@@ -213,9 +229,11 @@ class Ec2Host(SshHost):
     # Interface
     # ----------------------------------------------------------------
 
-    def launch(self, silent=False, dryrun=False):
+    def launch(self, itype=None, silent=False, dryrun=False):
         """Launches a new instance"""
-        # TODO: call create_instance if no instance exists
+        itype = itype or self.ec2_itype
+        if self.instance == None:
+            self.create_instance(itype)
 
 
     def terminate(self, silent=False, dryrun=False):
@@ -321,28 +339,25 @@ class Ec2Host(SshHost):
 
     def make_ami_snapshot(self, name, desc):
         """Creates a snapshot of the running image."""
-        self.update()
-
-        if self.skynet_status() != 'running':
-            raise InstanceError("Instance is not running.")
 
         self.conn.create_image(instance_id = self.instance.id,
                                name = name,
                                description = desc)
 
-        if not self._wait_for('available', self.ami_status, timeout=300):
-            raise InstanceError("I've waited long enough and the ami is not created.")
+        def _state():
+            self.ami.update()
+            return self.ami.state
+
+        if not self.wait_for('available', _state, timeout=300):
+            raise HostError("Timed out creating ami")
 
 
-    def make_data_snapshot(self, desc):
+    def make_data_snapshot(self, dev, desc):
         """Creates a snapshot of the data volume."""
-        self.update()
-
-        if self.skynet_status() != 'running':
-            raise InstanceError("Instance is not running.")
-
-        self.conn.create_snapshot(volume_id = self.data.id,
-                                  description = desc)
+        if dev in self.volumes:
+            id = self.volumes[dev].id
+            self.conn.create_snapshot(volume_id = id,
+                                      description = desc)
 
 
 
