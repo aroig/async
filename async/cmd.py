@@ -57,27 +57,24 @@ class StdoutWriter(Thread):
         while len(b) > 0:
             b = self.stream.read(1)
 
-            if self.force_newline: line = line + '\n'
-            else:                  line = line + b
-
             # when forcing a newline, just reset line without calling callback. We can't
             # guarantee an other '\n' (from stdin for example) messes up with the rewriting.
             if self.force_newline:
-                # the character I read belongs to the next line!
-                line = line0 + b
+                line = line0
                 self.force_newline = False
-
                 if self.char_callback: self.char_callback(line)
 
             # reset line and call callback to rewrite the line. we know there is no extra '\n'
             # in the tty.
-            elif b == '\n':
+            if b == '\n' or b == '\r':
+                line = line + b
                 if self.char_callback: self.char_callback('\r')
                 if self.line_callback: self.line_callback(line)
                 line = line0
                 if self.char_callback: self.char_callback(line)
 
             else:
+                line = line + b
                 if self.char_callback: self.char_callback(b)
 
         self.stream.close()
