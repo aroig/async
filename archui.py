@@ -85,15 +85,45 @@ fc = {'done'  : '#G',
       }
 
 
-
 # Internal state
 _mc = '#*b'           # main color
 _maxwidth = 80        # max text width
 
+_loglevel   = 4       # the log level
 _debug      = 0       # debug flag
 _use_color  = True    # use colors flag
 _last_status = ""     # remember text of last print_status
 
+_logger = None
+
+def start_logging(logfile, level=4):
+    path = os.path.expandvars(os.path.expanduser(logfile))
+    try:
+        os.makedirs(os.path.dirname(path))
+    except:
+        pass
+
+    try:
+        fd = open(logfile, 'w')
+
+        global _logger
+        _logger = fd
+
+        global _loglevel
+        _loglevel = level
+
+    except:
+        print_error("Can't setup logging to %s" % logfile)
+
+def stop_logging():
+    global _logger
+    if _logger != None: _logger.close()
+    _logger = None
+
+def set_loglevel(level):
+    """logging level: 0 none, 1 errors, 2 warnings, 3 info, 4 messages, 5 debug"""
+    global _loglevel
+    _loglevel = level
 
 def set_debug(dbg):
     global _debug
@@ -148,46 +178,64 @@ def strip_color(s):
     return re.sub(r'\x1b[^m]*m|\x1b[^B]*B', '', s)
 
 
-def color(s):
+def color(s, use_color=None):
     global _use_color
+    if use_color == None: use_color = _use_color
+
     ret = s + '#t'
-    if _use_color:
+    if use_color:
         for k in _cc: ret = ret.replace('#'+k, _cc[k])
     else:
         for k in _cc: ret = ret.replace('#'+k, '')
+
     return ret
 
 
 def print_color(text, file=sys.stdout):
     write_color(text + '\n', file)
 
-def write_color(text, file=sys.stdout):
-    file.write('%s' % color(text))
-    file.flush()
-
-def print_debug(t, level=1):
+def write_color(text, file=sys.stdout, loglevel=4, debug=0):
     global _debug
-    if level <= _debug: write_color("#*gdebug:#t %s\n" % t, file=sys.stderr)
+    if debug <= _debug:
+        file.write('%s' % color(text))
+        file.flush()
+    write_log(text, level=loglevel)
+
+def print_log(text, level=3):
+    write_log(txt + '\n', level=level)
+
+def write_log(text, level=3):
+    global _logger, _loglevel
+    if _logger != None and level <= _loglevel:
+        _logger.write('%s' % color(text, use_color=False))
+
+
+
+def print_debug(text, level=1):
+    write_color("#*gdebug:#t %s\n" % text, file=sys.stderr, loglevel=5, debug=level)
 
 def print_message(text):
-    write_color(" %s\n" % text, file=sys.stdout)
+    write_color(" %s\n" % text, file=sys.stdout, loglevel=4)
 
 def print_error(text):
-    write_color('#*rerror: #w%s\n' % text, file=sys.stderr)
+    write_color('#*rerror: #w%s\n' % text, file=sys.stderr, loglevel=1)
 
 def print_warning(text):
-    write_color('#*ywarning: #w%s\n' % text, file=sys.stderr)
+    write_color('#*ywarning: #w%s\n' % text, file=sys.stderr, loglevel=2)
+
+def print_info(text):
+    write_color('#*binfo: #w%s\n' % text, file=sys.stderr, loglevel=3)
 
 
 
 def print_item(text):
-    write_color('%s * #*w%s\n' % (_mc, text), file=sys.stdout)
+    write_color('%s * #*w%s\n' % (_mc, text), file=sys.stdout, loglevel=3)
 
 def print_heading(text):
-    write_color('%s > #*w%s\n' % (_mc, text), file=sys.stdout)
+    write_color('%s > #*w%s\n' % (_mc, text), file=sys.stdout, loglevel=3)
 
 def print_enum(i, n, text):
-    write_color('%s(%d/%d) #t%s\n' % (_mc, i, n, text), file=sys.stdout)
+    write_color('%s(%d/%d) #t%s\n' % (_mc, i, n, text), file=sys.stdout, loglevel=3)
 
 
 
@@ -217,10 +265,12 @@ def print_status(text=None, flag=None, nl=None):
         if nl: fmt = fmt + '\n'
         else: fmt = fmt + '\r'
 
-        write_color(fmt.format(text, sta), file=sys.stdout)
+        if nl: write_color(fmt.format(text, sta), file=sys.stdout, loglevel=3)
+        else:  write_color(fmt.format(text, sta), file=sys.stdout, loglevel=0)
+
     else:
         fmt = '\r%s:: #*w{0:<%s}\n' % (_mc, width)
-        write_color(fmt.format(text), file=sys.stdout)
+        write_color(fmt.format(text), file=sys.stdout, loglevel=3)
 
 
 def print_progress(text, r, nl=None):
@@ -247,16 +297,19 @@ def print_progress(text, r, nl=None):
     if nl: fmt = fmt + '\n'
     else: fmt = fmt + '\r'
 
-    sys.stdout.write(fmt.format(text, barstr, int(100*r)))
+    out = fmt.format(text, barstr, int(100*r))
+    sys.stdout.write(out)
     sys.stdout.flush()
+    if nl: write_log(out, level=3)
+
+
 
 
 def ask_question_string(question):
-    write_color('%s ? #*w%s ' % (_mc, question), file=sys.stderr)
+    write_color('%s ? #*w%s ' % (_mc, question), file=sys.stderr, loglevel=3)
     ans = input()
+    write_log('%s\n' % ans, level=3)
     return ans
-
-
 
 def ask_question_yesno(question, default=None):
     if default == 'yes':    hint = '[Y/n]'
@@ -268,7 +321,7 @@ def ask_question_yesno(question, default=None):
         if val == 'y':              return 'yes'
         elif val == 'n':            return 'no'
         elif default and val == '': return default
-        else: write_color('Invalid answer.\n')
+        else: write_color('Invalid answer.\n', loglevel=3)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
