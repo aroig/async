@@ -85,7 +85,7 @@ class SshHost(BaseHost):
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         if self.ssh_key:
-            self.ssh_args = self.ssh_args + ['-i %s' % self.ssh_key]
+            self.ssh_args = self.ssh_args + ['-i', self.ssh_key]
 
 
     def check_ssh(self):
@@ -219,7 +219,7 @@ class SshHost(BaseHost):
 
     def interactive_shell(self):
         """Opens an interactive shell to host"""
-        cmd.ssh(host=self.hostname)
+        cmd.ssh(host=self.hostname, args=self.ssh_args)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

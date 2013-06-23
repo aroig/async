@@ -82,7 +82,7 @@ def shell(tgtdir):
 def ssh(host, args=[]):
     ssh_cmd = 'ssh'
     ssh_args = args
-    subprocess.check_call([ssh_cmd] + ssh_args)
+    subprocess.check_call([ssh_cmd] + ssh_args + [host])
 
 
 def mount(path):
