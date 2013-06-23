@@ -99,8 +99,8 @@ class AsyncConfig(ConfigParser):
         'user'           : (None, parse_string),
 
         'ssh_key'        : (None, parse_path),
-        'ssh_trust'      : ('no', parse_bool),
-        'unison_as_rsync': ('false', parse_bool),
+        'ssh_trust'      : (False, parse_bool),
+        'unison_as_rsync': (False, parse_bool),
 
         'mounts'         : ({}, parse_dict),
         'luks'           : ({}, parse_dict),

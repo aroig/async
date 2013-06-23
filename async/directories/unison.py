@@ -17,7 +17,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir, DirError
+from async.directories.base import BaseDir, DirError, SyncError, SetupError
+from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd
 import async.archui as ui
@@ -32,13 +33,13 @@ class UnisonDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        src = local.path
+        src = '%s/' % local.path
 
-        if isinstance(remote, hosts.SshHost):
+        if isinstance(remote, SshHost):
             tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path)
             tgtalias = 'ssh://%s/%s/' % (remote.name, remote.path)
 
-        elif isinstance(remote, hosts.DirectoryHost):
+        elif isinstance(remote, DirectoryHost):
             tgt = remote.path
             tgtalias = remote.path
 
@@ -64,7 +65,10 @@ class UnisonDir(BaseDir):
         if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
 
         ui.print_color('unison %s' % ' '.join(args))
-        if not dryrun: cmd.unison(args=args, silent=silent)
+        try:
+            if not dryrun: cmd.unison(args=args, silent=silent)
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
 
 
 
