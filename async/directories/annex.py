@@ -26,7 +26,7 @@ class AnnexDir(BaseDir):
     """Directory synced via git annex"""
     def __init__(self, basepath, conf):
         super(AnnexDir, self).__init__(basepath, conf)
-
+        self.annex_get = conf['annex_get']
 
     # Interface
     # ----------------------------------------------------------------
@@ -40,11 +40,12 @@ class AnnexDir(BaseDir):
             ui.print_debug('git annex %s' % ' '.join(annex_args))
             if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
 
-#            annex_args = ['get', '--from="%s"' % remote.name]
-#            ui.print_color('git annex %s' % ' '.join(annex_args))
-#            if not dryrun: cmd.annex(tgtdir=src, args=annex_args)
+            if self.annex_get:
+                annex_args = ['get', '--from="%s"' % remote.name]
+                ui.print_color('git annex %s' % ' '.join(annex_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
 
-             # TODO: run git annex get on the remote. Can't use cmd!!!
+            # TODO: run git annex get on the remote. Can't use cmd!!!
 
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))

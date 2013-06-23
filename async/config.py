@@ -144,11 +144,12 @@ class AsyncConfig(ConfigParser):
         'ignore'          : ([], parse_list_path),
         'unison_profile'  : (None, parse_string),
         'unison_args'     : ([], parse_list),
+        'annex_get'       : (True, parse_bool),
 }
 
     ASYNC_FIELDS={
-        'color'           : ('yes', parse_bool),     # color UI
-        'logfile'         : (None, parse_path),      # color UI
+        'color'           : (True, parse_bool),     # color UI
+        'logfile'         : (None, parse_path),     # logfile
     }
 
 
