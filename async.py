@@ -102,7 +102,7 @@ try:
 
     # UI settings
     if opts.debug: ui.set_debug(1)
-    ui.use_color(conf.async['color'])
+    if conf.async['color'] != None: ui.use_color(conf.async['color'])
 
     # If the output is not a terminal, remove the colors
     if not sys.stdout.isatty(): ui.use_color(False)
@@ -115,7 +115,7 @@ try:
 
     if len(args) > 1:
         name = args[1]
-        ui.print_status(text="Connecting to #*m%s#t" % name, flag="BUSY")
+        ui.print_status(text="Connecting to %s" % name, flag="BUSY")
         remote = get_remote_host(name, conf)
         remote.connect()
         ui.print_status(flag="DONE", nl=True)
@@ -129,7 +129,10 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
-        if len(args) == 0:    ret = local.sync(remote=remote, dryrun=opts.dryrun, opts=opts)
+        if len(args) == 0:
+            if conf.async['logfile'] != None: ui.start_logging(conf.async['logfile'], level=4)
+            ret = local.sync(remote=remote, dryrun=opts.dryrun, opts=opts)
+            ui.stop_logging()
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":

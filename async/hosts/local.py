@@ -22,7 +22,7 @@ from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, SetupError
 
 import async.archui as ui
-
+from datetime import datetime
 
 class LocalHost(DirectoryHost):
     """Represents the localhost. Does not sync, only useful for initial setup and status."""
@@ -44,6 +44,10 @@ class LocalHost(DirectoryHost):
 
         keys = sorted(set(self.dirs.keys()) & set(dirs) & set(remote.dirs.keys()))
         num = len(keys)
+
+        ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,
+                                                            datetime.now().strftime("%a %d %b %Y %H:%M")))
+        ui.print_color("")
 
         for i, k in enumerate(sorted(keys)):
             d = remote.dirs[k]
