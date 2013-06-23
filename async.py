@@ -115,7 +115,7 @@ try:
 
     if len(args) > 1:
         name = args[1]
-        ui.print_status(text="Connecting to %s" % name, flag="BUSY")
+        ui.print_status(text="Connecting to #*m%s#t" % name, flag="BUSY")
         remote = get_remote_host(name, conf)
         remote.connect()
         ui.print_status(flag="DONE", nl=True)

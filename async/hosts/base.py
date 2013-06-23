@@ -264,7 +264,7 @@ class BaseHost(object):
     def print_status(self):
         info = self.get_info()
 
-        ui.print_status("Status of #m%s#t" % self.name)
+        ui.print_status("Status of #*m%s#t" % self.name)
         ui.print_color("")
 
         if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
