@@ -78,6 +78,8 @@ class StdoutWriter(Thread):
             # do not call line_callback
             elif b == '\r':
                 if self.char_callback: self.char_callback('\r')
+                line = line0
+                if self.char_callback: self.char_callback(line)
 
             else:
                 if self.char_callback: self.char_callback(b)
@@ -109,16 +111,16 @@ def run_stream(args, callback=None, cwd=None):
     """Runs a process, streaming its stdout through a callback function, but still accepting
        interactive input"""
 
-    # process and queue
-    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE, cwd=cwd)
-    force_newline = False
-
+    # NOTE: if I redirect stderr to stdout here, unison eventually fails because stderr blocks.
+    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+                            bufsize=-1, cwd=cwd)
 
     def char_to_sys_stdout(b):
         sys.stdout.write(b)
         sys.stdout.flush()
 
     stdout_writer = StdoutWriter(stream=proc.stdout, char_callback=char_to_sys_stdout, line_callback=callback)
+#    stderr_writer = StdoutWriter(stream=proc.stderr, char_callback=char_to_sys_stdout, line_callback=callback)
 
 
     def line_to_proc_stdin(line):
@@ -129,6 +131,7 @@ def run_stream(args, callback=None, cwd=None):
     stdin_reader = StdinReader(stream=sys.stdin, char_callback=None, line_callback=line_to_proc_stdin)
 
     stdout_writer.start()
+ #   stderr_writer.start()
     stdin_reader.start()
 
     # wait until process finishes
