@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+import inspect
+import ctypes
 import sys
 import os
 import re
@@ -40,71 +42,87 @@ def print_annex_line(line):
     ui.write_color("%s" % line)
 
 
-class StdoutWriter(Thread):
-    """Prints caracters in stream as they come, by when a line is completed uses '\r'
-       to rewrite it according to line_callback"""
-    def __init__(self, stream, char_callback, line_callback):
-        super(StdoutWriter, self).__init__()
+class StopThread(Exception):
+    def __init__(self):
+        pass
+
+class StreamWriter(Thread):
+    """Gets characters from stream. Calls char_callback one character at a time
+       and line_callback one line at a time"""
+
+    def __init__(self, stream, char_callback, line_callback, prefix=''):
+        super(StreamWriter, self).__init__()
         self.stream = stream
         self.char_callback = char_callback
         self.line_callback = line_callback
-        self.force_newline = False
+        self.prefix = prefix
+        self._force_newline = False
         self.daemon = True
 
-    def run(self):
-        line0='  '
 
-        line = line0
-        b = 'a'
-        while len(b) > 0:
-            b = self.stream.read(1)
+    def async_raise(self, tid, exctype):
+        """Raises an exception in the threads with id tid"""
+        if not inspect.isclass(exctype):
+            raise TypeError("Only types can be raised (not instances)")
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
 
-            # when forcing a newline, just reset line without calling callback. We can't
-            # guarantee an other '\n' (from stdin for example) messes up with the rewriting.
-            if self.force_newline:
-                line = line0
-                self.force_newline = False
-                if self.char_callback: self.char_callback(line)
+        if res == 0:
+            raise ValueError("invalid thread id")
 
-            line = line + b
-
-            # call line_callback to rewrite line.
-            if b == '\n':
-                if self.char_callback: self.char_callback('\r')
-                if self.line_callback: self.line_callback(line)
-                line = line0
-                if self.char_callback: self.char_callback(line)
-
-            # do not call line_callback
-            elif b == '\r':
-                if self.char_callback: self.char_callback('\r')
-                line = line0
-                if self.char_callback: self.char_callback(line)
-
-            else:
-                if self.char_callback: self.char_callback(b)
-
-        self.stream.close()
+        elif res != 1:
+            # "if it returns a number greater than one, you're in trouble,
+            # and you should call it again with exc=NULL to revert the effect"
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
+            raise SystemError("PyThreadState_SetAsyncExc failed")
 
 
-class StdinReader(Thread):
-    def __init__(self, stream, char_callback, line_callback):
-        super(StdinReader, self).__init__()
-        self.stream = stream
-        self.char_callback = char_callback
-        self.line_callback = line_callback
-        self.daemon = True
+    def kill(self):
+        if self.isAlive():
+            self.async_raise(self.ident, StopThread)
+
+
+    def force_newline(self):
+        self._force_newline = True
+
 
     def run(self):
-        line = ''
+        line = self.prefix
         b = 'a'
-        while len(b) > 0:
-            b = self.stream.read(1)
-            line = line + b
-            if b == '\n':
-                if self.line_callback: self.line_callback(line)
-                line = ''
-        self.stream.close()
+        try:
+            while len(b) > 0:
+                b = self.stream.read(1)
+
+                # when forcing a newline, just reset line without calling callback. We can't
+                # guarantee an other '\n' (from stdin for example) messes up with the rewriting.
+                if self._force_newline:
+                    line = self.prefix
+                    self._force_newline = False
+                    if self.char_callback: self.char_callback(line)
+
+                line = line + b
+
+                # call line_callback to rewrite line.
+                if b == '\n':
+                    if self.line_callback:
+                        if self.char_callback: self.char_callback('\r')
+                        self.line_callback(line)
+                    line = self.prefix
+                    if self.char_callback and len(line) > 0:
+                        self.char_callback(line)
+
+                # do not call line_callback
+                elif b == '\r':
+                    if self.char_callback: self.char_callback('\r')
+                    line = self.prefix
+                    if self.char_callback and len(line) > 0:
+                        self.char_callback(line)
+
+                else:
+                    if self.char_callback: self.char_callback(b)
+
+        except StopThread:
+            return
+
 
 
 def run_stream(args, callback=None, cwd=None):
@@ -119,26 +137,34 @@ def run_stream(args, callback=None, cwd=None):
         sys.stdout.write(b)
         sys.stdout.flush()
 
-    stdout_writer = StdoutWriter(stream=proc.stdout, char_callback=char_to_sys_stdout, line_callback=callback)
-#    stderr_writer = StdoutWriter(stream=proc.stderr, char_callback=char_to_sys_stdout, line_callback=callback)
+    stdout_writer = StreamWriter(stream=proc.stdout, char_callback=char_to_sys_stdout,
+                                 line_callback=callback, prefix='  ')
+
+#    stderr_writer = StreamWriter(stream=proc.stderr, char_callback=char_to_sys_stdout,
+#                                 line_callback=callback, prefix='  ')
 
 
     def line_to_proc_stdin(line):
         proc.stdin.write(line)
         proc.stdin.flush()
-        stdout_writer.force_newline = True
+        stdout_writer.force_newline()
 
-    stdin_reader = StdinReader(stream=sys.stdin, char_callback=None, line_callback=line_to_proc_stdin)
+    stdin_writer = StreamWriter(stream=sys.stdin, char_callback=None,
+                                line_callback=line_to_proc_stdin, prefix='')
 
     stdout_writer.start()
  #   stderr_writer.start()
-    stdin_reader.start()
+    stdin_writer.start()
 
     # wait until process finishes
     ret = proc.wait()
 
     stdout_writer.join()
-    # TODO: kill stdin_reader
+    stdin_writer.kill()
+
+    import time
+    time.sleep(10)
+    print(stdin_writer.isAlive())
 
     if ret:
         raise subprocess.CalledProcessError(ret, ' '.join(args))
