@@ -97,7 +97,7 @@ class StreamWriter(Thread):
             else:
                 if self.char_callback: self.char_callback(b)
 
-        stream.close()
+        self.stream.close()
 
 
 
