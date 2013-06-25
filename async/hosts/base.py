@@ -295,7 +295,12 @@ class BaseHost(object):
 
     def connect(self):
         """Establishes a connection and initialized data"""
-        pass
+        raise NotImplementedError
+
+
+    def backup(self, silent=False, dryrun=False):
+        """Creates a data backup"""
+        raise NotImplementedError
 
 
     def set_state(self, state, silent=False, dryrun=False):

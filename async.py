@@ -30,6 +30,19 @@ from async.config import AsyncConfig
 import async.archui as ui
 from async import get_remote_host, get_local_host
 
+from async.hosts import Ec2Host
+
+
+
+# Functions
+#------------------------
+
+def get_itype(name):
+    if name == "micro":    return "t1.micro"
+    elif name == "small":  return "m1.small"
+    elif name == "medium": return "m1.medium"
+    elif name == "large":  return "m1.large"
+    else:                  return name
 
 
 # Main stuff
@@ -58,6 +71,17 @@ Commands:
 
   umount:     %prog umount <host>
               Umount devices on host.
+
+  launch:     %prog launch <host>
+              Launch an ec2 instance.
+
+  terminate:  %prog terminate <host>
+              Terminate an ec2 instance.
+
+  snapshot:   %prog snapshot <host>
+              Create a snapshot of a running ec2 instance.
+
+
 """
 parser = OptionParser(usage=usage)
 
@@ -75,6 +99,9 @@ parser.add_option("-f", "--force", action="store", type="string", default=None, 
 
 parser.add_option("-d", "--dirs", action="store", type="string", default=None, dest="dirs",
                   help="Only sync the dirs given as a comma separated list.")
+
+parser.add_option("-i", "--instance", action="store", type="string", default=None, dest="itype",
+                  help="Instance type. Values: micro (default), small, large")
 
 parser.add_option("--dryrun", dest="dryrun", action="store_true", default=False,
                   help="Dry run.")
@@ -153,6 +180,34 @@ try:
 
     elif cmd == "shell":
         if len(args) == 0:    ret = remote.shell()
+        else:                 ui.print_error("Too many arguments.")
+
+
+    elif cmd == "launch":
+        if not isinstance(remote, Ec2Host):
+            ui.print_error("Host %s is not an Ec2 host" % remote.name)
+
+        elif len(args) == 0:
+            ret = remote.launch(dryrun=opts.dryrun, itype=get_itype(opts.itype))
+
+        else:
+            ui.print_error("Too many arguments.")
+
+    elif cmd == "terminate":
+        if not isinstance(remote, Ec2Host):
+            ui.print_error("Host %s is not an Ec2 host" % remote.name)
+
+        elif len(args) == 0:
+            ret = remote.terminate(dryrun=opts.dryrun)
+
+        else:
+            ui.print_error("Too many arguments.")
+
+    elif cmd == "snapshot":
+        if not isinstance(remote, Ec2Host):
+            ui.print_error("Host %s is not an Ec2 host" % remote.name)
+
+        elif len(args) == 0:  ret = remote.snapshot(dryrun=opts.dryrun)
         else:                 ui.print_error("Too many arguments.")
 
 

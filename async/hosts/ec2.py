@@ -242,6 +242,45 @@ class Ec2Host(SshHost):
             self.set_state('terminated', silent=silent, dryrun=dryrun)
 
 
+    def snapshot(self, silent=False, dryrun=False):
+        """Creates a snapshot of the running instance"""
+
+        # go online but with detached data
+        self.set_state(state='online', silent=silent, dryrun=dryrun)
+
+        ui.print_color("I'm going create a new ami from the running instance:")
+        self.print_status()
+
+        cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
+        if cont != 'yes': return
+
+        new_ami_name = ui.ask_question_string("Enter the new ami name:")
+        description = "%s %s" % (self.name, datetime.date.today().strftime("%Y-%m-%d"))
+
+        ui.print_status(text="Creating %s ami snapshot" % new_ami_name, flag='BUSY')
+        self.make_ami_snapshot(name = new_ami_name, desc = description)
+        ui.print_status(flag='DONE', nl=True)
+
+
+    def backup(self, silent=False, dryrun=False):
+        """Creates a data backup"""
+
+        # go online but with detached data
+        self.set_state(state='online', silent=silent, dryrun=dryrun)
+
+        ui.print_color("I'm going create snapshots for all data volumes")
+        self.print_status()
+
+        cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
+        if cont != 'yes': return
+
+        for k, dev in self.volumes.items():
+            description = "volume %s on %s %s" % (k, self.name, datetime.date.today().strftime("%Y-%m-%d"))
+            ui.print_status(text="Creating snapshot for %s" % k, flag='BUSY')
+            self.make_data_snapshot(dev = dev, desc = description)
+            ui.print_status(flag='DONE', nl=True)
+
+
     def attach(self, silent=False, dryrun=False):
         """Attaches volumes"""
         if self.STATES.index(self.state) < self.STATES.index('attached'):
