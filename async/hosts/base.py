@@ -114,16 +114,14 @@ class BaseHost(object):
                                (passphrase, dev, name),
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
-                ui.print_error("Can't open luks partition %s" % name)
-                raise HostError("Can't open luks partition")
+                raise HostError("Can't open luks partition %s" % name)
 
         # mount devices
         for dev, mp in self.mounts.items():
             ret = self.run_cmd('mount "%s"; echo $?' % mp,
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
-                ui.print_error("Can't mount %s" % mp)
-                raise HostError("Can't mount")
+                raise HostError("Can't mount %s" % mp)
 
         # mount ecryptfs
         # TODO: needs testing
@@ -139,8 +137,7 @@ class BaseHost(object):
             ret = self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt "%s"; echo $?' % (options, cryp, mp),
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
-                ui.print_error("Can't mount ecryptfs directory %s" % mp)
-                raise HostError("Can't mount ecryptfs")
+                raise HostError("Can't mount ecryptfs directory %s" % mp)
 
 
     def umount_devices(self):
@@ -149,21 +146,21 @@ class BaseHost(object):
             ret = self.run_cmd('umount "%s"; echo $?' % mp,
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
-                ui.print_error("Can't umount ecryptfs directory %s" % mp)
+                raise HostError("Can't umount ecryptfs directory %s" % mp)
 
         # umount devices
         for dev, mp in self.mounts.items():
             ret = self.run_cmd('umount "%s"; echo $?' % mp,
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
-                ui.print_error("Can't umount %s" % mp)
+                raise HostError("Can't umount %s" % mp)
 
         # close luks partitions
         for dev, name in self.luks.items():
             ret = self.run_cmd('sudo cryptsetup luksClose %s; echo $?' % name,
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
-                ui.print_error("Can't close luks partition %s" % name)
+                raise HostError("Can't close luks partition %s" % name)
 
 
     def check_devices(self):
