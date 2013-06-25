@@ -241,8 +241,23 @@ class Ec2Host(SshHost):
 
     def terminate(self, silent=False, dryrun=False):
         """Terminates the current instance"""
+        st = 'terminated'
         if self.STATES.index(self.state) > self.STATES.index('terminated'):
-            self.set_state('terminated', silent=silent, dryrun=dryrun)
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+
+    def attach(self, silent=False, dryrun=False):
+        """Attaches volumes"""
+        st = 'attached'
+        if self.STATES.index(self.state) < self.STATES.index('attached'):
+            return = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+
+    def detach(self, silent=False, dryrun=False):
+        """Deataches volumes"""
+        st = self.STATES[self.STATES.index('attached') - 1]
+        if self.STATES.index(self.state) >= self.STATES.index('attached'):
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
 
     def snapshot(self, silent=False, dryrun=False):
@@ -259,10 +274,13 @@ class Ec2Host(SshHost):
 
         new_ami_name = ui.ask_question_string("Enter the new ami name:")
         description = "%s %s" % (self.name, datetime.date.today().strftime("%Y-%m-%d"))
+        def func():
+            self.make_ami_snapshot(name = new_ami_name, desc = description)
 
-        ui.print_status(text="Creating %s ami snapshot" % new_ami_name, flag='BUSY')
-        self.make_ami_snapshot(name = new_ami_name, desc = description)
-        ui.print_status(flag='DONE', nl=True)
+        self.run_with_message(func=func,
+                              msg="Creating %s ami snapshot" % new_ami_name,
+                              silent=silent,
+                              dryrun=dryrun)
 
 
     def backup(self, silent=False, dryrun=False):
@@ -279,22 +297,15 @@ class Ec2Host(SshHost):
 
         for k, dev in self.volumes.items():
             description = "volume %s on %s %s" % (k, self.name, datetime.date.today().strftime("%Y-%m-%d"))
-            ui.print_status(text="Creating snapshot for %s" % k, flag='BUSY')
-            self.make_data_snapshot(dev = dev, desc = description)
-            ui.print_status(flag='DONE', nl=True)
+            def func():
+                self.make_data_snapshot(dev = dev, desc = description)
+
+                self.run_with_message(func=func,
+                                      msg="Creating volume backup: %s" % k,
+                                      silent=silent,
+                                      dryrun=dryrun)
 
 
-    def attach(self, silent=False, dryrun=False):
-        """Attaches volumes"""
-        if self.STATES.index(self.state) < self.STATES.index('attached'):
-            self.set_state('attached', silent=silent, dryrun=dryrun)
-
-
-    def detach(self, silent=False, dryrun=False):
-        """Deataches volumes"""
-        newstate = self.STATES[self.STATES.index('attached') - 1]
-        if self.STATES.index(self.state) >= self.STATES.index('attached'):
-            self.set_state(newstate, silent=silent, dryrun=dryrun)
 
 
     # State transitions

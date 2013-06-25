@@ -235,27 +235,30 @@ class BaseHost(object):
 
     def start(self, silent=False, dryrun=False):
         """Starts the host if not running"""
+        st = 'online':
         if self.STATES.index(self.state) < self.STATES.index('online'):
-            self.set_state('online', silent=silent, dryrun=dryrun)
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
 
     def stop(self, silent=False, dryrun=False):
         """Stops the host if running"""
+        st = 'offline'
         if self.STATES.index(self.state) >= self.STATES.index('online'):
-            self.set_state('offline', silent=silent, dryrun=dryrun)
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
 
     def mount(self, silent=False, dryrun=False):
         """Mounts partitions on host, starting it if necessary"""
+        st = 'mounted'
         if self.STATES.index(self.state) < self.STATES.index('mounted'):
-            self.set_state('mounted', silent=silent, dryrun=dryrun)
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
 
     def umount(self, silent=False, dryrun=False):
         """Umounts partitions on host if mounted"""
-        newstate = self.STATES[self.STATES.index('mounted') - 1]
+        st = self.STATES[self.STATES.index('mounted') - 1]
         if self.STATES.index(self.state) >= self.STATES.index('mounted'):
-            self.set_state(newstate, silent=silent, dryrun=dryrun)
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
 
     def print_status(self):
@@ -304,29 +307,43 @@ class BaseHost(object):
         """Sets the host to the given state, passing through all the states in between."""
         self.state = self.get_state()
 
-        if not state in self.STATES:
-            raise HostError("Unknown state %s" % state)
+        try:
+            if not state in self.STATES:
+                raise HostError("Unknown state %s" % state)
 
-        cur = self.STATES.index(self.state)
-        new = self.STATES.index(state)
+            cur = self.STATES.index(self.state)
+            new = self.STATES.index(state)
 
-        if cur < new:
-            for i in range(cur, new, 1):
-                def func():
-                    self.enter_state(self.STATES[i+1])
+            if cur < new:
+                for i in range(cur, new, 1):
+                    st = self.STATES[i+1]
+                    def func():
+                        self.enter_state(st)
 
-                self.run_with_message(func=func, msg="Entering state %s" % self.STATES[i+1],
-                                      silent=silent, dryrun=dryrun)
-        elif cur > new:
-            for i in range(cur, new, -1):
-                def func():
-                    self.leave_state(self.STATES[i])
+                    self.run_with_message(func=func,
+                                          msg="Entering state %s" % st,
+                                          silent=silent,
+                                          dryrun=dryrun)
+                    self.state = st
 
-                self.run_with_message(func=func, msg="Leaving state %s" % self.STATES[i],
-                                      silent=silent, dryrun=dryrun)
+            elif cur > new:
+                for i in range(cur, new, -1):
+                    st = self.STATES[i]
+                    def func():
+                        self.leave_state(st)
+
+                    self.run_with_message(func=func,
+                                          msg="Leaving state %s" % st,
+                                          silent=silent,
+                                          dryrun=dryrun)
+                    self.state = st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            return self.state
 
         self.state = self.get_state()
-
+        return self.state
 
 
     # State transitions
@@ -338,9 +355,10 @@ class BaseHost(object):
             if not dryrun: func()
             if not silent: ui.print_status(flag="DONE", nl=True)
 
-        except HostError:
-            if not silent: ui.print_status(flag="FAIL", nl=True)
-            raise
+        except HostError as err:
+            if not silent:
+                ui.print_status(flag="FAIL", nl=True)
+                raise
 
     def enter_state(self, state):
         raise NotImplementedError
