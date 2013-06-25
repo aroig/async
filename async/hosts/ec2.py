@@ -97,7 +97,7 @@ class Ec2Host(SshHost):
             vol.update()
             return vol.attachment_state()
 
-        if not self.wait_for('attached', _state):
+        if not self.wait_for(None, _state):
             raise HostError("Timed out attaching")
 
 
