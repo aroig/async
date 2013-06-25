@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from async.directories.base import BaseDir, DirError, SyncError, SetupError
+import subprocess
 
 import async.cmd as cmd
 import async.archui as ui
