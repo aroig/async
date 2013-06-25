@@ -245,7 +245,7 @@ class Ec2Host(SshHost):
                 self.create_instance(ami=self.ami.id, itype=itype)
 
             self.run_with_message(func=func,
-                                  msg="Launching instance of #*m%s#t (%s, %s)" % (self.name, self.ami.id, itype),
+                                  msg="Launching instance of %s (%s, %s)" % (self.name, self.ami.id, itype),
                                   silent=silent,
                                   dryrun=dryrun)
 
@@ -293,7 +293,7 @@ class Ec2Host(SshHost):
             self.make_ami_snapshot(name = new_ami_name, desc = description)
 
         self.run_with_message(func=func,
-                              msg="Creating #*m%s#t ami snapshot" % new_ami_name,
+                              msg="Creating %s ami snapshot" % new_ami_name,
                               silent=silent,
                               dryrun=dryrun)
 
@@ -316,7 +316,7 @@ class Ec2Host(SshHost):
                 self.make_data_snapshot(dev = dev, desc = description)
 
                 self.run_with_message(func=func,
-                                      msg="Creating volume backup for #*m%s#t" % k,
+                                      msg="Creating volume backup for %s" % k,
                                       silent=silent,
                                       dryrun=dryrun)
 
