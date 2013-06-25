@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from async.hosts.ssh import SshHost
+from async.hosts.base import HostError
+
 from boto import ec2
 from boto.exception import EC2ResponseError
 
