@@ -43,7 +43,7 @@ class AnnexDir(BaseDir):
 
             if self.annex_get:
                 annex_args = ['get', '--from="%s"' % remote.name]
-                ui.print_color('git annex %s' % ' '.join(annex_args))
+                ui.print_debug('git annex %s' % ' '.join(annex_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
 
             # TODO: run git annex get on the remote. Can't use cmd!!!
