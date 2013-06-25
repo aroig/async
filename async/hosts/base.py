@@ -235,7 +235,7 @@ class BaseHost(object):
 
     def start(self, silent=False, dryrun=False):
         """Starts the host if not running"""
-        st = 'online':
+        st = 'online'
         if self.STATES.index(self.state) < self.STATES.index('online'):
             return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
@@ -274,7 +274,7 @@ class BaseHost(object):
         if 'instance' in info and 'itype' in info:
             ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
         if 'block' in info:
-            ui.print_color('   #*wblock:#t %s' % ', '.join(info['block']))
+            ui.print_color('   #*wblock:#t %s' % ', '.join(['%s (%s)' % (k, s) for k, s in info['block'].items()]))
 
         if 'host' in info:  ui.print_color('    #*whost:#t %s' % info['host'])
         if 'ip' in info:    ui.print_color('      #*wip:#t %s' % info['ip'])

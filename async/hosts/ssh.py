@@ -41,6 +41,8 @@ class AlwaysAcceptPolicy(paramiko.MissingHostKeyPolicy):
 class SshHost(BaseHost):
     """A remote ssh host"""
 
+    STATES = ['offline', 'online', 'mounted']
+
     def __init__(self, conf):
         ui.print_debug("begin SshHost.__init__")
         super(SshHost, self).__init__(conf)

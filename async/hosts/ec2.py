@@ -35,7 +35,7 @@ class Ec2Error(Exception):
 class Ec2Host(SshHost):
     """An ec2 instance"""
     # ordered list of states. terminate does not belong here as it destroys the instance.
-    STATES = ['offline', 'online', 'attached', 'mounted']
+    STATES = ['offline', 'running', 'attached', 'online', 'mounted']
 
     def __init__(self, conf):
         ui.print_debug("begin Ec2Host.__init__")
@@ -250,7 +250,7 @@ class Ec2Host(SshHost):
         """Attaches volumes"""
         st = 'attached'
         if self.STATES.index(self.state) < self.STATES.index('attached'):
-            return = self.set_state(st, silent=silent, dryrun=dryrun) == st
+            return self.set_state(st, silent=silent, dryrun=dryrun) == st
 
 
     def detach(self, silent=False, dryrun=False):
@@ -263,8 +263,8 @@ class Ec2Host(SshHost):
     def snapshot(self, silent=False, dryrun=False):
         """Creates a snapshot of the running instance"""
 
-        # go online but with detached data
-        self.set_state(state='online', silent=silent, dryrun=dryrun)
+        # go to running state, with detached data
+        self.set_state(state='running', silent=silent, dryrun=dryrun)
 
         ui.print_color("I'm going create a new ami from the running instance:")
         self.print_status()
@@ -286,8 +286,8 @@ class Ec2Host(SshHost):
     def backup(self, silent=False, dryrun=False):
         """Creates a data backup"""
 
-        # go online but with detached data
-        self.set_state(state='online', silent=silent, dryrun=dryrun)
+        # go to running state with detached data
+        self.set_state(state='running', silent=silent, dryrun=dryrun)
 
         ui.print_color("I'm going create snapshots for all data volumes")
         self.print_status()
@@ -319,12 +319,15 @@ class Ec2Host(SshHost):
         elif state == 'offline':
             pass
 
-        elif state == 'online':
+        elif state == 'running':
             self.start_instance(self.instance.id)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
                 self.attach_volume(vol, self.instance.id, dev)
+
+        elif state == 'online':
+            pass
 
         elif state == 'mounted':
             self.mount_devices()
@@ -340,12 +343,15 @@ class Ec2Host(SshHost):
         elif state == 'offline':
             self.conn.terminate_instances([self.instance.id])
 
-        elif state == 'online':
+        elif state == 'running':
             self.stop_instance(self.instance.id)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
                 self.detach_volume(vol)
+
+        elif state == 'online':
+            pass
 
         elif state == 'mounted':
             self.umount_devices()
@@ -360,14 +366,16 @@ class Ec2Host(SshHost):
 
     def get_state(self):
         """Queries the state of the host"""
-        self.state = 'terminated'
-        if self.state == 'terminated'   and self.instance != None: self.state = 'offline'
-        if self.state == 'offline'  and \
-           self.check_instance() and self.check_ssh():             self.state = 'online'
-        if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
-        if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
+        self.state = 'unknown'
+        if self.instance == None:                                  self.state = 'terminated'
+        if self.instance != None:                                  self.state = 'offline'
+        if self.state == 'offline'  and self.check_instance():     self.state = 'running'
+        if self.state == 'running'  and self.check_volumes():      self.state = 'attached'
+        if self.state == 'attached' and self.check_ssh():          self.state = 'online'
+        if self.state == 'online'   and self.check_devices():      self.state = 'mounted'
 
         return self.state
+
 
     def get_info(self):
         """Gets a dictionary with host state parameters"""
@@ -382,7 +390,19 @@ class Ec2Host(SshHost):
         if self.instance:
             info['instance'] = self.instance.state
             info['itype'] = self.instance.instance_type
-            info['block'] = list(self.instance.block_device_mapping.keys())
+
+
+            info['block'] = {}
+            for k in self.instance.block_device_mapping.keys():
+                k = str(k)
+                if k in self.volumes:
+                    state = self.volumes[k].attachment_state()
+                elif k == str(self.instance.root_device_name):
+                    state = 'root'
+                else:
+                    state = 'unknown'
+
+                info['block'][k] = state
 
         return info
 
