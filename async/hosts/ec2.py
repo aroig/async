@@ -19,6 +19,7 @@
 
 from async.hosts.ssh import SshHost
 from boto import ec2
+from boto.exception import EC2ResponseError
 
 import async.archui as ui
 import async.cmd as cmd
@@ -69,7 +70,7 @@ class Ec2Host(SshHost):
     def detach_volume(self, vol):
         try:
             vol.detach()
-        except boto.exception.EC2ResponseError as err:
+        except EC2ResponseError as err:
             raise HostError(str(err))
 
         def _state():
@@ -83,7 +84,7 @@ class Ec2Host(SshHost):
     def attach_volume(self, vol, inst, dev):
         try:
             vol.attach(inst, dev)
-        except boto.exception.EC2ResponseError as err:
+        except EC2ResponseError as err:
             raise HostError(str(err))
 
         def _state():
@@ -97,7 +98,7 @@ class Ec2Host(SshHost):
     def start_instance(self, id):
         try:
             self.conn.start_instances([id])
-        except boto.exception.EC2ResponseError as err:
+        except EC2ResponseError as err:
             raise HostError(str(err))
 
         def _state():
@@ -111,7 +112,7 @@ class Ec2Host(SshHost):
     def stop_instance(self, id):
         try:
             self.conn.stop_instances([id])
-        except boto.exception.EC2ResponseError as err:
+        except EC2ResponseError as err:
             raise HostError(str(err))
 
         def _state():
@@ -132,7 +133,7 @@ class Ec2Host(SshHost):
                                           instance_type = itype,
                                           placement = self.zone)
 
-        except boto.exception.EC2ResponseError as err:
+        except EC2ResponseError as err:
             raise HostError(str(err))
 
         if len(res.instances) == 0:
