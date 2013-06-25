@@ -76,6 +76,7 @@ class Ec2Host(SshHost):
             raise HostError(str(err))
 
         def _state():
+            vol.update()
             return vol.attachment_state()
 
         if not self.wait_for('detached', _state):
