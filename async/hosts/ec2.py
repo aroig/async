@@ -44,13 +44,15 @@ class Ec2Host(SshHost):
         # base config
         super(Ec2Host, self).__init__(conf)
 
-        # ec2 config
+        # ec2 instance
         self.ec2_ami = conf['instance']['ec2_ami']
         self.ec2_itype = conf['instance']['ec2_itype']
         self.ec2_owner = conf['instance']['ec2_owner']
+        self.ec2_zone  = conf['instance']['zone']
 
         self.ec2_keypair        = conf['instance']['ec2_keypair']
         self.ec2_security_group = conf['instance']['ec2_security_group']
+
 
         # open aws connection
         ec2_region = conf['instance']['ec2_region']
@@ -127,15 +129,15 @@ class Ec2Host(SshHost):
             raise HostError("Timed out stopping instance")
 
 
-    def create_instance(self, itype):
+    def create_instance(self, ami_id, itype):
         """Creates a new instance"""
         try:
             res = self.conn.run_instances(min_count = 1, max_count = 1,
-                                          image_id = self.ami.id,
+                                          image_id = ami_id,
                                           key_name = self.ec2_keypair,
                                           security_groups = [self.ec2_security_group],
                                           instance_type = itype,
-                                          placement = self.zone)
+                                          placement = self.ec2_zone)
 
         except EC2ResponseError as err:
             raise HostError(str(err))
@@ -238,7 +240,18 @@ class Ec2Host(SshHost):
         """Launches a new instance"""
         itype = itype or self.ec2_itype
         if self.instance == None:
-            self.create_instance(itype)
+
+            def func():
+                self.create_instance(ami=self.ami.id, itype=itype)
+
+            self.run_with_message(func=func,
+                                  msg="Launching instance of #*m%s#t (%s, %s)" % (self.name, self.ami.id, itype),
+                                  silent=silent,
+                                  dryrun=dryrun)
+
+        else:
+            ui.print_error("There is already a running instance.")
+            return False
 
 
     def terminate(self, silent=False, dryrun=False):
