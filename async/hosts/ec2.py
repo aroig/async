@@ -20,6 +20,7 @@
 from async.hosts.ssh import SshHost
 from async.hosts.base import HostError
 
+from datetime import datetime, date
 from boto import ec2
 from boto.exception import EC2ResponseError
 
@@ -267,19 +268,19 @@ class Ec2Host(SshHost):
         # go to running state, with detached data
         self.set_state(state='running', silent=silent, dryrun=dryrun)
 
-        ui.print_color("I'm going create a new ami from the running instance:")
+        ui.print_status("I'm going create a new ami from the running instance")
         self.print_status()
 
         cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
         if cont != 'yes': return
 
         new_ami_name = ui.ask_question_string("Enter the new ami name:")
-        description = "%s %s" % (self.name, datetime.date.today().strftime("%Y-%m-%d"))
+        description = "%s %s" % (self.name, date.today().strftime("%Y-%m-%d"))
         def func():
             self.make_ami_snapshot(name = new_ami_name, desc = description)
 
         self.run_with_message(func=func,
-                              msg="Creating %s ami snapshot" % new_ami_name,
+                              msg="Creating #*m%s#t ami snapshot" % new_ami_name,
                               silent=silent,
                               dryrun=dryrun)
 
@@ -290,19 +291,19 @@ class Ec2Host(SshHost):
         # go to running state with detached data
         self.set_state(state='running', silent=silent, dryrun=dryrun)
 
-        ui.print_color("I'm going create snapshots for all data volumes")
+        ui.print_status("I'm going create snapshots for all data volumes")
         self.print_status()
 
         cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
         if cont != 'yes': return
 
         for k, dev in self.volumes.items():
-            description = "volume %s on %s %s" % (k, self.name, datetime.date.today().strftime("%Y-%m-%d"))
+            description = "volume %s on %s %s" % (k, self.name, date.today().strftime("%Y-%m-%d"))
             def func():
                 self.make_data_snapshot(dev = dev, desc = description)
 
                 self.run_with_message(func=func,
-                                      msg="Creating volume backup: %s" % k,
+                                      msg="Creating volume backup for #*m%s#t" % k,
                                       silent=silent,
                                       dryrun=dryrun)
 
