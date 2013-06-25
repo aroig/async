@@ -242,7 +242,7 @@ class Ec2Host(SshHost):
         if self.instance == None:
 
             def func():
-                self.create_instance(ami=self.ami.id, itype=itype)
+                self.create_instance(ami_id=self.ami.id, itype=itype)
 
             self.run_with_message(func=func,
                                   msg="Launching instance of %s (%s, %s)" % (self.name, self.ami.id, itype),
