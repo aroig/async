@@ -36,7 +36,7 @@ class Ec2Error(Exception):
 class Ec2Host(SshHost):
     """An ec2 instance"""
     # ordered list of states. terminate does not belong here as it destroys the instance.
-    STATES = ['offline', 'running', 'attached', 'online', 'mounted']
+    STATES = ['terminated', 'offline', 'running', 'attached', 'online', 'mounted']
 
     def __init__(self, conf):
         ui.print_debug("begin Ec2Host.__init__")
