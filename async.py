@@ -21,6 +21,7 @@
 import sys
 import re
 import os
+import subprocess
 
 from optparse import OptionParser
 
@@ -43,6 +44,34 @@ def get_itype(name):
     elif name == "medium": return "m1.medium"
     elif name == "large":  return "m1.large"
     else:                  return name
+
+
+def setup_tee(logfile):
+    """redirect stdout and stderr through tee"""
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+    proc = subprocess.Popen(["tee", logfile], stdin=subprocess.PIPE)
+    os.dup2(proc.stdin.fileno(), sys.stdout.fileno())
+    os.dup2(proc.stdin.fileno(), sys.stderr.fileno())
+
+
+class FileSnitch(object):
+    """A wrapper for stdout that writes everything to a logfile"""
+    def __init__(self, orig, logfile):
+        self.logfile = open(logfile, 'w')
+        self.orig = orig
+
+    def write(self, data):
+        self.logfile.write(data)
+        self.orig.write(data)
+
+    def flush(self):
+        self.orig.flush()
+
+    def close():
+        self.logfile.close()
+        self.orig.close()
+
 
 
 # Main stuff
@@ -157,10 +186,17 @@ try:
 
     elif cmd == "sync":
         if len(args) == 0:
-            if conf.async['logfile'] != None: ui.start_logging(conf.async['logfile'], level=4)
+#            if conf.async['logfile'] != None: setup_tee(conf.async['logfile'])
+            if conf.async['logfile'] != None:
+                ui.start_logging(conf.async['logfile'], level=4)
+
             ret = local.sync(remote=remote, dryrun=opts.dryrun, opts=opts)
-            ui.stop_logging()
-        else:                 ui.print_error("Too many arguments.")
+
+            if conf.async['logfile'] != None:
+                ui.stop_logging()
+
+        else:
+            ui.print_error("Too many arguments.")
 
     elif cmd == "start":
         if len(args) == 0:    ret = remote.start(dryrun=opts.dryrun)
