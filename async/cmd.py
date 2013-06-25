@@ -150,10 +150,16 @@ def unison(args=[], silent=True):
     unison_cmd = 'unison'
     unison_args = [] + args
 
-    if silent: func = None
-    else:      func = print_unison_line
+#    if silent: func = None
+#    else:      func = print_unison_line
+#
+#    run_stream([unison_cmd] + unison_args, callback=func)
 
-    run_stream([unison_cmd] + unison_args, callback=func)
+    with open('/dev/null', 'w') as devnull:
+        if silent: out=devnull
+        else:      out=None
+
+        subprocess.check_call([unison_cmd] + unison_args, stderr=out, stdout=out)
 
 
 def rsync(src, tgt, args=[], silent=True):
@@ -166,20 +172,22 @@ def rsync(src, tgt, args=[], silent=True):
     if tgt[-1] != '/': B = '%s/' % tgt
     else:              B = tgt
 
-    if silent: func = None
-    else:      func = print_rsync_line
+    with open('/dev/null', 'w') as devnull:
+        if silent: out=devnull
+        else:      out=None
 
-    run_stream([rsync_cmd] + rsync_args + [A, B], callback=func)
+        subprocess.check_call([rsync_cmd] + rsync_args + [A, B], stderr=out, stdout=out)
 
 
 def annex(tgtdir, args=[], silent=True):
     git_cmd = 'git'
     git_args = ['annex'] + args
 
-    if silent: func = None
-    else:      func = print_annex_line
+    with open('/dev/null', 'w') as devnull:
+        if silent: out=devnull
+        else:      out=None
 
-    run_stream([git_cmd] + git_args, callback=func, cwd=tgtdir)
+        subprocess.check_call([git_cmd] + git_args, stderr=out, stdout=out)
 
 
 def git(tgtdir, args, silent=False, catchout=False):
