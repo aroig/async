@@ -179,7 +179,7 @@ try:
         remote = None
 
     args = args[2:]
-    ret = 0
+    ret = True
     if cmd == "status":
         if len(args) == 0:    ret = remote.print_status()
         else:                 ui.print_error("Too many arguments.")
@@ -256,7 +256,8 @@ try:
         ui.print_error("Unknown command %s" % cmd)
         sys.exit(1)
 
-    sys.exit(ret)
+    if ret: sys.exit(0)
+    else:   sys.exit(1)
 
 
 except KeyboardInterrupt:
