@@ -328,6 +328,9 @@ class Ec2Host(SshHost):
     # TODO:waitings
 
     def enter_state(self, state):
+        if self.state == 'terminated':
+            raise HostError("Instance terminated. please launch an instance")
+
         if state == 'terminated':
             pass
 
