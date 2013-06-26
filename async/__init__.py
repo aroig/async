@@ -23,7 +23,7 @@ __version__ = "0.1"
 from async.hosts import Ec2Host, SshHost, DirectoryHost, LocalHost
 import async.archui as ui
 import socket
-
+import sys
 
 def get_remote_host(hostname, conf):
     if hostname in conf.host:
