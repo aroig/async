@@ -48,6 +48,10 @@ class LocalHost(DirectoryHost):
         keys = sorted(keys)
         num = len(keys)
 
+        # mount remote
+        remote_state = remote.get_state()
+        remote.set_state('mounted')
+
         ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,
                                                             datetime.now().strftime("%a %d %b %Y %H:%M")))
         ui.print_color("")
@@ -65,14 +69,19 @@ class LocalHost(DirectoryHost):
 
             ui.print_color("")
 
+        # recover old remote state
+        remote.set_state(remote_state)
+        ui.print_color("")
+
+        # success message
         if len(failed) == 0:
             ui.print_color("Synchronization #*gsuceeded#t.\n")
-            return 0
+            return True
 
         elif len(failed) > 0:
             ui.print_color("Synchronization #*rfailed#t.\n")
             ui.print_color("  directories: %s" % ', '.join(failed))
-            return 1
+            return False
 
 
     def setup(self, silent=False, dryrun=False, opts=None):
@@ -100,12 +109,12 @@ class LocalHost(DirectoryHost):
 
         if len(failed) == 0:
             ui.print_color("Setup #*gsuceeded#t.\n")
-            return 0
+            return True
 
         elif len(failed) > 0:
             ui.print_color("Setup #*rfailed#t.\n")
             ui.print_color("  directories: %s" % ', '.join(failed))
-            return 1
+            return False
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
