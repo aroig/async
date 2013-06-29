@@ -144,6 +144,7 @@ class AsyncConfig(ConfigParser):
         'ignore'          : ([], parse_list_path),
         'unison_profile'  : (None, parse_string),
         'unison_args'     : ([], parse_list),
+        'rsync_args'      : ([], parse_list),
         'annex_get'       : (True, parse_bool),
 
         'hooks_path'      : (None, parse_path),

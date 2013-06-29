@@ -30,6 +30,7 @@ class RsyncDir(BaseDir):
     def __init__(self, basepath, conf):
         super(RsyncDir, self).__init__(basepath, conf)
         self.ignore = conf['ignore']
+        self.rsync_args = conf['rsync_args']
 
 
     # Interface
@@ -37,7 +38,7 @@ class RsyncDir(BaseDir):
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         src = '%s/' % local.dirs[self.name].path
-        args = ['-avz', '--delete']
+        args = ['-avz', '--delete'] + self.rsync_args
 
         for p in self.ignore:
             args = args + ['--exclude=%s' % p]
