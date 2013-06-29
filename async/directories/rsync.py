@@ -38,7 +38,7 @@ class RsyncDir(BaseDir):
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         src = '%s/' % self.fullpath(local.path)
-        args = ['-avz', '--delete'] + self.rsync_args
+        args = [] + self.rsync_args
 
         for p in self.ignore:
             args = args + ['--exclude=%s' % p]
