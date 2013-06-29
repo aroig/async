@@ -36,21 +36,38 @@ class AnnexDir(BaseDir):
         src = local.dirs[self.name].path
         tgt = remote.dirs[self.name].path
 
+        annex_sync_args = ['sync', remote.name]
+        annex_get_args  = ['get', '--from="%s"' % remote.name]
+
+        # pre-sync hook
+        ui.print_debug('pre_sync hook')
         try:
-            annex_args = ['sync', remote.name]
-            ui.print_debug('git annex %s' % ' '.join(annex_args))
-            if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
+            self.run_hook('pre_sync')
+        except subprocess.CalledProcessError as err:
+            raise HookError(str(err))
 
-            if self.annex_get:
-                annex_args = ['get', '--from="%s"' % remote.name]
-                ui.print_debug('git annex %s' % ' '.join(annex_args))
-                if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=False)
-
-            # TODO: run git annex get on the remote. Can't use cmd!!!
-
+        # sync
+        ui.print_debug('git annex %s' % ' '.join(annex_args))
+        try:
+            if not dryrun: cmd.annex(tgtdir=src, args=annex_sync_args, silent=False)
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 
+        if self.annex_get:
+            try:
+                ui.print_debug('git annex %s' % ' '.join(annex_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
+            except subprocess.CalledProcessError as err:
+                raise SyncError(str(err))
+
+        # TODO: run git annex get on the remote. Can't use cmd!!!
+
+        # post-sync hook
+        ui.print_debug('post_sync hook')
+        try:
+            self.run_hook('post_sync')
+        except subprocess.CalledProcessError as err:
+            raise HookError(str(err))
 
 
     def setup(self, host, silent=False, dryrun=False, opts=None):

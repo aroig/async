@@ -19,7 +19,7 @@
 
 import subprocess
 
-from async.directories.base import BaseDir, DirError, SyncError, SetupError
+from async.directories.base import BaseDir, DirError, SyncError, SetupError, HookError
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd
@@ -76,12 +76,27 @@ class UnisonDir(BaseDir):
         if len(sshargs) > 0:     args = args + ['-sshargs', ' '.join(sshargs)]
 
         args = args + [self.unison_profile]
+
+        # pre-sync hook
+        ui.print_debug('pre_sync hook')
+        try:
+            self.run_hook('pre_sync')
+        except subprocess.CalledProcessError as err:
+            raise HookError(str(err))
+
+        # sync
         ui.print_debug('unison %s' % ' '.join(args))
         try:
             if not dryrun: cmd.unison(args=args, silent=silent)
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 
+        # post-sync hook
+        ui.print_debug('post_sync hook')
+        try:
+            self.run_hook('post_sync')
+        except subprocess.CalledProcessError as err:
+            raise HookError(str(err))
 
 
     def setup(self, host, silent=False, dryrun=False, opts=None):

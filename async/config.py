@@ -145,6 +145,10 @@ class AsyncConfig(ConfigParser):
         'unison_profile'  : (None, parse_string),
         'unison_args'     : ([], parse_list),
         'annex_get'       : (True, parse_bool),
+
+        'hooks_path'      : (None, parse_path),
+        'pre_sync_hook'   : (None, parse_path),
+        'post_sync_hook'  : (None, parse_path),
 }
 
     ASYNC_FIELDS={

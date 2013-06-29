@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir, DirError, SyncError, SetupError
+from async.directories.base import BaseDir, DirError, SyncError, SetupError, HookError
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd
@@ -51,11 +51,27 @@ class RsyncDir(BaseDir):
         else:
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
+        # pre-sync hook
+        ui.print_debug('pre_sync hook')
+        try:
+            self.run_hook('pre_sync')
+        except subprocess.CalledProcessError as err:
+            raise HookError(str(err))
+
+        # sync
         ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
         try:
             if not dryrun: cmd.rsync(src, tgt, args=args, silent=silent)
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
+
+        # post-sync hook
+        ui.print_debug('post_sync hook')
+        try:
+            self.run_hook('post_sync')
+        except subprocess.CalledProcessError as err:
+            raise HookError(str(err))
+
 
 
     def setup(self, host, silent=False, dryrun=False, opts=None):

@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import subprocess
 
 class DirError(Exception):
     def __init__(self, msg=None):
@@ -31,6 +32,10 @@ class SetupError(Exception):
     def __init__(self, msg=None):
         super(SetupError, self).__init__(msg)
 
+class HookError(Exception):
+    def __init__(self, msg=None):
+        super(HookError, self).__init__(msg)
+
 
 class BaseDir(object):
 
@@ -39,6 +44,11 @@ class BaseDir(object):
         self.relpath = conf['path']
         self.path = os.path.join(basepath, conf['path'])
 
+        self.hooks = {}
+        self.hooks['pre_sync']  = conf['pre_sync_hook']
+        self.hooks['post_sync'] = conf['post_sync_hook']
+
+        self.hooks_path = conf['hooks_path']
 
     # Interface
     # ----------------------------------------------------------------
@@ -53,6 +63,16 @@ class BaseDir(object):
         elif isinstance(self, LocalDir):  return 'local'
         else:
             raise DirError("Unknown directory class %s" % str(type(self)))
+
+
+    def run_hook(name):
+        if name in self.hooks:
+            hook = self.hooks[name]
+            if hook:
+                newenv = dict(os.environ)
+                newenv['PATH'] = "%s:%s" % (self.hooks_path, newenv['PATH'])
+                subprocess.check_call(hook, shell=True, env=newenv)
+
 
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
