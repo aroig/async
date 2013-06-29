@@ -126,8 +126,9 @@ class LocalHost(DirectoryHost):
             return True
 
         elif len(failed) > 0:
-            ui.print_color("Setup #*rfailed#t.\n")
+            ui.print_color("Setup #*rfailed#t.")
             ui.print_color("  directories: %s" % ', '.join(failed))
+            ui.print_color("\n")
             return False
 
 
