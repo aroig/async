@@ -27,8 +27,8 @@ import subprocess
 
 class RsyncDir(BaseDir):
     """Directory synced via rsync"""
-    def __init__(self, basepath, conf):
-        super(RsyncDir, self).__init__(basepath, conf)
+    def __init__(self, conf):
+        super(RsyncDir, self).__init__(conf)
         self.ignore = conf['ignore']
         self.rsync_args = conf['rsync_args']
 
@@ -37,17 +37,17 @@ class RsyncDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        src = '%s/' % local.dirs[self.name].path
+        src = '%s/' % self.fullpath(local.path)
         args = ['-avz', '--delete'] + self.rsync_args
 
         for p in self.ignore:
             args = args + ['--exclude=%s' % p]
 
         if isinstance(remote, SshHost):
-            tgt = '%s:%s/' % (remote.hostname, remote.dirs[self.name].path)
+            tgt = '%s:%s/' % (remote.hostname, self.fullpath(remote.path))
 
         elif isinstance(remote, DirectoryHost):
-            tgt = '%s/' % remote.dirs[self.name].path
+            tgt = '%s/' % self.fullpath(remote.path)
 
         else:
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))

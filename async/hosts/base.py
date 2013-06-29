@@ -55,7 +55,7 @@ class BaseHost(object):
         # directories
         self.dirs = {}
         for name, dconf in conf['dirs'].items():
-            self.dirs[name] = get_directory(self.path, dconf, unison_as_rsync=conf['unison_as_rsync'])
+            self.dirs[name] = get_directory(dconf, unison_as_rsync=conf['unison_as_rsync'])
 
 
     # Utilities

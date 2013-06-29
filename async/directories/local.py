@@ -23,8 +23,8 @@ import async.archui as ui
 
 class LocalDir(BaseDir):
     """Local directory that will not be synced."""
-    def __init__(self, basepath, conf):
-        super(LocalDir, self).__init__(basepath, conf)
+    def __init__(self, conf):
+        super(LocalDir, self).__init__(conf)
 
 
     # Interface

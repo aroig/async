@@ -27,8 +27,8 @@ import async.archui as ui
 
 class UnisonDir(BaseDir):
     """Directory synced via unison"""
-    def __init__(self, basepath, conf):
-        super(UnisonDir, self).__init__(basepath, conf)
+    def __init__(self, conf):
+        super(UnisonDir, self).__init__(conf)
 
         self.unison_args = conf['unison_args']
         self.unison_profile = conf['unison_profile']

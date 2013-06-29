@@ -39,10 +39,9 @@ class HookError(Exception):
 
 class BaseDir(object):
 
-    def __init__(self, basepath, conf):
+    def __init__(self, conf):
         self.name = conf['name']
         self.relpath = conf['path']
-        self.path = os.path.join(basepath, conf['path'])
 
         self.hooks = {}
         self.hooks['pre_sync']  = conf['pre_sync_hook']
@@ -63,6 +62,10 @@ class BaseDir(object):
         elif isinstance(self, LocalDir):  return 'local'
         else:
             raise DirError("Unknown directory class %s" % str(type(self)))
+
+
+    def fullpath(self, basepath):
+        return os.path.join(basepath, self.relpath)
 
 
     def run_hook(self, name):

@@ -24,14 +24,14 @@ from async.directories.local import LocalDir
 
 from async.directories.base import DirError, SyncError, SetupError
 
-def get_directory(path, dconf, unison_as_rsync=False):
+def get_directory(dconf, unison_as_rsync=False):
     typ = dconf['type']
     if unison_as_rsync and typ == 'unison': typ = 'rsync'
 
-    if typ == 'unison':   return UnisonDir(basepath=path, conf=dconf)
-    elif typ == 'rsync':  return RsyncDir(basepath=path, conf=dconf)
-    elif typ == 'annex':  return AnnexDir(basepath=path, conf=dconf)
-    elif typ == 'local':  return LocalDir(basepath=path, conf=dconf)
+    if typ == 'unison':   return UnisonDir(conf=dconf)
+    elif typ == 'rsync':  return RsyncDir(conf=dconf)
+    elif typ == 'annex':  return AnnexDir(conf=dconf)
+    elif typ == 'local':  return LocalDir(conf=dconf)
     else:
         raise HostError("Unknown directory type %s" % typ)
 

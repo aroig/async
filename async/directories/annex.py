@@ -25,16 +25,16 @@ import async.archui as ui
 
 class AnnexDir(BaseDir):
     """Directory synced via git annex"""
-    def __init__(self, basepath, conf):
-        super(AnnexDir, self).__init__(basepath, conf)
+    def __init__(self, conf):
+        super(AnnexDir, self).__init__(conf)
         self.annex_get = conf['annex_get']
 
     # Interface
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        src = local.dirs[self.name].path
-        tgt = remote.dirs[self.name].path
+        src = self.fullpath(local.path)
+        tgt = self.fullpath(remote.path)
 
         annex_sync_args = ['sync', remote.name]
         annex_get_args  = ['get', '--from="%s"' % remote.name]
