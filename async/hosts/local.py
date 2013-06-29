@@ -20,9 +20,11 @@
 
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, SetupError, LocalDir
+from async.pathdict import PathDict
 
 import async.archui as ui
 from datetime import datetime
+
 
 class LocalHost(DirectoryHost):
     """Represents the localhost. Does not sync, only useful for initial setup and status."""
@@ -30,6 +32,16 @@ class LocalHost(DirectoryHost):
     STATES = ['offline', 'online', 'mounted']
     def __init__(self, conf):
         super(LocalHost, self).__init__(conf)
+
+
+    def _get_common_dirs(self, A, B, dirs):
+        """returns a dict of dir objects that are common in A and B as paths. Only allows for
+        directories with name in dirs, if dirs != None."""
+
+        pdA = PathDict({d.relpath: d for k, d in A.items()})
+        pdB = PathDict({d.relpath: d for k, d in B.items()})
+        pdI = pdA & pdB
+        return {d.name: d for p, d in pdI.items() if dirs==None or d.name in dirs}
 
 
 
@@ -40,13 +52,9 @@ class LocalHost(DirectoryHost):
         """Syncs local machine to this host"""
         failed = []
 
-        if opts.dirs: dirs = opts.dirs
-        else:         dirs = list(self.dirs.keys())
-
-        keys = set(self.dirs.keys()) & set(dirs) & set(remote.dirs.keys())
-        keys = set([k for k in keys if not isinstance(self.dirs[k], LocalDir)])
-        keys = sorted(keys)
-        num = len(keys)
+        dirs = self._get_common_dirs(self.dirs, remote.dirs, dirs=set(opts.dirs))
+        keys = sorted(dirs.keys())
+        num = len(dirs)
 
         # mount remote
         remote_state = remote.get_state()
@@ -57,7 +65,7 @@ class LocalHost(DirectoryHost):
         ui.print_color("")
 
         for i, k in enumerate(keys):
-            d = remote.dirs[k]
+            d = dirs[k]
             if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
 
             try:
@@ -88,14 +96,12 @@ class LocalHost(DirectoryHost):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
         failed = []
 
-        if opts.dirs: dirs = opts.dirs
-        else:         dirs = list(self.dirs.keys())
-
-        keys = sorted(set(self.dirs.keys()) & set(dirs))
+        dirs = {k: d for k, d in self.dirs.items() if opt.dirs==None or k in opt.dirs}
+        keys = sorted(dirs.keys())
         num = len(keys)
 
         for i, k in enumerate(keys):
-            d = self.dirs[k]
+            d = dirs[k]
             if not silent: ui.print_enum(i+1, num, "setup #*y%s#t (%s)" % (d.name, d.type))
 
             try:
