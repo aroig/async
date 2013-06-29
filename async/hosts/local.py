@@ -19,7 +19,7 @@
 
 
 from async.hosts.directory import DirectoryHost
-from async.directories import SyncError, SetupError, LocalDir
+from async.directories import SyncError, SetupError, LocalDir, HookError
 from async.pathdict import PathDict
 
 import async.archui as ui
@@ -60,7 +60,8 @@ class LocalHost(DirectoryHost):
 
         # mount remote
         remote_state = remote.get_state()
-        remote.set_state('mounted')
+        if not remote.set_state('mounted') == 'mounted':
+            return False
 
         ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,
                                                             datetime.now().strftime("%a %d %b %Y %H:%M")))
@@ -85,6 +86,7 @@ class LocalHost(DirectoryHost):
 
         # recover old remote state
         remote.set_state(remote_state)
+
         ui.print_color("")
 
         # success message
