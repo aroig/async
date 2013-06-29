@@ -61,6 +61,7 @@ class LocalHost(DirectoryHost):
         # mount remote
         remote_state = remote.get_state()
         if not remote.set_state('mounted') == 'mounted':
+            ui.print_error("Remote host is not in 'mounted' state")
             return False
 
         ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,

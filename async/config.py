@@ -146,7 +146,7 @@ class AsyncConfig(ConfigParser):
         'symlink'         : (None, parse_path),      # the directory is a symlink to this target
         'setup_hool'      : (None, parse_path),      # script to run on setup
         'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
-        'path_rename'     : ({},   parse_dict_ath),  # rename path on specific hosts
+        'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
 
         'check'           : ([], parse_list),
         'ignore'          : ([], parse_list_path),
