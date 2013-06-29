@@ -51,6 +51,12 @@ def parse_list(s, parse_val=parse_string):
     return [parse_val(it) for it in s.split(',')]
 
 
+def parse_list_args(s):
+    # TODO: handle quoted strings
+    if s == None: return []
+    return [it.strip() for it in s.split(' ')]
+
+
 def parse_dict(s, parse_val=parse_string):
     if s == None: return {}
     dic = {}
@@ -143,8 +149,8 @@ class AsyncConfig(ConfigParser):
         'check'           : ([], parse_list),
         'ignore'          : ([], parse_list_path),
         'unison_profile'  : (None, parse_string),
-        'unison_args'     : ([], parse_list),
-        'rsync_args'      : ([], parse_list),
+        'unison_args'     : ([], parse_list_args),
+        'rsync_args'      : ([], parse_list_args),
         'annex_get'       : (True, parse_bool),
 
         'hooks_path'      : (None, parse_path),
