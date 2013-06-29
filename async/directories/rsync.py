@@ -55,7 +55,7 @@ class RsyncDir(BaseDir):
         # pre-sync hook
         ui.print_debug('pre_sync hook')
         try:
-            self.run_hook('pre_sync')
+            if not dryrun: self.run_hook('pre_sync')
         except subprocess.CalledProcessError as err:
             raise HookError(str(err))
 
@@ -69,7 +69,7 @@ class RsyncDir(BaseDir):
         # post-sync hook
         ui.print_debug('post_sync hook')
         try:
-            self.run_hook('post_sync')
+            if not dryrun: self.run_hook('post_sync')
         except subprocess.CalledProcessError as err:
             raise HookError(str(err))
 

@@ -74,7 +74,11 @@ class LocalHost(DirectoryHost):
                 d.sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
 
             except SyncError as err:
-                ui.print_error("synchronization failed")
+                ui.print_error("synchronization failed: %s" % str(err))
+                failed.append(d.name)
+
+            except HookError as err:
+                ui.print_error("Hook failed: %s" % str(err))
                 failed.append(d.name)
 
             ui.print_color("")
