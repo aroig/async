@@ -72,7 +72,7 @@ class BaseDir(object):
         else:
             rpath = self.relpath
 
-        return os.path.join(host.path, relpath)
+        return os.path.join(host.path, rpath)
 
 
     def run_hook(self, name):
