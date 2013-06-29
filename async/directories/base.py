@@ -43,6 +43,8 @@ class BaseDir(object):
         self.name = conf['name']
         self.relpath = conf['path']
 
+        self.path_rename = conf['path_rename']
+
         self.hooks = {}
         self.hooks['pre_sync']  = conf['pre_sync_hook']
         self.hooks['post_sync'] = conf['post_sync_hook']
@@ -64,8 +66,13 @@ class BaseDir(object):
             raise DirError("Unknown directory class %s" % str(type(self)))
 
 
-    def fullpath(self, basepath):
-        return os.path.join(basepath, self.relpath)
+    def fullpath(self, host):
+        if host.name in self.path_rename:
+            rpath = self.path_rename[host.name]
+        else:
+            rpath = self.relpath
+
+        return os.path.join(host.path, relpath)
 
 
     def run_hook(self, name):

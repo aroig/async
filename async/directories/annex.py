@@ -33,8 +33,8 @@ class AnnexDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        src = self.fullpath(local.path)
-        tgt = self.fullpath(remote.path)
+        src = self.fullpath(local)
+        tgt = self.fullpath(remote)
 
         annex_sync_args = ['sync', remote.name]
         annex_get_args  = ['get', '--from="%s"' % remote.name]

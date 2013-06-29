@@ -37,17 +37,17 @@ class RsyncDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        src = '%s/' % self.fullpath(local.path)
+        src = '%s/' % self.fullpath(local)
         args = [] + self.rsync_args
 
         for p in self.ignore:
             args = args + ['--exclude=%s' % p]
 
         if isinstance(remote, SshHost):
-            tgt = '%s:%s/' % (remote.hostname, self.fullpath(remote.path))
+            tgt = '%s:%s/' % (remote.hostname, self.fullpath(remote))
 
         elif isinstance(remote, DirectoryHost):
-            tgt = '%s/' % self.fullpath(remote.path)
+            tgt = '%s/' % self.fullpath(remote)
 
         else:
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
