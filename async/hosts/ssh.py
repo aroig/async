@@ -74,6 +74,10 @@ class SshHost(BaseHost):
     # ----------------------------------------------------------------
 
     def load_ssh(self):
+        self.ssh_config = paramiko.SSHConfig()
+        with open(os.path.expanduser("~/.ssh/config"), 'r') as fd:
+            self.ssh_config.parse(fd)
+
         self.ssh = paramiko.SSHClient()
         self.ssh_args = []
         if self.ssh_trust:
@@ -97,15 +101,22 @@ class SshHost(BaseHost):
 
     def ssh_connect(self):
         # TODO: if trusthost=False, check host keys
-        try:
-            self.ssh.connect(hostname=self.hostname, username=self.user, timeout=10,
-                             key_filename=self.ssh_key, look_for_keys=False)
 
-        except:
-            raise SshError("Can't connect to host: %s" % self.hostname)
+        cfg_host = self.ssh_config.lookup(self.hostname)
+        hostname = cfg_host.get('hostname', None)
+        user = self.user or cfg_host.get('user', None)
+        if self.ssh_key: keyfiles = [self.ssh_key]
+        else:            keyfiles =  cfg_host.get('identityfile', [])
+
+        try:
+            self.ssh.connect(hostname=hostname, username=user, timeout=10,
+                             key_filename=keyfiles, look_for_keys=False)
+
+        except Exception as err:
+            raise SshError("Can't connect to %s: %s" % (self.hostname, str(err)))
 
         if not self.wait_for(True, self.check_ssh):
-            raise SshError("Can't connect to host: %s" % self.hostname)
+            raise SshError("Can't connect to %s" % self.hostname)
 
 
     def ssh_disconnect(self):
