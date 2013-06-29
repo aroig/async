@@ -37,6 +37,7 @@ class LocalHost(DirectoryHost):
     def _get_common_dirs(self, A, B, dirs):
         """returns a dict of dir objects that are common in A and B as paths. Only allows for
         directories with name in dirs, if dirs != None."""
+        if dirs != None: dirs = set(dirs)
 
         pdA = PathDict({d.relpath: d for k, d in A.items()})
         pdB = PathDict({d.relpath: d for k, d in B.items()})
@@ -52,7 +53,8 @@ class LocalHost(DirectoryHost):
         """Syncs local machine to this host"""
         failed = []
 
-        dirs = self._get_common_dirs(self.dirs, remote.dirs, dirs=set(opts.dirs))
+        dirs = self._get_common_dirs(self.dirs, remote.dirs, dirs=opts.dirs)
+        dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
         keys = sorted(dirs.keys())
         num = len(dirs)
 

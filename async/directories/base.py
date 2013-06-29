@@ -65,7 +65,7 @@ class BaseDir(object):
             raise DirError("Unknown directory class %s" % str(type(self)))
 
 
-    def run_hook(name):
+    def run_hook(self, name):
         if name in self.hooks:
             hook = self.hooks[name]
             if hook:

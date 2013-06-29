@@ -236,7 +236,7 @@ class AsyncConfig(ConfigParser):
             if dirs:
                 for k in dirs:
                     if not k in self.directory:
-                        raise AsyncConfigError("Unknown directory: %s" % d)
+                        raise AsyncConfigError("Unknown directory: %s" % k)
 
                 val['dirs'] = {k: self.directory[k] for k in dirs}
 

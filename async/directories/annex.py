@@ -47,7 +47,7 @@ class AnnexDir(BaseDir):
             raise HookError(str(err))
 
         # sync
-        ui.print_debug('git annex %s' % ' '.join(annex_args))
+        ui.print_debug('git annex %s' % ' '.join(annex_sync_args))
         try:
             if not dryrun: cmd.annex(tgtdir=src, args=annex_sync_args, silent=False)
         except subprocess.CalledProcessError as err:
@@ -55,7 +55,7 @@ class AnnexDir(BaseDir):
 
         if self.annex_get:
             try:
-                ui.print_debug('git annex %s' % ' '.join(annex_args))
+                ui.print_debug('git annex %s' % ' '.join(annex_get_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
             except subprocess.CalledProcessError as err:
                 raise SyncError(str(err))
