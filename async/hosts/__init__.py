@@ -22,6 +22,8 @@ from async.hosts.ssh import SshHost
 from async.hosts.directory import DirectoryHost
 from async.hosts.local import LocalHost
 
+from async.hosts.base import HostError
+from async.hosts.ssh import SshError
 
 
 

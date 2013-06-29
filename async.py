@@ -31,7 +31,7 @@ from async.config import AsyncConfig
 import async.archui as ui
 from async import get_remote_host, get_local_host
 
-from async.hosts import Ec2Host
+from async.hosts import Ec2Host, HostError
 
 
 
@@ -173,8 +173,14 @@ try:
         name = args[1]
         ui.print_status(text="Connecting to %s" % name, flag="BUSY")
         remote = get_remote_host(name, conf)
-        remote.connect()
-        ui.print_status(flag="DONE", nl=True)
+        try:
+            remote.connect()
+            ui.print_status(flag="DONE", nl=True)
+
+        except HostError as err:
+            ui.print_status(flag="FAIL", nl=True)
+            ui.print_error(str(err))
+
     else:
         remote = None
 

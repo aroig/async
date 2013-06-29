@@ -24,10 +24,10 @@ import paramiko
 import async.archui as ui
 import async.cmd as cmd
 
-from async.hosts.base import BaseHost
+from async.hosts.base import BaseHost, HostError
 
 
-class SshError(Exception):
+class SshError(HostError):
     def __init__(self, msg=None):
         super(SshError, self).__init__(msg)
 
@@ -179,8 +179,8 @@ class SshHost(BaseHost):
         try:
             self.ssh_connect()
 
-        except SshError:
-            pass
+        except SshError as err:
+            raise
 
         self.get_state()
 
