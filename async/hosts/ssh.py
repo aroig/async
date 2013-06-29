@@ -102,6 +102,9 @@ class SshHost(BaseHost):
     def ssh_connect(self):
         # TODO: if trusthost=False, check host keys
 
+        # paramiko debug
+        # paramiko.common.logging.basicConfig(level=paramiko.common.DEBUG)
+
         cfg_host = self.ssh_config.lookup(self.hostname)
         hostname = cfg_host.get('hostname', None)
         user = self.user or cfg_host.get('user', None)
