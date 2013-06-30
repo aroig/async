@@ -17,25 +17,19 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import os
 import sys
-import paramiko
 
 import async.archui as ui
 import async.cmd as cmd
 
 from async.hosts.base import BaseHost, HostError
-
+from async.openssh import SSHConnection, SSHConnectionError
 
 class SshError(HostError):
     def __init__(self, msg=None):
         super(SshError, self).__init__(msg)
-
-
-class AlwaysAcceptPolicy(paramiko.MissingHostKeyPolicy):
-    """Policy for accepting connections without adding to known hosts."""
-    def missing_host_key(self, client, hostname, key):
-        return
 
 
 class SshHost(BaseHost):
@@ -55,7 +49,20 @@ class SshHost(BaseHost):
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
-        self.load_ssh()
+        self.ssh = SSHConnection(socket="~/.config/async/ssh.socket")
+
+        self.ssh_args = []
+        if self.ssh_trust:
+            self.ssh_args = self.ssh_args + ['-o LogLevel=quiet',
+                                             '-o UserKnownHostsFile=/dev/null',
+                                             '-o StrictHostKeyChecking=no']
+
+        if self.ssh_key:
+            self.ssh_args = self.ssh_args + ['-i', self.ssh_key]
+
+
+    def __del__(self):
+        self.ssh.close()
 
 
     # Utilities
@@ -73,53 +80,23 @@ class SshHost(BaseHost):
     # Ssh
     # ----------------------------------------------------------------
 
-    def load_ssh(self):
-        self.ssh_config = paramiko.SSHConfig()
-        with open(os.path.expanduser("~/.ssh/config"), 'r') as fd:
-            self.ssh_config.parse(fd)
-
-        self.ssh = paramiko.SSHClient()
-        self.ssh_args = []
-        if self.ssh_trust:
-            self.ssh.set_missing_host_key_policy(AlwaysAcceptPolicy())
-
-            self.ssh_args = self.ssh_args + ['-o LogLevel=quiet',
-                                             '-o UserKnownHostsFile=/dev/null',
-                                             '-o StrictHostKeyChecking=no']
-
-        else:
-            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        if self.ssh_key:
-            self.ssh_args = self.ssh_args + ['-i', self.ssh_key]
-
-
     def check_ssh(self):
         """Returns true if ssh connection is live and authenticated"""
-        return self.ssh.get_transport() and self.ssh.get_transport().is_authenticated()
+        return self.ssh.alive()
 
 
     def ssh_connect(self):
         # TODO: if trusthost=False, check host keys
 
-        # paramiko debug
-        # paramiko.common.logging.basicConfig(level=paramiko.common.DEBUG)
-
-        cfg_host = self.ssh_config.lookup(self.hostname)
-        hostname = cfg_host.get('hostname', None)
-        user = self.user or cfg_host.get('user', None)
-        if self.ssh_key: keyfiles = [self.ssh_key]
-        else:            keyfiles =  cfg_host.get('identityfile', [])
-
         try:
-            self.ssh.connect(hostname=hostname, username=user, timeout=10,
-                             key_filename=keyfiles, look_for_keys=False)
+            self.ssh.connect(hostname=self.hostname, user=self.user,
+                             timeout=10, args=self.ssh_args)
 
-        except Exception as err:
+        except SSHConnectionError as err:
             raise SshError("Can't connect to %s: %s" % (self.hostname, str(err)))
 
-        if not self.wait_for(True, self.check_ssh):
-            raise SshError("Can't connect to %s" % self.hostname)
+        # if not self.wait_for(True, self.check_ssh):
+        #     raise SshError("Can't connect to %s" % self.hostname)
 
 
     def ssh_disconnect(self):
@@ -168,9 +145,9 @@ class SshHost(BaseHost):
     @property
     def ip(self):
         """Returns the ip"""
-        # TODO: sure?
-        addr, port = self.ssh.get_transport().getpeername()
-        return addr
+        # TODO: get the IP somehow
+        return None
+
 
 
     # Implementation
@@ -186,6 +163,10 @@ class SshHost(BaseHost):
             raise
 
         self.get_state()
+
+
+    def disconnect(self):
+        self.ssh.close()
 
 
     def get_state(self):
@@ -219,13 +200,8 @@ class SshHost(BaseHost):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
 
-        # TODO: what about stderr?
-        stdin, stdout, stderr = self.ssh.exec_command('cd "%s" && %s' % (path, c))
-
-        if catchout:
-            return stdout.read()
-        else:
-            for line in stdout: sys.stdout.write(line)
+        return self.ssh.run('cd "%s" && %s' % (path, c),
+                            args = self.ssh_args, catchout=catchout)
 
 
     def run_script(self, scr_path):

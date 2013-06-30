@@ -298,6 +298,11 @@ class BaseHost(object):
         raise NotImplementedError
 
 
+    def disconnect(self):
+        """Closes a connection and initialized data"""
+        raise NotImplementedError
+
+
     def backup(self, silent=False, dryrun=False):
         """Creates a data backup"""
         raise NotImplementedError

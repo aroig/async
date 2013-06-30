@@ -262,6 +262,12 @@ try:
         ui.print_error("Unknown command %s" % cmd)
         sys.exit(1)
 
+#    try:
+#        remote.disconnect()
+#    except Exception as err:
+#        ui.print_error(str(err))
+
+
     if ret: sys.exit(0)
     else:   sys.exit(1)
 
