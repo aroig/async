@@ -49,7 +49,12 @@ class SshHost(BaseHost):
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
-        self.ssh = SSHConnection(socket="~/.config/async/ssh.socket")
+        socket = os.path.expandvars('$XDG_RUNTIME_DIR/async/ssh.socket')
+        try:
+            os.makedirs(os.path.dirname(socket))
+        except:
+            pass
+        self.ssh = SSHConnection(socket=socket)
 
         self.ssh_args = []
         if self.ssh_trust:
