@@ -286,11 +286,17 @@ class BaseHost(object):
 
     def shell(self):
         """Opens a shell to host"""
-        if not self.get_state() in set(['mounted']):
-            ui.print_error("Not mounted")
-            return
+
+        # mount remote
+        remote_state = self.get_state()
+        if not self.set_state('mounted') == 'mounted':
+            ui.print_error("Remote host is not in 'mounted' state")
+            return False
 
         self.interactive_shell()
+
+        # recover old remote state
+        self.set_state(remote_state)
 
 
     def connect(self):
