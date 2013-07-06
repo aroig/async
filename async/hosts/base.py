@@ -227,6 +227,10 @@ class BaseHost(object):
         ret = True
         try:
             self.connect(silent=silent, dryrun=False)
+        except HostError:
+            pass
+
+        try:
             if self.STATES.index(self.state) < self.STATES.index('online'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 

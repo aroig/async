@@ -83,42 +83,12 @@ class SshHost(BaseHost):
         self.run_cmd("sudo systemctl poweroff")
 
 
-    def ping_delay(self):
+    def ping_delay(self, host):
         """Ping host and return the average time. None for offline"""
 
-        pmin, pavg, pmax, pstdev = cmd.ping(self.ip, timeout=2, num=2)
+        pmin, pavg, pmax, pstdev = cmd.ping(host, timeout=2, num=2)
         return pavg
 
-
-    # Ssh
-    # ----------------------------------------------------------------
-
-    def check_ssh(self):
-        """Returns true if ssh connection is live and authenticated"""
-        return self.ssh.alive()
-
-
-    def ssh_connect(self):
-        # TODO: if trusthost=False, check host keys
-
-        try:
-            if not self.ssh.alive():
-                self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
-                                 timeout=10, args=self.ssh_args)
-
-        except SSHConnectionError as err:
-            raise SshError("Can't connect to %s: %s" % (self.ssh_hostname, str(err)))
-
-        # if not self.wait_for(True, self.check_ssh):
-        #     raise SshError("Can't connect to %s" % self.ssh_hostname)
-
-
-    def ssh_disconnect(self):
-        if self.ssh.alive():
-            self.ssh.close()
-
-        if not self.wait_for(False, self.check_ssh):
-            raise SshError("Can't disconnect from host: %s" % self.ssh_hostname)
 
 
     # State transitions
@@ -157,7 +127,12 @@ class SshHost(BaseHost):
 
     def ping(self):
         """Pings the host and prints the delay"""
-        ui.print_color("%s (%s): %4.3f s" % (self.name, self.ip, self.ping_delay()))
+        ip = self.ip
+        if ip:
+            delay = self.ping_delay(ip)
+            ui.print_color("%s (%s): %4.3f s" % (self.name, ip, delay))
+        else:
+            ui.print_color("%s: offline" % self.name)
 
 
 
@@ -180,18 +155,36 @@ class SshHost(BaseHost):
         """Establishes a connection and initialized data"""
 
         def func():
-            self.ssh_connect()
+            # TODO: if trusthost=False, check host keys
 
-        self.run_with_message(func=func,
-                              msg="Connecting to %s" % self.name,
-                              silent=silent,
-                              dryrun=dryrun)
-        self.get_state()
+            try:
+                if not self.ssh.alive():
+                    self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
+                                     timeout=5, args=self.ssh_args)
+
+            except SSHConnectionError as err:
+                raise SshError("Can't connect to %s: %s" % (self.ssh_hostname,
+                                                            str(err)))
+
+            # if not self.wait_for(True, self.ssh.alive):
+            #     raise SshError("Can't connect to %s" % self.ssh_hostname)
+
+        try:
+            self.run_with_message(func=func,
+                                  msg="Connecting to %s" % self.name,
+                                  silent=silent,
+                                  dryrun=dryrun)
+        finally:
+            self.get_state()
 
 
     def disconnect(self, silent=False, dryrun=False):
         def func():
-            self.ssh.close()
+            if self.ssh.alive():
+                self.ssh.close()
+
+            # if not self.wait_for(False, self.ssh.alive):
+            #    raise SshError("Can't disconnect from host: %s" % self.ssh_hostname)
 
         self.run_with_message(func=func,
                               msg="Disconnecting from %s" % self.name,
@@ -203,7 +196,7 @@ class SshHost(BaseHost):
         """Queries the state of the host"""
         ui.print_debug("begin SshHost.get_state")
         self.state = 'offline'
-        if self.check_ssh():                                 self.state = 'online'
+        if self.ssh.alive():                                 self.state = 'online'
         if self.state == 'online' and self.check_devices():  self.state = 'mounted'
         return self.state
 

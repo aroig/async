@@ -117,8 +117,9 @@ class SSHConnection(object):
             raise SSHConnectionError("Socket %s already exists" % self.socket)
 
         sshargs = ['-M', '-N', '-o', 'ControlPath=%s' % self.socket] + self.args
-        self.master_proc = self._ssh(sshargs + [self.decorated_host],
-                                     timeout=timeout)
+        with open('/dev/null', 'w') as devnull:
+            self.master_proc = self._ssh(sshargs + [self.decorated_host],
+                                         timeout=timeout, stdout=devnull, stderr=devnull)
 
         sec = 0
         while not self.alive() and sec <= timeout:

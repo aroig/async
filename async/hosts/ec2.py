@@ -53,23 +53,16 @@ class Ec2Host(SshHost):
         self.ec2_keypair        = conf['instance']['ec2_keypair']
         self.ec2_security_group = conf['instance']['ec2_security_group']
 
+        self.ec2_region = conf['instance']['ec2_region']
+        self.aws_keys = self.read_keys(conf['instance']['aws_keys'])
 
-        # open aws connection
-        ec2_region = conf['instance']['ec2_region']
-        aws_keys = self.read_keys(conf['instance']['aws_keys'])
-        self.conn = ec2.connect_to_region(region_name = ec2_region,
-                                          aws_access_key_id = aws_keys['access_key_id'],
-                                          aws_secret_access_key = aws_keys['secret_access_key'])
+        self.ec2_vol = conf['instance']['volumes']
 
-        if not self.conn:
-            raise Ec2Error("Could not establish a connection with aws.")
+        self.conn = None
+        self.volumes = {}
+        self.ami = None
+        self.instance = None
 
-        self.load_volumes(conf['instance']['volumes'])
-        self.load_ami()
-        self.load_instance()
-
-        # use aws dynamic hostname for ssh connections
-        self.ssh_hostname = self.hostname
 
 
     # Utilities
@@ -161,7 +154,6 @@ class Ec2Host(SshHost):
 
 
 
-
     # status functions
     # ------------------------------------------------------
 
@@ -188,9 +180,8 @@ class Ec2Host(SshHost):
             self.ami = L[0]
 
 
-    def load_volumes(self, conf):
-        self.volumes = {}
-        for dev, vol in conf.items():
+    def load_volumes(self):
+        for dev, vol in self.ec2_vol.items():
             L = self.conn.get_all_volumes(volume_ids = [vol])
             if len(L) == 0:
                 raise Ec2Error("Can't fine volume %s" % vol)
@@ -233,7 +224,10 @@ class Ec2Host(SshHost):
         ret = False
 
         try:
-            self.connect(silent=silent, dryrun=False)
+            try:
+                self.connect(silent=silent, dryrun=False)
+            except SshError:
+                pass
 
             if self.instance == None:
 
@@ -259,12 +253,41 @@ class Ec2Host(SshHost):
 
         return ret
 
+
+    def start(self, silent=False, dryrun=False):
+        """Starts the host if not running"""
+        st = 'online'
+        ret = True
+
+        try:
+            try:
+                self.connect(silent=silent, dryrun=False)
+            except SshError:
+                pass
+
+            if self.STATES.index(self.state) < self.STATES.index('online'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
+
+
     def terminate(self, silent=False, dryrun=False):
         """Terminates the current instance"""
         st = 'terminated'
         ret = True
         try:
-            self.connect(silent=silent, dryrun=False)
+            try:
+                self.connect(silent=silent, dryrun=False)
+            except SshError:
+                pass
+
             if self.STATES.index(self.state) > self.STATES.index('terminated'):
                 ret =  self.set_state(st, silent=silent, dryrun=dryrun) == st
 
@@ -386,6 +409,12 @@ class Ec2Host(SshHost):
         return ret
 
 
+    def ping(self):
+        """Pings the host and prints the delay"""
+        self.aws_connect()
+        super(Ec2Host, self).ping()
+
+
     # State transitions
     # ----------------------------------------------------------------
 
@@ -456,6 +485,49 @@ class Ec2Host(SshHost):
         else:             return None
 
 
+    def aws_connect(self, silent=False, dryrun=False):
+        if self.conn == None:
+            self.conn = ec2.connect_to_region(region_name = self.ec2_region,
+                                              aws_access_key_id = self.aws_keys['access_key_id'],
+                                              aws_secret_access_key = self.aws_keys['secret_access_key'])
+
+        if not self.conn:
+            raise Ec2Error("Could not establish a connection with aws.")
+
+        self.load_volumes()
+        self.load_ami()
+        self.load_instance()
+
+
+    def connect(self, silent=False, dryrun=False):
+        """Establishes a connection and initialized data"""
+
+        # connect to aws and grab state
+        self.aws_connect(silent=silent, dryrun=dryrun)
+
+        # use aws dynamic hostname for ssh connections
+        self.ssh_hostname = self.hostname
+
+        # establish a ssh connection
+        if self.instance:
+            super(Ec2Host, self).connect(silent=silent, dryrun=dryrun)
+        else:
+            raise Ec2Error("No instance running")
+
+
+    def disconnect(self, silent=False, dryrun=False):
+
+        # close the ssh connection
+        if self.instance:
+            super(Ec2Host, self).disconnect(silent=silent, dryrun=dryrun)
+        else:
+            raise Ec2Error("No instance running")
+
+        # close aws connection
+        self.conn.close()
+        self.conn = None
+
+
     def get_state(self):
         """Queries the state of the host"""
         self.state = 'unknown'
@@ -463,7 +535,7 @@ class Ec2Host(SshHost):
         if self.instance != None:                                  self.state = 'offline'
         if self.state == 'offline'  and self.check_instance():     self.state = 'running'
         if self.state == 'running'  and self.check_volumes():      self.state = 'attached'
-        if self.state == 'attached' and self.check_ssh():          self.state = 'online'
+        if self.state == 'attached' and self.ssh.alive():          self.state = 'online'
         if self.state == 'online'   and self.check_devices():      self.state = 'mounted'
 
         return self.state
