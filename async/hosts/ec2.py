@@ -68,6 +68,9 @@ class Ec2Host(SshHost):
         self.load_ami()
         self.load_instance()
 
+        # use aws dynamic hostname for ssh connections
+        self.ssh_hostname = self.hostname
+
 
     # Utilities
     # ----------------------------------------------------------------

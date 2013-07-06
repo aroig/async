@@ -44,7 +44,7 @@ class SshHost(BaseHost):
         self.check = conf['check']
 
         # ssh related config
-        self._hostname         = conf['hostname']         # the hostname
+        self.ssh_hostname     = conf['hostname']         # the hostname
         self.user             = conf['user']             # the user on the remote
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
@@ -101,23 +101,23 @@ class SshHost(BaseHost):
         # TODO: if trusthost=False, check host keys
 
         try:
-            if not self.ssh.connected():
-                self.ssh.connect(hostname=self.hostname, user=self.user,
+            if not self.ssh.alive():
+                self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
                                  timeout=10, args=self.ssh_args)
 
         except SSHConnectionError as err:
-            raise SshError("Can't connect to %s: %s" % (self.hostname, str(err)))
+            raise SshError("Can't connect to %s: %s" % (self.ssh_hostname, str(err)))
 
         # if not self.wait_for(True, self.check_ssh):
-        #     raise SshError("Can't connect to %s" % self.hostname)
+        #     raise SshError("Can't connect to %s" % self.ssh_hostname)
 
 
     def ssh_disconnect(self):
-        if ssh.connected():
+        if self.ssh.alive():
             self.ssh.close()
 
         if not self.wait_for(False, self.check_ssh):
-            raise SshError("Can't disconnect from host: %s" % self.hostname)
+            raise SshError("Can't disconnect from host: %s" % self.ssh_hostname)
 
 
     # State transitions
@@ -165,14 +165,14 @@ class SshHost(BaseHost):
 
     @property
     def hostname(self):
-        return self._hostname
+        hostname, ip = self.ssh.resolve(hostname=self.ssh_hostname)
+        return hostname
 
 
     @property
     def ip(self):
-        """Returns the ip"""
-        # TODO: get the IP somehow
-        return None
+        hostname, ip = self.ssh.resolve(hostname=self.ssh_hostname)
+        return ip
 
 
     def connect(self, silent=False, dryrun=False):
@@ -240,7 +240,7 @@ class SshHost(BaseHost):
 
     def interactive_shell(self):
         """Opens an interactive shell to host"""
-        cmd.ssh(host=self.hostname, args=self.ssh_args)
+        cmd.ssh(host=self.ssh_hostname, args=self.ssh_args)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
