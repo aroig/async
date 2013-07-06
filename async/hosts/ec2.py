@@ -221,111 +221,170 @@ class Ec2Host(SshHost):
         return attached
 
 
-    @property
-    def hostname(self):
-        if self.instance: return self.instance.public_dns_name
-        else:             return None
-
-
-    @property
-    def ip(self):
-        if self.instance: return self.instance.ip_address
-        else:             return None
-
-
     # Interface
     # ----------------------------------------------------------------
 
     def launch(self, itype=None, silent=False, dryrun=False):
         """Launches a new instance"""
         itype = itype or self.ec2_itype
-        if self.instance == None:
+        ret = False
 
-            def func():
-                self.create_instance(ami_id=self.ami.id, itype=itype)
+        try:
+            self.connect(silent=silent, dryrun=False)
 
-            self.run_with_message(func=func,
-                                  msg="Launching instance of %s (%s, %s)" % (self.name, self.ami.id, itype),
-                                  silent=silent,
-                                  dryrun=dryrun)
+            if self.instance == None:
 
-        else:
-            ui.print_error("There is already a running instance.")
-            return False
+                def func():
+                    self.create_instance(ami_id=self.ami.id, itype=itype)
 
+                self.run_with_message(func=func,
+                                      msg="Launching instance of %s (%s, %s)" % (self.name, self.ami.id, itype),
+                                      silent=silent,
+                                      dryrun=dryrun)
+                ret = True
+
+            else:
+                ui.print_error("There is already a running instance.")
+                ret = False
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
 
     def terminate(self, silent=False, dryrun=False):
         """Terminates the current instance"""
         st = 'terminated'
-        if self.STATES.index(self.state) > self.STATES.index('terminated'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) > self.STATES.index('terminated'):
+                ret =  self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
 
 
     def attach(self, silent=False, dryrun=False):
         """Attaches volumes"""
         st = 'attached'
-        if self.STATES.index(self.state) < self.STATES.index('attached'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) < self.STATES.index('attached'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
 
 
     def detach(self, silent=False, dryrun=False):
         """Deataches volumes"""
         st = self.STATES[self.STATES.index('attached') - 1]
-        if self.STATES.index(self.state) >= self.STATES.index('attached'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) >= self.STATES.index('attached'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
 
 
     def snapshot(self, silent=False, dryrun=False):
         """Creates a snapshot of the running instance"""
+        ret = False
 
-        # go to running state, with detached data
-        self.set_state(state='running', silent=silent, dryrun=dryrun)
+        try:
+            self.connect(silent=silent, dryrun=False)
 
-        ui.print_status("I'm going create a new ami from the running instance")
-        self.print_status()
+            # go to running state, with detached data
+            self.set_state(state='running', silent=silent, dryrun=dryrun)
 
-        cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
-        if cont != 'yes': return
+            ui.print_status("I'm going create a new ami from the running instance")
+            self.print_status()
 
-        new_ami_name = ui.ask_question_string("Enter the new ami name:")
-        description = "%s %s" % (self.name, date.today().strftime("%Y-%m-%d"))
-        def func():
-            self.make_ami_snapshot(name = new_ami_name, desc = description)
+            cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
+            if cont == 'yes':
+                new_ami_name = ui.ask_question_string("Enter the new ami name:")
+                description = "%s %s" % (self.name, date.today().strftime("%Y-%m-%d"))
+                def func():
+                    self.make_ami_snapshot(name = new_ami_name, desc = description)
 
-        self.run_with_message(func=func,
-                              msg="Creating %s ami snapshot" % new_ami_name,
-                              silent=silent,
-                              dryrun=dryrun)
+                self.run_with_message(func=func,
+                                      msg="Creating %s ami snapshot" % new_ami_name,
+                                      silent=silent,
+                                      dryrun=dryrun)
+                retu = True
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
 
 
     def backup(self, silent=False, dryrun=False):
         """Creates a data backup"""
+        ret = False
+        try:
+            self.connect(silent=silent, dryrun=False)
 
-        # go to running state with detached data
-        self.set_state(state='running', silent=silent, dryrun=dryrun)
+            # go to running state with detached data
+            self.set_state(state='running', silent=silent, dryrun=dryrun)
 
-        ui.print_status("I'm going create snapshots for all data volumes")
-        self.print_status()
+            ui.print_status("I'm going create snapshots for all data volumes")
+            self.print_status()
 
-        cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
-        if cont != 'yes': return
+            cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
+            if cont == 'yes':
+                for k, dev in self.volumes.items():
+                    description = "volume %s on %s %s" % (k, self.name, date.today().strftime("%Y-%m-%d"))
+                    def func():
+                        self.make_data_snapshot(dev = dev, desc = description)
 
-        for k, dev in self.volumes.items():
-            description = "volume %s on %s %s" % (k, self.name, date.today().strftime("%Y-%m-%d"))
-            def func():
-                self.make_data_snapshot(dev = dev, desc = description)
+                    self.run_with_message(func=func,
+                                          msg="Creating volume backup for %s" % k,
+                                          silent=silent,
+                                          dryrun=dryrun)
+                    ret = True
 
-                self.run_with_message(func=func,
-                                      msg="Creating volume backup for %s" % k,
-                                      silent=silent,
-                                      dryrun=dryrun)
+            self.disconnect(silent=silent, dryrun=False)
 
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
 
+        return ret
 
 
     # State transitions
     # ----------------------------------------------------------------
-    # TODO:waitings
 
     def enter_state(self, state):
         if self.state == 'terminated':
@@ -381,6 +440,18 @@ class Ec2Host(SshHost):
 
     # Implementation
     # ----------------------------------------------------------------
+
+    @property
+    def hostname(self):
+        if self.instance: return self.instance.public_dns_name
+        else:             return None
+
+
+    @property
+    def ip(self):
+        if self.instance: return self.instance.ip_address
+        else:             return None
+
 
     def get_state(self):
         """Queries the state of the host"""

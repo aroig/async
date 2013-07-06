@@ -57,48 +57,60 @@ class LocalHost(DirectoryHost):
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
         keys = sorted(dirs.keys())
         num = len(dirs)
+        ret = True
 
-        # mount remote
-        remote_state = remote.get_state()
-        if not remote.set_state('mounted') == 'mounted':
-            ui.print_error("Remote host is not in 'mounted' state")
-            return False
+        try:
+            remote.connect(silent=silent, dryrun=False)
 
-        ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,
-                                                            datetime.now().strftime("%a %d %b %Y %H:%M")))
-        ui.print_color("")
+            # mount remote
+            remote_state = remote.get_state()
+            if not remote.set_state('mounted') == 'mounted':
+                ui.print_error("Remote host is not in 'mounted' state")
+                return False
 
-        for i, k in enumerate(keys):
-            d = dirs[k]
-            if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
-
-            try:
-                d.sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
-
-            except SyncError as err:
-                ui.print_error("synchronization failed")
-                failed.append(d.name)
-
-            except HookError as err:
-                ui.print_error("Hook failed: %s" % str(err))
-                failed.append(d.name)
-
+            ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,
+                                                                datetime.now().strftime("%a %d %b %Y %H:%M")))
             ui.print_color("")
 
-        # recover old remote state
-        remote.set_state(remote_state)
+            for i, k in enumerate(keys):
+                d = dirs[k]
+                if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
+
+                try:
+                    d.sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
+
+                except SyncError as err:
+                    ui.print_error("synchronization failed")
+                    failed.append(d.name)
+
+                except HookError as err:
+                    ui.print_error("Hook failed: %s" % str(err))
+                    failed.append(d.name)
+
+                ui.print_color("")
+
+            # recover old remote state
+            remote.set_state(remote_state)
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            remote.disconnect(silent=silent, dryrun=False)
 
         ui.print_color("")
 
         # success message
-        if len(failed) == 0:
+        if len(failed) == 0 and ret == True:
             ui.print_color("Synchronization #*gsuceeded#t.\n")
             return True
 
-        elif len(failed) > 0:
+        elif len(failed) > 0 or ret == False:
             ui.print_color("Synchronization #*rfailed#t.\n")
             ui.print_color("  directories: %s" % ', '.join(failed))
             return False
+
 
 
     def setup(self, silent=False, dryrun=False, opts=None):
@@ -108,6 +120,7 @@ class LocalHost(DirectoryHost):
         dirs = {k: d for k, d in self.dirs.items() if opt.dirs==None or k in opt.dirs}
         keys = sorted(dirs.keys())
         num = len(keys)
+        ret = True
 
         for i, k in enumerate(keys):
             d = dirs[k]

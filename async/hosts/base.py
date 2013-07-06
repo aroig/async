@@ -221,6 +221,160 @@ class BaseHost(object):
     # Interface
     # ----------------------------------------------------------------
 
+    def start(self, silent=False, dryrun=False):
+        """Starts the host if not running"""
+        st = 'online'
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) < self.STATES.index('online'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
+
+
+    def stop(self, silent=False, dryrun=False):
+        """Stops the host if running"""
+        st = 'offline'
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) >= self.STATES.index('online'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
+
+
+    def mount(self, silent=False, dryrun=False):
+        """Mounts partitions on host, starting it if necessary"""
+        st = 'mounted'
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) < self.STATES.index('mounted'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
+
+
+    def umount(self, silent=False, dryrun=False):
+        """Umounts partitions on host if mounted"""
+        st = self.STATES[self.STATES.index('mounted') - 1]
+        ret = True
+        try:
+            self.connect(silent=silent, dryrun=False)
+            if self.STATES.index(self.state) >= self.STATES.index('mounted'):
+                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return ret
+
+
+    def print_status(self, silent=False, dryrun=False):
+        try:
+            self.connect(silent=silent, dryrun=False)
+            info = self.get_info()
+
+            ui.print_status("Status of #*m%s#t" % self.name)
+            ui.print_color("")
+
+            if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+
+            if 'ami_name' in info and 'ami_id' in info:
+                ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'], info['ami_name']))
+            if 'instance' in info and 'itype' in info:
+                ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
+            if 'block' in info:
+                ui.print_color('   #*wblock:#t %s' % ', '.join(
+                    ['%s (%s)' % (k, s) for k, s in info['block'].items()]))
+
+            if 'host' in info:
+                ui.print_color('    #*whost:#t %s' % info['host'])
+            if 'ip' in info:
+                ui.print_color('      #*wip:#t %s' % info['ip'])
+
+            if 'size' in info:
+                ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
+            if 'free' in info:
+                ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
+
+            ui.print_color("")
+
+        except HostError as err:
+            ui.print_error(str(err))
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+        return True
+
+
+    def shell(self, silent=False, dryrun=False):
+        """Opens a shell to host"""
+        try:
+            self.connect()
+
+            # mount remote
+            remote_state = self.get_state()
+            if not self.set_state('mounted') == 'mounted':
+                ui.print_error("Remote host is not in 'mounted' state")
+                return False
+
+            ui.print_color("")
+            self.interactive_shell()
+            ui.print_color("")
+
+            # recover old remote state
+            self.set_state(remote_state)
+
+        except HostError as err:
+            ui.print_error(str(err))
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+
+    def backup(self, silent=False, dryrun=False):
+        """Creates a data backup"""
+        raise NotImplementedError
+
+
+    def snapshot(self, silent=False, dryrun=False):
+        """Creates a server backup"""
+        raise NotImplementedError
+
+
+
+    # Implementation
+    # ----------------------------------------------------------------
+
     @property
     def type(self):
         """Returns the type of host as a string"""
@@ -233,72 +387,6 @@ class BaseHost(object):
             raise DirError("Unknown host class %s" % str(type(self)))
 
 
-    def start(self, silent=False, dryrun=False):
-        """Starts the host if not running"""
-        st = 'online'
-        if self.STATES.index(self.state) < self.STATES.index('online'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
-
-
-    def stop(self, silent=False, dryrun=False):
-        """Stops the host if running"""
-        st = 'offline'
-        if self.STATES.index(self.state) >= self.STATES.index('online'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
-
-
-    def mount(self, silent=False, dryrun=False):
-        """Mounts partitions on host, starting it if necessary"""
-        st = 'mounted'
-        if self.STATES.index(self.state) < self.STATES.index('mounted'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
-
-
-    def umount(self, silent=False, dryrun=False):
-        """Umounts partitions on host if mounted"""
-        st = self.STATES[self.STATES.index('mounted') - 1]
-        if self.STATES.index(self.state) >= self.STATES.index('mounted'):
-            return self.set_state(st, silent=silent, dryrun=dryrun) == st
-
-
-    def print_status(self):
-        info = self.get_info()
-
-        ui.print_status("Status of #*m%s#t" % self.name)
-        ui.print_color("")
-
-        if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
-
-        if 'ami_name' in info and 'ami_id' in info:
-            ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'], info['ami_name']))
-        if 'instance' in info and 'itype' in info:
-            ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
-        if 'block' in info:
-            ui.print_color('   #*wblock:#t %s' % ', '.join(['%s (%s)' % (k, s) for k, s in info['block'].items()]))
-
-        if 'host' in info:  ui.print_color('    #*whost:#t %s' % info['host'])
-        if 'ip' in info:    ui.print_color('      #*wip:#t %s' % info['ip'])
-
-        if 'size' in info:  ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
-        if 'free' in info:  ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
-        ui.print_color("")
-
-
-    def shell(self):
-        """Opens a shell to host"""
-
-        # mount remote
-        remote_state = self.get_state()
-        if not self.set_state('mounted') == 'mounted':
-            ui.print_error("Remote host is not in 'mounted' state")
-            return False
-
-        self.interactive_shell()
-
-        # recover old remote state
-        self.set_state(remote_state)
-
-
     def connect(self):
         """Establishes a connection and initialized data"""
         raise NotImplementedError
@@ -306,11 +394,6 @@ class BaseHost(object):
 
     def disconnect(self):
         """Closes a connection and initialized data"""
-        raise NotImplementedError
-
-
-    def backup(self, silent=False, dryrun=False):
-        """Creates a data backup"""
         raise NotImplementedError
 
 
@@ -357,6 +440,33 @@ class BaseHost(object):
         return self.state
 
 
+    def get_state(self):
+        """Queries the state of the host"""
+        raise NotImplementedError
+
+
+    def get_info(self):
+        """Gets a dictionary with host state parameters"""
+        raise NotImplementedError
+
+
+    def run_cmd(self, c, tgtpath=None, catchout=False):
+        """Run a shell command in a given path at host"""
+        raise NotImplementedError
+
+
+    def interactive_shell(self):
+        """Opens an interactive shell to host"""
+        raise NotImplementedError
+
+
+    # TODO: I should be able to implement this with run_cmd
+    def run_script(self, scr_path):
+        """Run script on a local path on the host"""
+        raise NotImplementedError
+
+
+
     # State transitions
     # ----------------------------------------------------------------
 
@@ -375,32 +485,6 @@ class BaseHost(object):
         raise NotImplementedError
 
     def leave_state(self, state):
-        raise NotImplementedError
-
-
-
-    # Abstract methods
-    # ----------------------------------------------------------------
-
-    def get_state(self):
-        """Queries the state of the host"""
-        raise NotImplementedError
-
-    def get_info(self):
-        """Gets a dictionary with host state parameters"""
-        raise NotImplementedError
-
-    def run_cmd(self, c, tgtpath=None, catchout=False):
-        """Run a shell command in a given path at host"""
-        raise NotImplementedError
-
-    def interactive_shell(self):
-        """Opens an interactive shell to host"""
-        raise NotImplementedError
-
-    # TODO: I should be able to implement this with run_cmd
-    def run_script(self, scr_path):
-        """Run script on a local path on the host"""
         raise NotImplementedError
 
 

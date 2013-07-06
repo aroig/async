@@ -55,6 +55,10 @@ class SSHConnection(object):
         return proc
 
 
+    def connected(self):
+        """Check whether there is a ssh master session running"""
+        return self.master_proc and self.master_proc.poll() == None
+
 
     def connect(self, hostname, user=None, keyfile=None, timeout=30, args=[]):
         self.args = []

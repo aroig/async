@@ -101,8 +101,9 @@ class SshHost(BaseHost):
         # TODO: if trusthost=False, check host keys
 
         try:
-            self.ssh.connect(hostname=self.hostname, user=self.user,
-                             timeout=10, args=self.ssh_args)
+            if not self.ssh.connected():
+                self.ssh.connect(hostname=self.hostname, user=self.user,
+                                 timeout=10, args=self.ssh_args)
 
         except SSHConnectionError as err:
             raise SshError("Can't connect to %s: %s" % (self.hostname, str(err)))
@@ -112,7 +113,8 @@ class SshHost(BaseHost):
 
 
     def ssh_disconnect(self):
-        self.ssh.close()
+        if ssh.connected():
+            self.ssh.close()
 
         if not self.wait_for(False, self.check_ssh):
             raise SshError("Can't disconnect from host: %s" % self.hostname)
@@ -149,7 +151,16 @@ class SshHost(BaseHost):
             raise HostError("Unknown state %s" % state)
 
 
-    # Network related interface
+    # Interface
+    # ----------------------------------------------------------------
+
+    def ping(self):
+        """Pings the host and prints the delay"""
+        ui.print_color("%s (%s): %4.3f s" % (self.name, self.ip, self.ping_delay()))
+
+
+
+    # Implementation
     # ----------------------------------------------------------------
 
     @property
@@ -164,28 +175,27 @@ class SshHost(BaseHost):
         return None
 
 
-    def ping(self):
-        """Pings the host and prints the delay"""
-        ui.print_color("%s (%s): %4.3f s" % (self.name, self.ip, self.ping_delay()))
-
-
-    # Implementation
-    # ----------------------------------------------------------------
-
-    def connect(self):
+    def connect(self, silent=False, dryrun=False):
         """Establishes a connection and initialized data"""
-        ui.print_debug("begin SshHost.connect")
-        try:
+
+        def func():
             self.ssh_connect()
 
-        except SshError as err:
-            raise
-
+        self.run_with_message(func=func,
+                              msg="Connecting to %s" % self.name,
+                              silent=silent,
+                              dryrun=dryrun)
         self.get_state()
 
 
-    def disconnect(self):
-        self.ssh.close()
+    def disconnect(self, silent=False, dryrun=False):
+        def func():
+            self.ssh.close()
+
+        self.run_with_message(func=func,
+                              msg="Disconnecting from %s" % self.name,
+                              silent=silent,
+                              dryrun=dryrun)
 
 
     def get_state(self):

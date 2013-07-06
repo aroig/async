@@ -171,15 +171,7 @@ try:
 
     if len(args) > 1:
         name = args[1]
-        ui.print_status(text="Connecting to %s" % name, flag="BUSY")
         remote = get_remote_host(name, conf)
-        try:
-            remote.connect()
-            ui.print_status(flag="DONE", nl=True)
-
-        except HostError as err:
-            ui.print_status(flag="FAIL", nl=True)
-            ui.print_error(str(err))
 
     else:
         remote = None
@@ -221,7 +213,7 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
-        if len(args) == 0:    ret = remote.shell()
+        if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "ping":
