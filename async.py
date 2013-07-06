@@ -224,6 +224,9 @@ try:
         if len(args) == 0:    ret = remote.shell()
         else:                 ui.print_error("Too many arguments.")
 
+    elif cmd == "ping":
+        if len(args) == 0:    ret = remote.ping()
+        else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "launch":
         if not isinstance(remote, Ec2Host):

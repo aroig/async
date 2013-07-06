@@ -82,6 +82,13 @@ class SshHost(BaseHost):
         pass
 
 
+    def ping_delay(self):
+        """Ping host and return the average time. None for offline"""
+
+        pmin, pavg, pmax, pstdev = cmd.ping(self.ip, timeout=2, num=2)
+        return pavg
+
+
     # Ssh
     # ----------------------------------------------------------------
 
@@ -142,6 +149,9 @@ class SshHost(BaseHost):
             raise HostError("Unknown state %s" % state)
 
 
+    # Network related interface
+    # ----------------------------------------------------------------
+
     @property
     def hostname(self):
         return self._hostname
@@ -153,6 +163,10 @@ class SshHost(BaseHost):
         # TODO: get the IP somehow
         return None
 
+
+    def ping(self):
+        """Pings the host and prints the delay"""
+        ui.print_color("%s (%s): %4.3f s" % (self.name, self.ip, self.ping_delay()))
 
 
     # Implementation

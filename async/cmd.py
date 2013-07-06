@@ -233,6 +233,20 @@ def umount(path):
     subprocess.check_call(['umount', path])
 
 
+def ping(host, timeout=10, num=1):
+    try:
+        raw = subprocess.check_output(["ping", "-q", "-c", str(num), "-w", str(timeout), host])
+
+    except subprocess.CalledProcessError:
+        return (None, None, None, None)
+
+    m = re.search("min/avg/max/mdev = (\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)", raw)
+    if m:
+        return (float(t) / 1000 for t in m.groups())
+    else:
+        return (None, None, None, None)
+
+
 def cat_pager(fname):
     pager = os.environ.get('PAGER', 'less')
     subprocess.call('cat "%s" | %s' % (fname, pager), shell=True)
