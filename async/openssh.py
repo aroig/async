@@ -71,7 +71,7 @@ class SSHConnection(object):
 
             Lh = rawhost.split('\n')
             if len(Lh) > 0:
-                names = [n.strip() for n in LH[0].split()]
+                names = [n.strip() for n in Lh[0].split()]
 
                 dic = {}
                 for line in Lh[1:]:
