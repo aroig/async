@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import time
 import subprocess
 
@@ -55,9 +56,53 @@ class SSHConnection(object):
         return proc
 
 
-    def connected(self):
-        """Check whether there is a ssh master session running"""
-        return self.master_proc and self.master_proc.poll() == None
+    def _parse_ssh_config(self, path):
+        hosts = {}
+
+        if not os.path.exists(path):
+            return hosts
+
+        with open(path, 'r') as fd:
+            raw = fd.read()
+
+        for rawhost in re.split("^\s*Host\s", raw, flags=re.MULTILINE):
+            rawhost = rawhost.strip()
+            if len(rawhost) == 0: continue
+
+            Lh = rawhost.split('\n')
+            if len(Lh) > 0:
+                names = [n.strip() for n in LH[0].split()]
+
+                dic = {}
+                for line in Lh[1:]:
+                    m = re.match("^\s*([^\s]*)\s(.*)$", line)
+                    if m:
+                        dic[m.group(1).strip()] = m.group(2).strip()
+
+                for nm in names:
+                    hosts[nm.strip()] = dic
+
+        return hosts
+
+
+    def resolve(self, hostname):
+        """Resolves a hostname into a tuple, (fqdn, ip). Parses .ssh/config to resolve
+        aliases."""
+
+        hosts = self._parse_ssh_config(os.path.expanduser("~/.ssh/config"))
+
+        if hostname in hosts:
+            dic = hosts[hostname]
+            if "HostName" in dic: hostname = dic['HostName']
+
+        raw = subprocess.check_output(['host', '-4', hostname])
+        m = re.match("^(.*) has address (\d+.\d+.\d+.\d+)\s*$", raw)
+        if m:
+            return (m.group(1).strip(), m.group(2).strip())
+
+        else:
+            if re.match("^(\d+.\d+.\d+.\d+)$", hostname): return (None, hostname)
+            else:                                         return (None, None)
 
 
     def connect(self, hostname, user=None, keyfile=None, timeout=30, args=[]):
@@ -123,7 +168,10 @@ class SSHConnection(object):
 
     def alive(self, timeout=30):
         try:
-            alive = os.path.exists(self.socket) and self.run('true', timeout=timeout) == 0
+            alive = os.path.exists(self.socket) and \
+                    self.master_proc and \
+                    self.master_proc.poll() == None
+                    # and self.run('true', timeout=timeout) == 0
             return alive
 
         except:
