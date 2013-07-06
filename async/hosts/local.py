@@ -104,12 +104,14 @@ class LocalHost(DirectoryHost):
 
         # success message
         if len(failed) == 0 and ret == True:
-            ui.print_color("Synchronization #*gsuceeded#t.\n")
+            ui.print_color("Synchronization #*gsuceeded#t.")
+            ui.print_color("")
             return True
 
         elif len(failed) > 0 or ret == False:
-            ui.print_color("Synchronization #*rfailed#t.\n")
+            ui.print_color("Synchronization #*rfailed#t.")
             ui.print_color("  directories: %s" % ', '.join(failed))
+            ui.print_color("")
             return False
 
 
