@@ -106,6 +106,7 @@ class AsyncConfig(ConfigParser):
 
         'hostname'       : (None, parse_string),
         'user'           : (None, parse_string),
+        'mac_address'    : (None, parse_string),
 
         'ssh_key'        : (None, parse_path),
         'ssh_trust'      : (False, parse_bool),

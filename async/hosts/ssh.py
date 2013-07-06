@@ -46,6 +46,7 @@ class SshHost(BaseHost):
         # ssh related config
         self.ssh_hostname     = conf['hostname']         # the hostname
         self.user             = conf['user']             # the user on the remote
+        self.mac_address      = conf['mac_address']      # mac address
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
@@ -74,12 +75,12 @@ class SshHost(BaseHost):
     # ----------------------------------------------------------------
 
     def wake_on_lan(self):
-        # TODO
-        pass
+        if self.mac_address:
+            cmd.wake_on_lan(self.mac_address)
+
 
     def power_off(self):
-        # TODO
-        pass
+        self.run_cmd("sudo systemctl poweroff")
 
 
     def ping_delay(self):

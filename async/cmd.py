@@ -233,6 +233,10 @@ def umount(path):
     subprocess.check_call(['umount', path])
 
 
+def wake_on_lan(mac):
+    subprocess.check_call(['wol', mac])
+
+
 def ping(host, timeout=10, num=1):
     try:
         raw = subprocess.check_output(["ping", "-q", "-c", str(num), "-w", str(timeout), host])
