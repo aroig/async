@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, SetupError, LocalDir, HookError
 from async.pathdict import PathDict
