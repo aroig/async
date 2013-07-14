@@ -395,12 +395,12 @@ class BaseHost(object):
             raise DirError("Unknown host class %s" % str(type(self)))
 
 
-    def connect(self):
+    def connect(self, silent=False, dryrun=False):
         """Establishes a connection and initialized data"""
         raise NotImplementedError
 
 
-    def disconnect(self):
+    def disconnect(self, silent=False, dryrun=False):
         """Closes a connection and initialized data"""
         raise NotImplementedError
 

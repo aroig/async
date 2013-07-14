@@ -64,9 +64,14 @@ class DirectoryHost(BaseHost):
     # Implementation
     # ----------------------------------------------------------------
 
-    def connect(self):
+    def connect(self, silent=False, dryrun=False):
         """Establishes a connection and initialized data"""
         self.get_state()
+
+
+    def disconnect(self, silent=False, dryrun=False):
+        """Closes a connection and initialized data"""
+        pass
 
 
     def get_state(self):
