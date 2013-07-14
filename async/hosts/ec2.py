@@ -255,8 +255,8 @@ class Ec2Host(SshHost):
 
 
     def start(self, silent=False, dryrun=False):
-        """Starts the host if not running"""
-        st = 'online'
+        """Starts the host if not running and attach."""
+        st = 'attached'
         ret = True
 
         try:
@@ -265,7 +265,7 @@ class Ec2Host(SshHost):
             except SshError:
                 pass
 
-            if self.STATES.index(self.state) < self.STATES.index('online'):
+            if self.STATES.index(self.state) < self.STATES.index('attached'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
