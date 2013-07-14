@@ -37,8 +37,8 @@ class AnnexDir(BaseDir):
         tgt = self.fullpath(remote)
 
         annex_sync_args = ['sync', remote.name]
-        annex_get_args  = ['copy', '--fast', '--from="%s"' % remote.name]
-        annex_send_args = ['copy', '--fast', '--to="%s"' % remote.name]
+        annex_get_args  = ['copy', '--fast', '--from=%s' % remote.name]
+        annex_send_args = ['copy', '--fast', '--to=%s' % remote.name]
 
         # pre-sync hook
         ui.print_debug('pre_sync hook')
@@ -58,9 +58,9 @@ class AnnexDir(BaseDir):
             try:
                 ui.print_debug('git annex %s' % ' '.join(annex_get_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
-
-                ui.print_debug('git annex %s' % ' '.join(annex_send_args))
-                if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
+                # git annex copy --to=remote goes through all files. too slow
+                # ui.print_debug('git annex %s' % ' '.join(annex_send_args))
+                # if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
 
             except subprocess.CalledProcessError as err:
                 raise SyncError(str(err))
