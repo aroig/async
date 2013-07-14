@@ -110,7 +110,7 @@ class BaseHost(object):
         # open luks partitions
         for dev, name in self.luks.items():
             passphrase = self.vol_keys[name]
-            ret = self.run_cmd('sudo sh -c "echo -n %s | cryptsetup --key-file=- luksOpen %s %s"; echo $?' % \
+            ret = self.run_cmd('sh -c "echo -n %s | sudo cryptsetup --key-file=- luksOpen %s %s"; echo $?' % \
                                (passphrase, dev, name),
                                tgtpath='/', catchout=True)
             if ret.strip() != '0':
@@ -128,7 +128,7 @@ class BaseHost(object):
         for cryp, mp in self.ecryptfs.items():
             passphrase = self.vol_keys[mp]
 
-            raw = self.run_cmd('sudo sh -c "echo -n %s | ecryptfs-add-passphrase -"', catchout=True)
+            raw = self.run_cmd('sh -c "echo -n %s | sudo ecryptfs-add-passphrase -"', catchout=True)
             sig = re.search("\[(.*?)\]", raw).group(1)
             options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
                       "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
