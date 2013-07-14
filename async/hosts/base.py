@@ -217,6 +217,35 @@ class BaseHost(object):
         return (int(size), int(available))
 
 
+    def _print_status(self):
+        info = self.get_info()
+
+        ui.print_status("Status of #*m%s#t" % self.name)
+        ui.print_color("")
+
+        if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+
+        if 'ami_name' in info and 'ami_id' in info:
+            ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'], info['ami_name']))
+        if 'instance' in info and 'itype' in info:
+            ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
+        if 'block' in info:
+            ui.print_color('   #*wblock:#t %s' % ', '.join(
+                ['%s (%s)' % (k, s) for k, s in info['block'].items()]))
+
+        if 'host' in info:
+            ui.print_color('    #*whost:#t %s' % info['host'])
+        if 'ip' in info:
+            ui.print_color('      #*wip:#t %s' % info['ip'])
+
+        if 'size' in info:
+            ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
+        if 'free' in info:
+            ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
+
+        ui.print_color("")
+
+
 
     # Interface
     # ----------------------------------------------------------------
@@ -304,32 +333,7 @@ class BaseHost(object):
     def print_status(self, silent=False, dryrun=False):
         try:
             self.connect(silent=silent, dryrun=False)
-            info = self.get_info()
-
-            ui.print_status("Status of #*m%s#t" % self.name)
-            ui.print_color("")
-
-            if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
-
-            if 'ami_name' in info and 'ami_id' in info:
-                ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'], info['ami_name']))
-            if 'instance' in info and 'itype' in info:
-                ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
-            if 'block' in info:
-                ui.print_color('   #*wblock:#t %s' % ', '.join(
-                    ['%s (%s)' % (k, s) for k, s in info['block'].items()]))
-
-            if 'host' in info:
-                ui.print_color('    #*whost:#t %s' % info['host'])
-            if 'ip' in info:
-                ui.print_color('      #*wip:#t %s' % info['ip'])
-
-            if 'size' in info:
-                ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
-            if 'free' in info:
-                ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
-
-            ui.print_color("")
+            self._print_status()
 
         except HostError as err:
             ui.print_error(str(err))

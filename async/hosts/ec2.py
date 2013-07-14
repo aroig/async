@@ -36,7 +36,7 @@ class Ec2Error(Exception):
 class Ec2Host(SshHost):
     """An ec2 instance"""
     # ordered list of states. terminate does not belong here as it destroys the instance.
-    STATES = ['terminated', 'offline', 'running', 'attached', 'online', 'mounted']
+    STATES = ['terminated', 'offline', 'online', 'attached', 'mounted']
 
     def __init__(self, conf):
         ui.print_debug("begin Ec2Host.__init__")
@@ -78,7 +78,7 @@ class Ec2Host(SshHost):
             vol.update()
             return vol.attachment_state()
 
-        if not self.wait_for('detached', _state):
+        if not self.wait_for(None, _state):
             raise HostError("Timed out detaching")
 
 
@@ -93,7 +93,7 @@ class Ec2Host(SshHost):
             vol.update()
             return vol.attachment_state()
 
-        if not self.wait_for(None, _state):
+        if not self.wait_for('attached', _state):
             raise HostError("Timed out attaching")
 
 
@@ -346,11 +346,11 @@ class Ec2Host(SshHost):
         try:
             self.connect(silent=silent, dryrun=False)
 
-            # go to running state, with detached data
-            self.set_state(state='running', silent=silent, dryrun=dryrun)
+            # go to online state, with detached data
+            self.set_state(state='online', silent=silent, dryrun=dryrun)
 
             ui.print_status("I'm going create a new ami from the running instance")
-            self.print_status()
+            self._print_status()
 
             cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
             if cont == 'yes':
@@ -381,11 +381,11 @@ class Ec2Host(SshHost):
         try:
             self.connect(silent=silent, dryrun=False)
 
-            # go to running state with detached data
-            self.set_state(state='running', silent=silent, dryrun=dryrun)
+            # go to online state with detached data
+            self.set_state(state='online', silent=silent, dryrun=dryrun)
 
             ui.print_status("I'm going create snapshots for all data volumes")
-            self.print_status()
+            self._print_status()
 
             cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
             if cont == 'yes':
@@ -428,15 +428,12 @@ class Ec2Host(SshHost):
         elif state == 'offline':
             pass
 
-        elif state == 'running':
+        elif state == 'online':
             self.start_instance(self.instance.id)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
                 self.attach_volume(vol, self.instance.id, dev)
-
-        elif state == 'online':
-            pass
 
         elif state == 'mounted':
             self.mount_devices()
@@ -452,15 +449,12 @@ class Ec2Host(SshHost):
         elif state == 'offline':
             self.conn.terminate_instances([self.instance.id])
 
-        elif state == 'running':
+        elif state == 'online':
             self.stop_instance(self.instance.id)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
                 self.detach_volume(vol)
-
-        elif state == 'online':
-            pass
 
         elif state == 'mounted':
             self.umount_devices()
@@ -524,7 +518,9 @@ class Ec2Host(SshHost):
             raise Ec2Error("No instance running")
 
         # close aws connection
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
+
         self.conn = None
 
 
@@ -533,10 +529,10 @@ class Ec2Host(SshHost):
         self.state = 'unknown'
         if self.instance == None:                                  self.state = 'terminated'
         if self.instance != None:                                  self.state = 'offline'
-        if self.state == 'offline'  and self.check_instance():     self.state = 'running'
-        if self.state == 'running'  and self.check_volumes():      self.state = 'attached'
-        if self.state == 'attached' and self.ssh.alive():          self.state = 'online'
-        if self.state == 'online'   and self.check_devices():      self.state = 'mounted'
+        if self.state == 'offline'  and self.check_instance() \
+           and self.ssh.alive():                                   self.state = 'online'
+        if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
+        if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
 
         return self.state
 
