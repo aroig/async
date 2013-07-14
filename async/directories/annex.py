@@ -37,6 +37,9 @@ class AnnexDir(BaseDir):
         tgt = self.fullpath(remote)
 
         annex_sync_args = ['sync', remote.name]
+
+        # I use quiet because git annex copy -to=... runs over all files and produces
+        # too much output.
         annex_get_args  = ['copy', '--quiet', '--fast', '--from=%s' % remote.name]
         annex_send_args = ['copy', '--quiet', '--fast', '--to=%s' % remote.name]
 
@@ -59,9 +62,8 @@ class AnnexDir(BaseDir):
                 ui.print_debug('git annex %s' % ' '.join(annex_get_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
 
-                # git annex copy --to=remote goes through all files. too slow
-                # ui.print_debug('git annex %s' % ' '.join(annex_send_args))
-                # if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
+                ui.print_debug('git annex %s' % ' '.join(annex_send_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
 
             except subprocess.CalledProcessError as err:
                 raise SyncError(str(err))
