@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.hosts.ssh import SshHost
+from async.hosts.ssh import SshHost, SshError
 from async.hosts.base import HostError
 
 from datetime import datetime, date
@@ -505,8 +505,6 @@ class Ec2Host(SshHost):
         # establish a ssh connection
         if self.instance:
             super(Ec2Host, self).connect(silent=silent, dryrun=dryrun)
-        else:
-            raise Ec2Error("No instance running")
 
 
     def disconnect(self, silent=False, dryrun=False):
@@ -514,14 +512,11 @@ class Ec2Host(SshHost):
         # close the ssh connection
         if self.instance:
             super(Ec2Host, self).disconnect(silent=silent, dryrun=dryrun)
-        else:
-            raise Ec2Error("No instance running")
 
         # close aws connection
         if self.conn:
             self.conn.close()
-
-        self.conn = None
+            self.conn = None
 
 
     def get_state(self):
