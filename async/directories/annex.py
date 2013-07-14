@@ -27,7 +27,7 @@ class AnnexDir(BaseDir):
     """Directory synced via git annex"""
     def __init__(self, conf):
         super(AnnexDir, self).__init__(conf)
-        self.annex_get = conf['annex_get']
+        self.annex_copy_data = conf['annex_copy_data']
 
     # Interface
     # ----------------------------------------------------------------
@@ -37,7 +37,8 @@ class AnnexDir(BaseDir):
         tgt = self.fullpath(remote)
 
         annex_sync_args = ['sync', remote.name]
-        annex_get_args  = ['get', '--from="%s"' % remote.name]
+        annex_get_args  = ['copy', '--fast', '--from="%s"' % remote.name]
+        annex_send_args = ['copy', '--fast', '--to="%s"' % remote.name]
 
         # pre-sync hook
         ui.print_debug('pre_sync hook')
@@ -53,14 +54,16 @@ class AnnexDir(BaseDir):
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 
-        if self.annex_get:
+        if self.annex_copy_data:
             try:
                 ui.print_debug('git annex %s' % ' '.join(annex_get_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
+
+                ui.print_debug('git annex %s' % ' '.join(annex_send_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
+
             except subprocess.CalledProcessError as err:
                 raise SyncError(str(err))
-
-        # TODO: run git annex get on the remote. Can't use cmd!!!
 
         # post-sync hook
         ui.print_debug('post_sync hook')
