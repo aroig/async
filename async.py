@@ -132,6 +132,12 @@ parser.add_option("-d", "--dirs", action="store", type="string", default=None, d
 parser.add_option("-i", "--instance", action="store", type="string", default=None, dest="itype",
                   help="Instance type. Values: micro (default), small, large")
 
+parser.add_option("--terse", dest="terse", action="store_true", default=False,
+                  help="Terse output.")
+
+parser.add_option("--quiet", dest="quiet", action="store_true", default=False,
+                  help="No output.")
+
 parser.add_option("--dryrun", dest="dryrun", action="store_true", default=False,
                   help="Dry run.")
 
@@ -188,7 +194,7 @@ try:
             if conf.async['logfile'] != None:
                 ui.start_logging(conf.async['logfile'], level=4)
 
-            ret = local.sync(remote=remote, dryrun=opts.dryrun, opts=opts)
+            ret = local.sync(remote=remote, dryrun=opts.dryrun, silent=opts.quiet, opts=opts)
 
             if conf.async['logfile'] != None:
                 ui.stop_logging()
@@ -197,23 +203,23 @@ try:
             ui.print_error("Too many arguments.")
 
     elif cmd == "start":
-        if len(args) == 0:    ret = remote.start(dryrun=opts.dryrun)
+        if len(args) == 0:    ret = remote.start(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "stop":
-        if len(args) == 0:    ret = remote.stop(dryrun=opts.dryrun)
+        if len(args) == 0:    ret = remote.stop(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "mount":
-        if len(args) == 0:    ret = remote.mount(dryrun=opts.dryrun)
+        if len(args) == 0:    ret = remote.mount(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "umount":
-        if len(args) == 0:    ret = remote.umount(dryrun=opts.dryrun)
+        if len(args) == 0:    ret = remote.umount(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
-        if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun)
+        if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "ping":
@@ -225,7 +231,8 @@ try:
             ui.print_error("Host %s is not an Ec2 host" % remote.name)
 
         elif len(args) == 0:
-            ret = remote.launch(dryrun=opts.dryrun, itype=get_itype(opts.itype))
+            ret = remote.launch(dryrun=opts.dryrun, silent=opts.quiet,
+                                itype=get_itype(opts.itype))
 
         else:
             ui.print_error("Too many arguments.")
@@ -235,7 +242,7 @@ try:
             ui.print_error("Host %s is not an Ec2 host" % remote.name)
 
         elif len(args) == 0:
-            ret = remote.terminate(dryrun=opts.dryrun)
+            ret = remote.terminate(dryrun=opts.dryrun, silent=opts.quiet)
 
         else:
             ui.print_error("Too many arguments.")
@@ -244,12 +251,12 @@ try:
         if not isinstance(remote, Ec2Host):
             ui.print_error("Host %s is not an Ec2 host" % remote.name)
 
-        elif len(args) == 0:  ret = remote.snapshot(dryrun=opts.dryrun)
+        elif len(args) == 0:  ret = remote.snapshot(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
 
     elif cmd == "upgrade":
-        if len(args) == 0:    ret = remote.upgrade(opts=opts)
+        if len(args) == 0:    ret = remote.upgrade(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
 

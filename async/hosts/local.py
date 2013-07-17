@@ -78,7 +78,8 @@ class LocalHost(DirectoryHost):
                 if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
 
                 try:
-                    d.sync(self, remote, silent=silent, dryrun=dryrun, opts=opts)
+                    d.sync(self, remote, silent=silent or opts.terse,
+                           dryrun=dryrun, opts=opts)
 
                 except SyncError as err:
                     ui.print_error("synchronization failed")

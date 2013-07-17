@@ -53,7 +53,7 @@ class AnnexDir(BaseDir):
         # sync
         ui.print_debug('git annex %s' % ' '.join(annex_sync_args))
         try:
-            if not dryrun: cmd.annex(tgtdir=src, args=annex_sync_args, silent=False)
+            if not dryrun: cmd.annex(tgtdir=src, args=annex_sync_args, silent=silent)
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 
@@ -61,11 +61,11 @@ class AnnexDir(BaseDir):
             try:
                 if not opts.force == 'up':
                     ui.print_debug('git annex %s' % ' '.join(annex_get_args))
-                    if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=False)
+                    if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=silent)
 
                 if not opts.force == 'down':
                     ui.print_debug('git annex %s' % ' '.join(annex_send_args))
-                    if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args, silent=False)
+                    if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args, silent=silent)
 
             except subprocess.CalledProcessError as err:
                 raise SyncError(str(err))
