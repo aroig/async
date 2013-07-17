@@ -86,7 +86,7 @@ class LocalHost(DirectoryHost):
                     failed.append(d.name)
 
                 except HookError as err:
-                    ui.print_error("Hook failed: %s" % str(err))
+                    ui.print_error("hook failed: %s" % str(err))
                     failed.append(d.name)
 
                 ui.print_color("")
@@ -105,12 +105,12 @@ class LocalHost(DirectoryHost):
 
         # success message
         if len(failed) == 0 and ret == True:
-            ui.print_color("Synchronization #*gsuceeded#t.")
+            ui.print_color("Synchronization with #*m%s#t #*gsuceeded#t." % remote.name)
             ui.print_color("")
             return True
 
         elif len(failed) > 0 or ret == False:
-            ui.print_color("Synchronization #*rfailed#t.")
+            ui.print_color("Synchronization with #*m%s#t #*rfailed#t." % remote.name)
             ui.print_color("  directories: %s" % ', '.join(failed))
             ui.print_color("")
             return False
