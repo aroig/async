@@ -356,7 +356,9 @@ class BaseHost(object):
                 return False
 
             ui.print_color("")
-            self.interactive_shell()
+            ret = self.interactive_shell()
+            if ret != 0:
+                ui.print_error("Shell returned with code %d" % ret)
             ui.print_color("")
 
             # recover old remote state
@@ -464,7 +466,7 @@ class BaseHost(object):
 
 
     def interactive_shell(self):
-        """Opens an interactive shell to host"""
+        """Opens an interactive shell to host. Returns the shell return code"""
         raise NotImplementedError
 
 

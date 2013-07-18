@@ -20,6 +20,7 @@
 import re
 import os
 import sys
+import subprocess
 
 import async.archui as ui
 import async.cmd as cmd
@@ -234,7 +235,11 @@ class SshHost(BaseHost):
 
     def interactive_shell(self):
         """Opens an interactive shell to host"""
-        cmd.ssh(host=self.ssh_hostname, args=self.ssh_args)
+        try:
+            cmd.ssh(host=self.ssh_hostname, args=self.ssh_args)
+            return 0
+        except subprocess.CalledProcessError as err:
+            return err.returncode
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

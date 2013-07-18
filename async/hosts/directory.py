@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import subprocess
 
 import async.archui as ui
 import async.cmd as cmd
@@ -109,8 +110,11 @@ class DirectoryHost(BaseHost):
 
     def interactive_shell(self):
         """Opens an interactive shell to host"""
-        cmd.shell(self.path)
-
+        try:
+            cmd.shell(self.path)
+            return 0
+        except subprocess.CalledProcessError as err:
+            return err.returncode
 
 
 
