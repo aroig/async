@@ -43,6 +43,9 @@ class RsyncDir(BaseDir):
         for p in self.ignore:
             args = args + ['--exclude=%s' % p]
 
+        for p in opts.ignore:
+            args = args + ['--exclude=%s' % p]
+
         if isinstance(remote, SshHost):
             tgt = '%s:%s/' % (remote.hostname, self.fullpath(remote))
 

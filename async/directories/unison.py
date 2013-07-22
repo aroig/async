@@ -61,9 +61,14 @@ class UnisonDir(BaseDir):
                 '-path', self.relpath,
                 '-follow', 'Path %s' % self.relpath,
                 '-logfile', '/dev/null',
-            ] + self.unison_args
+            ]
+
+        args = args + self.unison_args
 
         for p in self.ignore:
+            args = args + ['-ignore', 'Path %s' % p]
+
+        for p in opts.ignore:
             args = args + ['-ignore', 'Path %s' % p]
 
         if opts.auto:  args = args + ['-auto']

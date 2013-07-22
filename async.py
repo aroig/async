@@ -129,6 +129,9 @@ parser.add_option("-f", "--force", action="store", type="string", default=None, 
 parser.add_option("-d", "--dirs", action="store", type="string", default=None, dest="dirs",
                   help="Only sync the dirs given as a comma separated list.")
 
+parser.add_option("--ignore", action="store", type="string", default=None, dest="ignore",
+                  help="Ignore these paths, given as a comma separated list.")
+
 parser.add_option("-i", "--instance", action="store", type="string", default=None, dest="itype",
                   help="Instance type. Values: micro (default), small, large")
 
@@ -155,8 +158,12 @@ if opts.version:
     sys.exit(0)
 
 if opts.dirs:
-    opts.dirs = [d.strip() for d in opts.dirs.split(',')]
+    opts.dirs = [d.strip() for d in opts.dirs.split(',') if len(d.strip()) > 0]
 
+if opts.ignore:
+    opts.ignore = [d.strip() for d in opts.ignore.split(',') if len(d.strip()) > 0]
+else:
+    opts.ignore = []
 
 try:
     # parse config

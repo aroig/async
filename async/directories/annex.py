@@ -33,6 +33,8 @@ class AnnexDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
+        # TODO: implement ignore
+        # TODO: implement force
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
@@ -40,6 +42,8 @@ class AnnexDir(BaseDir):
 
         # I use quiet because git annex copy -to=... runs over all files and produces
         # too much output.
+        # NOTE: git annex copy --to is much slower than copy --from, as it needs to
+        # query the location log for each file, while --from just does stat.
         annex_get_args  = ['copy', '--quiet', '--fast', '--from=%s' % remote.name]
         annex_send_args = ['copy', '--quiet', '--fast', '--to=%s' % remote.name]
 
