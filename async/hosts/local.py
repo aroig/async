@@ -82,7 +82,7 @@ class LocalHost(DirectoryHost):
                            dryrun=dryrun, opts=opts)
 
                 except SyncError as err:
-                    ui.print_error("synchronization failed")
+                    ui.print_error("synchronization failed: %s" % str(err))
                     failed.append(d.name)
 
                 except HookError as err:
@@ -134,7 +134,7 @@ class LocalHost(DirectoryHost):
                 d.setup(self, silent=silent, dryrun=dryrun, opts=opts)
 
             except SetupError as err:
-                ui.print_error("setup failed")
+                ui.print_error("setup failed: %s" % str(err))
                 failed.append(d.name)
 
             ui.print_color("")
