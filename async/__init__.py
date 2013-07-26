@@ -43,7 +43,7 @@ def get_remote_host(hostname, conf):
             sys.exit(1)
 
     elif hostname == 'localhost':
-        return get_localhost(conf)
+        return get_local_host(conf)
 
     else:
         ui.print_error("Unknown host: %s" % hostname)

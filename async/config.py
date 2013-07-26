@@ -145,7 +145,7 @@ class AsyncConfig(ConfigParser):
         'perms'           : ('700', parse_string),   # directory perms
         'type'            : (None, parse_string),    # sync method
         'symlink'         : (None, parse_path),      # the directory is a symlink to this target
-        'setup_hool'      : (None, parse_path),      # script to run on setup
+        'setup_hook'      : (None, parse_path),      # script to run on setup
         'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
         'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
 

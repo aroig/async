@@ -43,13 +43,45 @@ class BaseDir(object):
         self.name = conf['name']
         self.relpath = conf['path']
 
+        self.perms      = int(conf['perms'], base=8)
+        self.symlink    = conf['symlink']
+
         self.path_rename = conf['path_rename']
 
         self.hooks = {}
         self.hooks['pre_sync']  = conf['pre_sync_hook']
         self.hooks['post_sync'] = conf['post_sync_hook']
+        self.hooks['setup']     = conf['setup_hook']
 
         self.hooks_path = conf['hooks_path']
+
+
+
+    def _create_directory(self, host, path, mode, silent=False, dryrun=False):
+        """Creates a directory or symlink. Returns false if it already existed"""
+        if host.path_exists(path):
+            return False
+
+        elif self.symlink:
+            if not silent:
+                ui.print_color("symlink: %s -> %s" % (path, self.symlink))
+
+            try:
+                if not dryrun: host.symlink(self.symlink, path)
+            except Exception as err:
+                raise SetupError(str(err))
+            return True
+
+        else:
+            if not silent:
+                ui.print_color("mkdir: %s" % path)
+
+            try:
+                if not dryrun: host.mkdir(path, mode=mode)
+            except Exception as err:
+                raise SetupError(str(err))
+            return True
+
 
     # Interface
     # ----------------------------------------------------------------
@@ -75,15 +107,15 @@ class BaseDir(object):
         return os.path.join(host.path, rpath)
 
 
-    def run_hook(self, name):
+    def run_hook(self, host, name, tgt=None):
         if name in self.hooks:
-            hook = self.hooks[name]
+            hookpath = os.path.join(self.hooks_path, self.hooks[name])
             if hook:
-                newenv = dict(os.environ)
-                newenv['PATH'] = "%s:%s" % (self.hooks_path, newenv['PATH'])
-                subprocess.check_call(hook, shell=True, env=newenv)
+                # newenv = dict(os.environ)
+                # newenv['PATH'] = "%s:%s" % (self.hooks_path, newenv['PATH'])
 
-
+                ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
+                ui.print_color(ret)
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         raise NotImplementedError

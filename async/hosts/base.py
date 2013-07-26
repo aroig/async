@@ -28,6 +28,11 @@ class HostError(Exception):
         super(HostError, self).__init__(msg)
 
 
+class CmdError(HostError):
+    def __init__(self, msg=None):
+        super(CmdError, self).__init__(msg)
+
+
 
 class BaseHost(object):
     STATES = ['offline', 'online', 'mounted']
@@ -379,6 +384,30 @@ class BaseHost(object):
     def snapshot(self, silent=False, dryrun=False):
         """Creates a server backup"""
         raise NotImplementedError
+
+
+    # Filesystem manipulations
+    # ----------------------------------------------------------------
+
+    def symlink(self, tgt, path):
+        ret = self.run_cmd('ln -s "%s" "%s"; echo $?' % (tgt, path),
+                           catchout=True)
+
+        if ret != '0':
+            raise CmdError("symlink command failed on %s" % self.name)
+
+
+    def path_exists(self, path):
+        ret = self.run_cmd('[ -e "%s" ]; echo $?' % path,
+                           catchout=True)
+        return ret == '0'
+
+
+    def mkdir(self, path, mode):
+        ret = self.run_cmd('mkdir -m %o "%s"; echo $?' % (mode, path),
+                           catchout=True)
+        if ret != '0':
+            raise CmdError("mkdir command failed on %s" % self.name)
 
 
 

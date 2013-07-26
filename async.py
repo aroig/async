@@ -86,6 +86,9 @@ Commands:
   sync:       %prog sync <host>
               Sync host.
 
+  setup:      %prog setup <host>
+              Setup directory structure on host.
+
   shell:      %prog shell <host>
               Launch a shell on host.
 
@@ -189,6 +192,12 @@ try:
     else:
         remote = None
 
+    logging_cmds = set(['setup', 'sync'])
+    if cmd in logging_cmds and conf.async['logfile'] != None:
+        # setup_tee(conf.async['logfile'])
+        ui.start_logging(conf.async['logfile'], level=4)
+
+
     args = args[2:]
     ret = True
     if cmd == "status":
@@ -196,37 +205,38 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
-        if len(args) == 0:
-#            if conf.async['logfile'] != None: setup_tee(conf.async['logfile'])
-            if conf.async['logfile'] != None:
-                ui.start_logging(conf.async['logfile'], level=4)
+        if len(args) == 0:    ret = local.sync(remote=remote, dryrun=opts.dryrun,
+                                               silent=opts.quiet, opts=opts)
+        else:                 ui.print_error("Too many arguments.")
 
-            ret = local.sync(remote=remote, dryrun=opts.dryrun, silent=opts.quiet, opts=opts)
-
-            if conf.async['logfile'] != None:
-                ui.stop_logging()
-
-        else:
-            ui.print_error("Too many arguments.")
+    elif cmd == "setup":
+        if len(args) == 0:    ret = remote.setup(dryrun=opts.dryrun,
+                                                 silent=opts.quiet, opts=opts)
+        else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":
-        if len(args) == 0:    ret = remote.start(dryrun=opts.dryrun, silent=opts.quiet)
+        if len(args) == 0:    ret = remote.start(dryrun=opts.dryrun,
+                                                 silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "stop":
-        if len(args) == 0:    ret = remote.stop(dryrun=opts.dryrun, silent=opts.quiet)
+        if len(args) == 0:    ret = remote.stop(dryrun=opts.dryrun,
+                                                silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "mount":
-        if len(args) == 0:    ret = remote.mount(dryrun=opts.dryrun, silent=opts.quiet)
+        if len(args) == 0:    ret = remote.mount(dryrun=opts.dryrun,
+                                                 silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "umount":
-        if len(args) == 0:    ret = remote.umount(dryrun=opts.dryrun, silent=opts.quiet)
+        if len(args) == 0:    ret = remote.umount(dryrun=opts.dryrun,
+                                                  silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
-        if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun, silent=opts.quiet)
+        if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun,
+                                                 silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "ping":
@@ -266,6 +276,9 @@ try:
         if len(args) == 0:    ret = remote.upgrade(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
+
+    if cmd in logging_cmds and conf.async['logfile'] != None:
+        ui.start_logging(conf.async['logfile'], level=4)
 
     else:
         ui.print_error("Unknown command %s" % cmd)

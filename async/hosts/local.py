@@ -121,7 +121,7 @@ class LocalHost(DirectoryHost):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
         failed = []
 
-        dirs = {k: d for k, d in self.dirs.items() if opt.dirs==None or k in opt.dirs}
+        dirs = {k: d for k, d in self.dirs.items() if opts.dirs==None or k in opts.dirs}
         keys = sorted(dirs.keys())
         num = len(keys)
         ret = True
@@ -135,6 +135,10 @@ class LocalHost(DirectoryHost):
 
             except SetupError as err:
                 ui.print_error("setup failed: %s" % str(err))
+                failed.append(d.name)
+
+            except HookError as err:
+                ui.print_error("hook failed: %s" % str(err))
                 failed.append(d.name)
 
             ui.print_color("")
