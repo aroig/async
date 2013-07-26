@@ -56,7 +56,6 @@ class BaseDir(object):
         self.hooks_path = conf['hooks_path']
 
 
-
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
         """Creates a directory or symlink. Returns false if it already existed"""
         if host.path_exists(path):
@@ -117,11 +116,23 @@ class BaseDir(object):
                 ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
                 ui.print_color(ret)
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        raise NotImplementedError
-
 
     def setup(self, host, silent=False, dryrun=False, opts=None):
+        path = self.fullpath()
+        if not silent:
+            ui.print_color("Creating %s with permissions %o" % (path, self.perms))
+        new = self._create_directory(host, path, self.perms, silent, dryrun)
+        if not new:
+            ui.print_warning("path already exists: %s" % path)
+
+        # run hooks if the path is new
+        if new and self.setup_hook:
+            if not silent:
+                ui.print_color("Running setup hook")
+            if not dryrun: self.run_hook(host, 'setup', tgt=path)
+
+
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 

@@ -121,7 +121,7 @@ class AsyncConfig(ConfigParser):
         'check'          : ([], parse_list),
         'type'           : (None, parse_string),
         'instance'       : (None, parse_string),
-}
+    }
 
     INSTANCE_FIELDS={
         'ec2_ami'        : (None, parse_string),
@@ -137,9 +137,11 @@ class AsyncConfig(ConfigParser):
 
         'zone'           : (None, parse_string),
         'user'           : (None, parse_string),
-}
+    }
 
-    REMOTE_FIELDS={}
+    REMOTE_FIELDS={
+        'url'            : (None, parse_string),
+    }
 
     DIRECTORY_FIELDS={
         'perms'           : ('700', parse_string),   # directory perms
@@ -159,7 +161,7 @@ class AsyncConfig(ConfigParser):
         'hooks_path'      : (None, parse_path),
         'pre_sync_hook'   : (None, parse_path),
         'post_sync_hook'  : (None, parse_path),
-}
+    }
 
     ASYNC_FIELDS={
         'color'           : (True, parse_bool),     # color UI
@@ -237,6 +239,12 @@ class AsyncConfig(ConfigParser):
                     val['instance'] = self.instance[k]
                 else:
                     raise AsyncConfigError("Unknown instance for host: %s" % k)
+
+
+        # match remotes to annex dirs
+        for k, val in self.directory.items():
+            if val['type'] == 'annex':
+                val['annex_remotes'] = self.remote
 
 
         # attach dirs data to hosts

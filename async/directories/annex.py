@@ -28,6 +28,9 @@ class AnnexDir(BaseDir):
     def __init__(self, conf):
         super(AnnexDir, self).__init__(conf)
         self.annex_copy_data = conf['annex_copy_data']
+        self.annex_remotes = conf['annex_remotes']
+
+
 
     # Interface
     # ----------------------------------------------------------------
@@ -78,19 +81,44 @@ class AnnexDir(BaseDir):
 
 
     def setup(self, host, silent=False, dryrun=False, opts=None):
-        ui.print_debug('create directory')
+        # TODO: finish repo initialization
         path = self.fullpath()
-        new = self._create_directory(host, path, self.perms, silent, dryrun)
-        if not new:
-            ui.print_warning("path already exists: %s" % path)
 
-        # TODO: initialize if not initialized
-        # TODO: setup remotes if not present
+        # create directory and run hooks
+        super(AnnexDir, self).setup(host, silent, dryrun, opts)
 
-        # run hooks if the path is new
-        if new and self.setup_hook:
-            ui.print_debug('setup hook')
-            if not dryrun: self.run_hook(host, 'setup', tgt=path)
+        # initialize git
+        if not host.path_exists(os.path.join(self.fullpath, '.git')):
+            if not silent: ui.print_color("Initializing git repo")
+            try:
+                if not dryrun: host.run_cmd('git init', tgt=path)
+            except CmdError as err:
+                ui.print_error("git init failed: %s" % str(err))
+                return
+
+        # initialize annex
+        if not host.path_exists(os.path.join(self.fullpath, '.git/annex')):
+            annex_desc = "%s : %s" % (host.name, self.name)
+            if not silent: ui.print_color("Initializing annex")
+            try:
+                if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgt=path)
+            except CmdError as err:
+                ui.print_error("git annex init failed: %s" % str(err))
+                return
+
+        # setup remotes
+        remotes_raw = host.run_cmd('git remote show', tgt=path, catchout=True)
+        remotes = set([r.strip() for r in remotes_raw.split(' ') if len(r.strip()) > 0])
+        for k, r in self.annex_remotes.items():
+            name = r.name
+            url = r.url.replace('%d', self.relpath)
+            if not name in remotes:
+                if not silent: ui.print_color("Adding remote %s" % name)
+                try:
+                    if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgt=path)
+                except CmdError as err:
+                    ui.print_error("git remote add failed: %s" % str(err))
+
 
 
 

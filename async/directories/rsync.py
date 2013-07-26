@@ -72,18 +72,5 @@ class RsyncDir(BaseDir):
 
 
 
-    def setup(self, host, silent=False, dryrun=False, opts=None):
-        ui.print_debug('create directory')
-        path = self.fullpath()
-        new = self._create_directory(host, path, self.perms, silent, dryrun)
-        if not new:
-            ui.print_warning("path already exists: %s" % path)
-
-        # run hooks if the path is new
-        if new and self.setup_hook:
-            ui.print_debug('setup hook')
-            if not dryrun: self.run_hook(host, 'setup', tgt=path)
-
-
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
