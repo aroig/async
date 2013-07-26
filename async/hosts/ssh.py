@@ -220,12 +220,12 @@ class SshHost(BaseHost):
         return info
 
 
-    def run_cmd(self, cmd, tgtpath=None, catchout=False, stdin=None):
+    def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
 
         try:
-            ret = self.ssh.run('cd "%s" && %s' % (path, cmd),
+            ret = self.ssh.run('cd "%s" && %s' % (path, cm),
                                args = self.ssh_args,
                                catchout=catchout, stdin=stdin)
             return ret

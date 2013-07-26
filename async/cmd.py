@@ -209,6 +209,7 @@ def bash_cmd(tgtdir, cmd, silent=False, catchout=False, stdin=None):
         if silent: out=devnull
         else:      out=None
 
+        stdi=None
         if stdin:
             stdi = StringIO(stdin)
 

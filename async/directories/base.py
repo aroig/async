@@ -20,6 +20,8 @@
 import os
 import subprocess
 
+import async.archui as ui
+
 class DirError(Exception):
     def __init__(self, msg=None):
         super(DirError, self).__init__(msg)
@@ -108,25 +110,28 @@ class BaseDir(object):
 
     def run_hook(self, host, name, tgt=None):
         if name in self.hooks:
-            hookpath = os.path.join(self.hooks_path, self.hooks[name])
+            hook = self.hooks[name]
             if hook:
                 # newenv = dict(os.environ)
                 # newenv['PATH'] = "%s:%s" % (self.hooks_path, newenv['PATH'])
-
+                hookpath = os.path.join(self.hooks_path, hook)
                 ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
                 ui.print_color(ret)
 
 
     def setup(self, host, silent=False, dryrun=False, opts=None):
-        path = self.fullpath()
-        if not silent:
-            ui.print_color("Creating %s with permissions %o" % (path, self.perms))
-        new = self._create_directory(host, path, self.perms, silent, dryrun)
-        if not new:
+        path = self.fullpath(host)
+
+        if not host.path_exists(path):
+            if not silent:
+                ui.print_color("Creating %s with permissions %o" % (path, self.perms))
+            self._create_directory(host, path, self.perms, silent, dryrun)
+        else:
             ui.print_warning("path already exists: %s" % path)
+            return
 
         # run hooks if the path is new
-        if new and self.setup_hook:
+        if self.setup_hook:
             if not silent:
                 ui.print_color("Running setup hook")
             if not dryrun: self.run_hook(host, 'setup', tgt=path)

@@ -97,11 +97,11 @@ class DirectoryHost(BaseHost):
         return info
 
 
-    def run_cmd(self, cmd, tgtpath=None, catchout=False, stdin=None):
+    def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
         try:
-            raw = cmd.bash_cmd(tgtdir=path, cmd=cmd,
+            raw = cmd.bash_cmd(tgtdir=path, cmd=cm,
                                catchout=catchout, stdin=stdin)
             return raw
         except subprocess.CalledProcessError as err:
