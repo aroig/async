@@ -276,13 +276,13 @@ try:
         if len(args) == 0:    ret = remote.upgrade(dryrun=opts.dryrun, silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
-
-    if cmd in logging_cmds and conf.async['logfile'] != None:
-        ui.start_logging(conf.async['logfile'], level=4)
-
     else:
         ui.print_error("Unknown command %s" % cmd)
         sys.exit(1)
+
+
+    if cmd in logging_cmds and conf.async['logfile'] != None:
+        ui.start_logging(conf.async['logfile'], level=4)
 
 #    try:
 #        remote.disconnect()

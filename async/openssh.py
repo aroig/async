@@ -30,7 +30,7 @@ class SSHConnectionError(Exception):
 class SSHCmdError(Exception):
     def __init__(self, msg=None):
         super(SSHCmdError, self).__init__(msg)
-
+        self.stdout = ""
 
 
 class SSHConnection(object):
@@ -143,9 +143,9 @@ class SSHConnection(object):
         if self.decorated_host == None:
             raise SSHConnectionError("Not authenticated")
 
-        stdo = stdo = stde = None
+        stdi = stdo = stde = None
         if catchout:
-            stdo = subrpocess.PIPE
+            stdo = subprocess.PIPE
             stde = subprocess.STDOUT
 
         if stdin:
@@ -155,8 +155,11 @@ class SSHConnection(object):
                          stdout=stdo, stderr=stde, stdin=stdi)
 
         stdout, stderr = proc.communicate()
+
         if proc.returncode != '0':
-            raise SSHCmdError("SSH command failed: %s" % cmd)
+            err = SSHCmdError("SSH command failed: %s" % cmd)
+            err.stdout = stdout
+            raise err
 
         if catchout: return stdout
         else:        return None

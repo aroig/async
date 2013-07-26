@@ -31,7 +31,7 @@ class HostError(Exception):
 class CmdError(HostError):
     def __init__(self, msg=None):
         super(CmdError, self).__init__(msg)
-
+        self.stdout = ""
 
 
 class BaseHost(object):
@@ -116,17 +116,18 @@ class BaseHost(object):
         for dev, name in self.luks.items():
             passphrase = self.vol_keys[name]
             try:
-                self.run_cmd('sh -c "echo -n %s | sudo cryptsetup --key-file=- luksOpen %s %s"' % \
+                self.run_cmd('sh -c "echo -n %s | sudo cryptsetup --key-file=- open --type luks %s %s"' % \
                              (passphrase, dev, name), tgtpath='/')
+
             except CmdError as err:
-                raise HostError("Can't open luks partition %s" % name)
+                raise HostError("Can't open luks partition %s. Messge: %s" % (name, err.stdout.strip()))
 
         # mount devices
         for dev, mp in self.mounts.items():
             try:
                 self.run_cmd('mount "%s"' % mp, tgtpath='/')
-            except CmdError:
-                raise HostError("Can't mount %s" % mp)
+            except CmdError as err:
+                raise HostError("Can't mount %s. Message: %s" % (mp, err.stdout.strip()))
 
         # mount ecryptfs
         # TODO: needs testing
@@ -143,7 +144,7 @@ class BaseHost(object):
                 self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt "%s"' % (options, cryp, mp),
                              tgtpath='/')
             except CmdError as err:
-                raise HostError("Can't mount ecryptfs directory %s" % mp)
+                raise HostError("Can't mount ecryptfs directory %s. Message: %s" % (mp, err.stdout.strip()))
 
 
     def umount_devices(self):
@@ -152,21 +153,21 @@ class BaseHost(object):
             try:
                 self.run_cmd('umount "%s"' % mp, tgtpath='/')
             except CmdError as err:
-                raise HostError("Can't umount ecryptfs directory %s" % mp)
+                raise HostError("Can't umount ecryptfs directory %s. Message: %s" % (mp, err.stdout.strip()))
 
         # umount devices
         for dev, mp in self.mounts.items():
             try:
                 self.run_cmd('umount "%s"' % mp, tgtpath='/')
             except CmdError as err:
-                raise HostError("Can't umount %s" % mp)
+                raise HostError("Can't umount %s. Message: %s" % (mp, err.stdout.strip()))
 
         # close luks partitions
         for dev, name in self.luks.items():
             try:
-                self.run_cmd('sudo cryptsetup luksClose %s' % name, tgtpath='/')
+                self.run_cmd('sudo cryptsetup close --type luks %s' % name, tgtpath='/')
             except CmdError as err:
-                raise HostError("Can't close luks partition %s" % name)
+                raise HostError("Can't close luks partition %s. Message: %s" % (name, err.stdout.strip()))
 
 
     def check_devices(self):
