@@ -115,17 +115,17 @@ class BaseHost(object):
         # open luks partitions
         for dev, name in self.luks.items():
             passphrase = self.vol_keys[name]
-            ret = self.run_cmd('sh -c "echo -n %s | sudo cryptsetup --key-file=- luksOpen %s %s"; echo $?' % \
-                               (passphrase, dev, name),
-                               tgtpath='/', catchout=True)
-            if ret.strip() != '0':
+            try:
+                self.run_cmd('sh -c "echo -n %s | sudo cryptsetup --key-file=- luksOpen %s %s"' % \
+                             (passphrase, dev, name), tgtpath='/')
+            except CmdError as err:
                 raise HostError("Can't open luks partition %s" % name)
 
         # mount devices
         for dev, mp in self.mounts.items():
-            ret = self.run_cmd('mount "%s"; echo $?' % mp,
-                               tgtpath='/', catchout=True)
-            if ret.strip() != '0':
+            try:
+                self.run_cmd('mount "%s"' % mp, tgtpath='/')
+            except CmdError:
                 raise HostError("Can't mount %s" % mp)
 
         # mount ecryptfs
@@ -133,38 +133,39 @@ class BaseHost(object):
         for cryp, mp in self.ecryptfs.items():
             passphrase = self.vol_keys[mp]
 
-            raw = self.run_cmd('sh -c "echo -n %s | sudo ecryptfs-add-passphrase -"', catchout=True)
-            sig = re.search("\[(.*?)\]", raw).group(1)
-            options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
-                      "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
-                      "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
+            try:
+                raw = self.run_cmd('sh -c "echo -n %s | sudo ecryptfs-add-passphrase -"', catchout=True)
+                sig = re.search("\[(.*?)\]", raw).group(1)
+                options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
+                          "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
+                          "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
 
-            ret = self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt "%s"; echo $?' % (options, cryp, mp),
-                               tgtpath='/', catchout=True)
-            if ret.strip() != '0':
+                self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt "%s"' % (options, cryp, mp),
+                             tgtpath='/')
+            except CmdError as err:
                 raise HostError("Can't mount ecryptfs directory %s" % mp)
 
 
     def umount_devices(self):
         # umount ecryptfs
         for cryp, mp in self.ecryptfs.items():
-            ret = self.run_cmd('umount "%s"; echo $?' % mp,
-                               tgtpath='/', catchout=True)
-            if ret.strip() != '0':
+            try:
+                self.run_cmd('umount "%s"' % mp, tgtpath='/')
+            except CmdError as err:
                 raise HostError("Can't umount ecryptfs directory %s" % mp)
 
         # umount devices
         for dev, mp in self.mounts.items():
-            ret = self.run_cmd('umount "%s"; echo $?' % mp,
-                               tgtpath='/', catchout=True)
-            if ret.strip() != '0':
+            try:
+                self.run_cmd('umount "%s"' % mp, tgtpath='/')
+            except CmdError as err:
                 raise HostError("Can't umount %s" % mp)
 
         # close luks partitions
         for dev, name in self.luks.items():
-            ret = self.run_cmd('sudo cryptsetup luksClose %s; echo $?' % name,
-                               tgtpath='/', catchout=True)
-            if ret.strip() != '0':
+            try:
+                self.run_cmd('sudo cryptsetup luksClose %s' % name, tgtpath='/')
+            except CmdError as err:
                 raise HostError("Can't close luks partition %s" % name)
 
 
@@ -177,7 +178,7 @@ class BaseHost(object):
                 return False
 
         # check whether basepath exists
-        if not self.check_path_exists(self.path):
+        if not self.path_exists(self.path):
             ui.print_debug("path %s does not exist" % self.path)
             return False
 
@@ -203,23 +204,22 @@ class BaseHost(object):
 
     def check_path_mountpoint(self, path):
         """Returns true if path is a mountpoint"""
-        ret = self.run_cmd('mountpoint -q "%s"; echo $?' % path,
-                           tgtpath='/', catchout=True)
-        return ret.strip() == '0'
+        try:
+            self.run_cmd('mountpoint -q "%s"' % path, tgtpath='/')
+            return True
+        except CmdError as err:
+            return False
 
-
-    def check_path_exists(self, path):
-        """Returns true if given path exists"""
-        ret = self.run_cmd('[ -e "%s" ]; echo $?' % path,
-                           tgtpath='/',  catchout=True)
-        return ret.strip() == '0'
 
 
     def df(self, path):
         """Run df on the remote and return a tuple of integers (size, available)"""
-        out = self.run_cmd('df "%s"' % path, catchout=True)
-        device, size, used, available, percent, mountpoint = out.split("\n")[1].split()
-        return (int(size), int(available))
+        try:
+            out = self.run_cmd('df "%s"' % path, catchout=True)
+            device, size, used, available, percent, mountpoint = out.split("\n")[1].split()
+            return (int(size), int(available))
+        except CmdError as err:
+            raise HostError("Can't check disk usage")
 
 
     def _print_status(self):
@@ -390,24 +390,26 @@ class BaseHost(object):
     # ----------------------------------------------------------------
 
     def symlink(self, tgt, path):
-        ret = self.run_cmd('ln -s "%s" "%s"; echo $?' % (tgt, path),
-                           catchout=True)
-
-        if ret != '0':
-            raise CmdError("symlink command failed on %s" % self.name)
+        try:
+            self.run_cmd('ln -s "%s" "%s"' % (tgt, path))
+        except CmdError as err:
+            raise HostError("Can't create symlink on %s" % self.name)
 
 
     def path_exists(self, path):
-        ret = self.run_cmd('[ -e "%s" ]; echo $?' % path,
-                           catchout=True)
-        return ret == '0'
+        """Returns true if given path exists"""
+        try:
+            self.run_cmd('[ -e "%s" ]' % path, tgtpath='/')
+            return True
+        except CmdError as err:
+            return False
 
 
     def mkdir(self, path, mode):
-        ret = self.run_cmd('mkdir -m %o "%s"; echo $?' % (mode, path),
-                           catchout=True)
-        if ret != '0':
-            raise CmdError("mkdir command failed on %s" % self.name)
+        try:
+            self.run_cmd('mkdir -m %o "%s"; echo $?' % (mode, path))
+        except CmdError as err:
+            raise HostError("Can't create directory on %s" % self.name)
 
 
 
@@ -489,7 +491,7 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    def run_cmd(self, c, tgtpath=None, catchout=False):
+    def run_cmd(self, cmd, tgtpath=None, catchout=False, stdin=None):
         """Run a shell command in a given path at host"""
         raise NotImplementedError
 
@@ -499,11 +501,12 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    # TODO: I should be able to implement this with run_cmd
-    def run_script(self, scr_path):
+    def run_script(self, scrpath, tgtpath=None, catchout=False):
         """Run script on a local path on the host"""
-        raise NotImplementedError
 
+        with open(scrpath, 'r') as fd:
+            script=fd.read()
+        self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script)
 
 
     # State transitions

@@ -25,8 +25,8 @@ import subprocess
 import async.archui as ui
 import async.cmd as cmd
 
-from async.hosts.base import BaseHost, HostError
-from async.openssh import SSHConnection, SSHConnectionError
+from async.hosts.base import BaseHost, HostError, CmdError
+from async.openssh import SSHConnection, SSHConnectionError, SSHCmdError
 
 class SshError(HostError):
     def __init__(self, msg=None):
@@ -220,17 +220,18 @@ class SshHost(BaseHost):
         return info
 
 
-    def run_cmd(self, c, tgtpath=None, catchout=False):
+    def run_cmd(self, cmd, tgtpath=None, catchout=False, stdin=None):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
 
-        return self.ssh.run('cd "%s" && %s' % (path, c),
-                            args = self.ssh_args, catchout=catchout)
+        try:
+            ret = self.ssh.run('cd "%s" && %s' % (path, cmd),
+                               args = self.ssh_args,
+                               catchout=catchout, stdin=stdin)
+            return ret
 
-
-    def run_script(self, scr_path):
-        """Run script on a local path on the host"""
-        raise NotImplementedError
+        except SSHCmdError as err:
+            raise CmdError(str(err))
 
 
     def interactive_shell(self):

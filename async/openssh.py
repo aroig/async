@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from io import StringIO
 import os
 import re
 import time
@@ -25,6 +26,10 @@ import subprocess
 class SSHConnectionError(Exception):
     def __init__(self, msg=None):
         super(SSHConnectionError, self).__init__(msg)
+
+class SSHCmdError(Exception):
+    def __init__(self, msg=None):
+        super(SSHCmdError, self).__init__(msg)
 
 
 
@@ -44,11 +49,12 @@ class SSHConnection(object):
 
 
 
-    def _ssh(self, args, timeout=30, stdout=None, stderr=None):
+    def _ssh(self, args, timeout=30, stdout=None, stderr=None, stdin=None):
         sshargs = ['-o', 'ConnectTimeout=%s' % str(timeout)]
         sshargs = sshargs + args
         try:
-            proc = subprocess.Popen(['ssh'] + sshargs, stdout=stdout, stderr=stderr)
+            proc = subprocess.Popen(['ssh'] + sshargs,
+                                    stdout=stdout, stderr=stderr, stdin=stdin)
 
         except subprocess.CalledProcessError as err:
             raise SSHConnectionError(str(err))
@@ -131,26 +137,29 @@ class SSHConnection(object):
 
 
 
-    def run(self, cmd, args=[], timeout=30, catchout=False):
+    def run(self, cmd, args=[], timeout=30, catchout=False, stdin=None):
         sshargs = ['-o', 'ControlPath=%s' % self.socket] + self.args + args
 
         if self.decorated_host == None:
             raise SSHConnectionError("Not authenticated")
 
+        stdo = stdo = stde = None
         if catchout:
-            proc = self._ssh(sshargs + [self.decorated_host, cmd], timeout=timeout,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        else:
-            proc = self._ssh(sshargs + [self.decorated_host, cmd], timeout=timeout)
+            stdo = subrpocess.PIPE
+            stde = subprocess.STDOUT
 
-        if catchout:
-            stdout, stderr = proc.communicate()
-            return stdout
+        if stdin:
+            stdi = StringIO(stdin)
 
-        else:
-            return proc.wait()
+        proc = self._ssh(sshargs + [self.decorated_host, cmd], timeout=timeout,
+                         stdout=stdo, stderr=stde, stdin=stdi)
 
+        stdout, stderr = proc.communicate()
+        if proc.returncode != '0':
+            raise SSHCmdError("SSH command failed: %s" % cmd)
 
+        if catchout: return stdout
+        else:        return None
 
     def close(self):
         if os.path.exists(self.socket):

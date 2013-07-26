@@ -195,6 +195,7 @@ def git(tgtdir, args, silent=False, catchout=False):
     with open('/dev/null', 'w') as devnull:
         if silent: out=devnull
         else:      out=None
+
         if catchout:
             raw = subprocess.check_output([git_cmd] + args, stderr=out, cwd=tgtdir)
             return raw
@@ -202,16 +203,22 @@ def git(tgtdir, args, silent=False, catchout=False):
             subprocess.check_call([git_cmd] + args, stderr=out, stdout=out, cwd=tgtdir)
 
 
-def bash_cmd(tgtdir, cmd, silent=False, catchout=False):
+def bash_cmd(tgtdir, cmd, silent=False, catchout=False, stdin=None):
     bash_cmd = 'bash'
     with open('/dev/null', 'w') as devnull:
         if silent: out=devnull
         else:      out=None
+
+        if stdin:
+            stdi = StringIO(stdin)
+
         if catchout:
-            raw = subprocess.check_output([bash_cmd, '-c', cmd], stderr=out, cwd=tgtdir)
+            raw = subprocess.check_output([bash_cmd, '-c', cmd], cwd=tgtdir,
+                                          stderr=out, stdin=stdi)
             return raw
         else:
-            subprocess.check_call([bash_cmd, '-c', cmd], stderr=out, stdout=out, cwd=tgtdir)
+            subprocess.check_call([bash_cmd, '-c', cmd], cwd=tgtdir,
+                                  stderr=out, stdout=out, stdin=stdi)
 
 
 def shell(tgtdir):

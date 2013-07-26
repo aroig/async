@@ -23,7 +23,7 @@ import subprocess
 import async.archui as ui
 import async.cmd as cmd
 
-from async.hosts.base import BaseHost
+from async.hosts.base import BaseHost, HostError, CmdError
 
 class DirectoryHost(BaseHost):
     """Host representing a local directory. A USB mountpoint, for instance"""
@@ -97,15 +97,15 @@ class DirectoryHost(BaseHost):
         return info
 
 
-    def run_cmd(self, c, tgtpath=None, catchout=False):
+    def run_cmd(self, cmd, tgtpath=None, catchout=False, stdin=None):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
-        return cmd.bash_cmd(tgtdir=path, cmd=c, catchout=catchout)
-
-
-    def run_script(self, scrpath, path):
-        """Run script on a local path on the host"""
-        raise NotImplementedError
+        try:
+            raw = cmd.bash_cmd(tgtdir=path, cmd=cmd,
+                               catchout=catchout, stdin=stdin)
+            return raw
+        except subprocess.CalledProcessError as err:
+            raise CmdError(str(err))
 
 
     def interactive_shell(self):
