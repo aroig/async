@@ -168,7 +168,7 @@ class SSHConnection(object):
 
         stdout, stderr = proc.communicate()
 
-        if proc.returncode != '0':
+        if proc.returncode != 0:
             err = SSHCmdError("SSH command failed: %s" % cmd)
             err.stdout = stdout
             raise err

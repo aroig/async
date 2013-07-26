@@ -125,7 +125,7 @@ class BaseHost(object):
             passphrase = self.vol_keys[name]
             try:
                 self.run_cmd('echo -n %s | sudo cryptsetup --key-file=- open --type luks %s %s' % \
-                             (shquote(passphrase), shquote(dev), shquote(name)), tgtpath='/')
+                             (shquote(passphrase), shquote(dev), shquote(name)), tgtpath='/', catchout=True)
 
             except CmdError as err:
                 raise HostError("Can't open luks partition %s. Messge: %s" % (name, err.stdout.strip()))
@@ -133,7 +133,7 @@ class BaseHost(object):
         # mount devices
         for dev, mp in self.mounts.items():
             try:
-                self.run_cmd('mount %s' % shquote(mp), tgtpath='/')
+                self.run_cmd('mount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't mount %s. Message: %s" % (mp, err.stdout.strip()))
 
@@ -153,7 +153,7 @@ class BaseHost(object):
                 self.run_cmd('sudo mount -i -t ecryptfs -o %s %s.crypt %s' % (shquote(options),
                                                                               shquote(cryp),
                                                                               shquote(mp)),
-                             tgtpath='/')
+                             tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't mount ecryptfs directory %s. Message: %s" % (mp, err.stdout.strip()))
 
@@ -162,21 +162,21 @@ class BaseHost(object):
         # umount ecryptfs
         for cryp, mp in self.ecryptfs.items():
             try:
-                self.run_cmd('umount %s' % shquote(mp), tgtpath='/')
+                self.run_cmd('umount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't umount ecryptfs directory %s. Message: %s" % (mp, err.stdout.strip()))
 
         # umount devices
         for dev, mp in self.mounts.items():
             try:
-                self.run_cmd('umount %s' % shquote(mp), tgtpath='/')
+                self.run_cmd('umount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't umount %s. Message: %s" % (mp, err.stdout.strip()))
 
         # close luks partitions
         for dev, name in self.luks.items():
             try:
-                self.run_cmd('sudo cryptsetup close --type luks %s' % shquote(name), tgtpath='/')
+                self.run_cmd('sudo cryptsetup close --type luks %s' % shquote(name), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't close luks partition %s. Message: %s" % (name, err.stdout.strip()))
 
@@ -217,7 +217,7 @@ class BaseHost(object):
     def check_path_mountpoint(self, path):
         """Returns true if path is a mountpoint"""
         try:
-            self.run_cmd('mountpoint -q %s' % shquote(path), tgtpath='/')
+            self.run_cmd('mountpoint -q %s' % shquote(path), tgtpath='/', catchout=True)
             return True
         except CmdError as err:
             return False

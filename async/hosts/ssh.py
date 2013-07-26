@@ -232,7 +232,7 @@ class SshHost(BaseHost):
 
         except SSHCmdError as err:
             newerr = CmdError(str(err))
-            newerr.stdout = err.stdout
+            if err.stdout: newerr.stdout = err.stdout
             raise newerr
 
 
