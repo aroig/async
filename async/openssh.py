@@ -20,8 +20,18 @@
 from io import StringIO
 import os
 import re
+import sys
 import time
+import shlex
 import subprocess
+
+
+if sys.version_info[0] < 3:
+    def shquote(s):
+        return "'" + s.replace("'", "'\"'\"'") + "'"
+else:
+    shquote = shlex.quote
+
 
 class SSHConnectionError(Exception):
     def __init__(self, msg=None):
@@ -139,6 +149,7 @@ class SSHConnection(object):
 
     def run(self, cmd, args=[], timeout=30, catchout=False, stdin=None):
         sshargs = ['-o', 'ControlPath=%s' % self.socket] + self.args + args
+        qcmd = 'sh -c %s' % shquote(cmd)
 
         if self.decorated_host == None:
             raise SSHConnectionError("Not authenticated")
@@ -151,7 +162,8 @@ class SSHConnection(object):
         if stdin:
             stdi = StringIO(stdin)
 
-        proc = self._ssh(sshargs + [self.decorated_host, cmd], timeout=timeout,
+        proc = self._ssh(sshargs + [self.decorated_host, qcmd],
+                         timeout=timeout,
                          stdout=stdo, stderr=stde, stdin=stdi)
 
         stdout, stderr = proc.communicate()
