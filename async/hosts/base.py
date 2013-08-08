@@ -518,7 +518,7 @@ class BaseHost(object):
 
         with open(scrpath, 'r') as fd:
             script=fd.read()
-        self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script)
+        return self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script)
 
 
     # State transitions

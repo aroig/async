@@ -24,6 +24,7 @@ import sys
 import os
 import re
 
+from io import StringIO
 from threading  import Thread, Event
 from Queue import Queue, Empty
 
@@ -205,21 +206,23 @@ def git(tgtdir, args, silent=False, catchout=False):
 
 def bash_cmd(tgtdir, cmd, silent=False, catchout=False, stdin=None):
     bash_cmd = 'bash'
-    with open('/dev/null', 'w') as devnull:
-        if silent: out=devnull
-        else:      out=None
 
-        stdi=None
-        if stdin:
-            stdi = StringIO(stdin)
+    if silent or catchout: sout = subprocess.PIPE
+    else:                  sout = None
 
-        if catchout:
-            raw = subprocess.check_output([bash_cmd, '-c', cmd], cwd=tgtdir,
-                                          stderr=out, stdin=stdi)
-            return raw
-        else:
-            subprocess.check_call([bash_cmd, '-c', cmd], cwd=tgtdir,
-                                  stderr=out, stdout=out, stdin=stdi)
+    if stdin != None:      sin = subprocess.PIPE
+    else:                  sin = None
+
+    proc = subprocess.Popen([bash_cmd, '-c', cmd], cwd=tgtdir,
+                            stderr=subprocess.STDOUT, stdout=sout, stdin=sin)
+
+    ret = proc.communicate(stdin)
+
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd)
+
+    if catchout: return ret[0]
+    else:        return None
 
 
 def shell(tgtdir):
