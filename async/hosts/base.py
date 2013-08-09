@@ -25,6 +25,7 @@ import shlex
 
 import async.archui as ui
 
+
 if sys.version_info[0] < 3:
     def shquote(s):
         return "'" + s.replace("'", "'\"'\"'") + "'"
@@ -396,6 +397,50 @@ class BaseHost(object):
     def snapshot(self, silent=False, dryrun=False):
         """Creates a server backup"""
         raise NotImplementedError
+
+
+    def sync(self, remote, silent=False, dryrun=False, opts=None):
+        raise NotImplementedError
+
+
+    def setup(self, silent=False, dryrun=False, opts=None):
+        """Prepares a host for the initial sync. sets up directories, and git annex repos"""
+        from async.directories import SetupError, HookError
+
+        failed = []
+
+        dirs = {k: d for k, d in self.dirs.items() if opts.dirs==None or k in opts.dirs}
+        keys = sorted(dirs.keys())
+        num = len(keys)
+        ret = True
+
+        for i, k in enumerate(keys):
+            d = dirs[k]
+            if not silent: ui.print_enum(i+1, num, "setup #*y%s#t (%s)" % (d.name, d.type))
+
+            try:
+                d.setup(self, silent=silent, dryrun=dryrun, opts=opts)
+
+            except SetupError as err:
+                ui.print_error("setup failed: %s" % str(err))
+                failed.append(d.name)
+
+            except HookError as err:
+                ui.print_error("hook failed: %s" % str(err))
+                failed.append(d.name)
+
+            ui.print_color("")
+
+        if len(failed) == 0:
+            ui.print_color("Setup #*gsuceeded#t.\n")
+            return True
+
+        elif len(failed) > 0:
+            ui.print_color("Setup #*rfailed#t.")
+            ui.print_color("  directories: %s" % ', '.join(failed))
+            ui.print_color("\n")
+            return False
+
 
 
     # Filesystem manipulations

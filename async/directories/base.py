@@ -131,7 +131,7 @@ class BaseDir(object):
             return
 
         # run hooks if the path is new
-        if self.setup_hook:
+        if self.hooks['setup']:
             if not silent:
                 ui.print_color("Running setup hook")
             if not dryrun: self.run_hook(host, 'setup', tgt=path)
