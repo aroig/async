@@ -31,6 +31,7 @@ class AnnexDir(BaseDir):
         self.annex_copy_data = conf['annex_copy_data']
         self.annex_remotes = conf['annex_remotes']
 
+        self.git_hooks_path = conf['conf_path']
 
 
     # Interface
@@ -118,13 +119,25 @@ class AnnexDir(BaseDir):
             if name == host.name: continue
 
             if not name in remotes:
-                if not silent: ui.print_color("Adding remote %s" % name)
+                if not silent: ui.print_color("Adding remote '%s'" % name)
                 try:
                     if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
                 except CmdError as err:
                     ui.print_error("git remote add failed: %s" % str(err))
 
+        # setup hooks
+        for h, p in r['git_hooks'].items():
+            srcpath = os.path.join(self.git_hooks_path, p)
+            tgtpath = os.path.join(path, '.git/hooks', h)
 
+            with open(srcpath, 'r') as fd:
+                script = fd.read()
 
+            if not silent: ui.print_color("Updating git hook '%s'" % h)
+            try:
+                if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
+                                            tgtpath=path, stdin=script)
+            except CmdError as err:
+                ui.print_error("hook setup failed: %s" % str(err))
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

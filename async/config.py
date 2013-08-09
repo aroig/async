@@ -141,6 +141,7 @@ class AsyncConfig(ConfigParser):
 
     REMOTE_FIELDS={
         'url'            : (None, parse_string),
+        'git_hooks'      : ({}, parse_dict_path),
     }
 
     DIRECTORY_FIELDS={
