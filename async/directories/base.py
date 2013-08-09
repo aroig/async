@@ -55,7 +55,7 @@ class BaseDir(object):
         self.hooks['post_sync'] = conf['post_sync_hook']
         self.hooks['setup']     = conf['setup_hook']
 
-        self.hooks_path = conf['hooks_path']
+        self.hooks_path = conf['conf_path']
 
 
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):

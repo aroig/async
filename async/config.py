@@ -158,7 +158,6 @@ class AsyncConfig(ConfigParser):
         'rsync_args'      : ([], parse_list_args),
         'annex_copy_data' : (True, parse_bool),
 
-        'hooks_path'      : (None, parse_path),
         'pre_sync_hook'   : (None, parse_path),
         'post_sync_hook'  : (None, parse_path),
     }
@@ -170,7 +169,7 @@ class AsyncConfig(ConfigParser):
 
 
     def _parse_config(self, sec, fields, defaults):
-        dic = {}
+        dic = {'conf_path': self.path}
         for k, pair in fields.items():
             func = pair[1]
 
@@ -186,12 +185,13 @@ class AsyncConfig(ConfigParser):
     def __init__(self, cfgdir):
         ConfigParser.__init__(self)
         self.read(glob.glob(os.path.join(cfgdir, '*.conf')))
+        self.path = cfgdir
 
-        self.host = {}
-        self.remote = {}
-        self.instance = {}
+        self.host      = {}
+        self.remote    = {}
+        self.instance  = {}
         self.directory = {}
-        self.async = {}
+        self.async     = {}
 
         host_defaults = dict(self.items('host_defaults'))
         remote_defaults = dict(self.items('remote_defaults'))
