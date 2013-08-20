@@ -202,7 +202,7 @@ class AsyncConfig(ConfigParser):
         # parse sections
         sec_re = re.compile(r'^\s*(.*)\s+([^"]*|"[^"]*")\s*$')
         for sec in self.sections():
-            m = self.sec_re.match(sec)
+            m = sec_re.match(sec)
             if m:
                 obj  = m.group(1).strip()
                 name = m.group(2).strip('"')
