@@ -71,8 +71,8 @@ class AnnexDir(BaseDir):
                 ui.print_debug('git annex %s' % ' '.join(annex_send_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args, silent=silent)
 
-            except subprocess.CalledProcessError as err:
-                raise SyncError(str(err))
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
 
         # post-sync hook
         ui.print_debug('post_sync hook')
