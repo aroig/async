@@ -91,11 +91,6 @@ def parse_list_path(s):
 
 
 class AsyncConfig(ConfigParser):
-    instance_re = re.compile(r'^\s*instance\s+([^"]*|"[^"]*")\s*$')
-    remote_re = re.compile(r'^\s*remote\s+([^"]*|"[^"]*")\s*$')
-    host_re = re.compile(r'^\s*host\s+([^"]*|"[^"]*")\s*$')
-    directory_re = re.compile(r'^\s*directory\s+([^"]*|"[^"]*")\s*$')
-
 
     # default values and parsing functions
 
@@ -203,41 +198,38 @@ class AsyncConfig(ConfigParser):
         self.async = self._parse_config('async', AsyncConfig.ASYNC_FIELDS, {})
 
         # parse sections
+        sec_re = re.compile(r'^\s*(.*)\s+([^"]*|"[^"]*")\s*$')
         for sec in self.sections():
-            m = self.instance_re.match(sec)
+            m = self.sec_re.match(sec)
             if m:
-                name = m.group(1).strip('"')
-                self.instance[name] = self._parse_config(sec, AsyncConfig.INSTANCE_FIELDS, instance_defaults)
-                self.instance[name]['name'] = name
-                continue
+                obj  = m.group(1).strip()
+                name = m.group(2).strip('"')
 
-            m = self.directory_re.match(sec)
-            if m:
-                name = m.group(1).strip('"')
-                self.directory[name] = self._parse_config(sec, AsyncConfig.DIRECTORY_FIELDS, directory_defaults)
-                self.directory[name]['name'] = name
-                continue
+                if obj == 'instance':
+                    self.instance[name] = self._parse_config(sec, AsyncConfig.INSTANCE_FIELDS, instance_defaults)
+                    self.instance[name]['name'] = name
 
-            m = self.remote_re.match(sec)
-            if m:
-                name = m.group(1).strip('"')
-                self.remote[name] = self._parse_config(sec, AsyncConfig.REMOTE_FIELDS, remote_defaults)
-                self.remote[name]['name'] = name
-                continue
+                elif obj == 'directory':
+                    self.directory[name] = self._parse_config(sec, AsyncConfig.DIRECTORY_FIELDS, directory_defaults)
+                    self.directory[name]['name'] = name
 
-            m = self.host_re.match(sec)
-            if m:
-                name = m.group(1).strip('"')
-                self.host[name] = self._parse_config(sec, AsyncConfig.HOST_FIELDS, host_defaults)
-                self.host[name]['name'] = name
-                continue
+                elif obj == 'remote':
+                    self.remote[name] = self._parse_config(sec, AsyncConfig.REMOTE_FIELDS, remote_defaults)
+                    self.remote[name]['name'] = name
+
+                elif obj == 'host':
+                    self.host[name] = self._parse_config(sec, AsyncConfig.HOST_FIELDS, host_defaults)
+                    self.host[name]['name'] = name
+
+                else:
+                    continue
 
 
         # match instance to ec2 hosts
         for k, val in self.host.items():
             if val['type'] == 'ec2':
                 if k in self.instance:
-                    val['instance'] = self.instance[k]
+                    val['instance'] = dict(self.instance[k])
                 else:
                     raise AsyncConfigError("Unknown instance for host: %s" % k)
 
@@ -256,7 +248,7 @@ class AsyncConfig(ConfigParser):
                     if not k in self.directory:
                         raise AsyncConfigError("Unknown directory: %s" % k)
 
-                val['dirs'] = {k: self.directory[k] for k in dirs}
+                val['dirs'] = {k: dict(self.directory[k]) for k in dirs}
 
 
 
