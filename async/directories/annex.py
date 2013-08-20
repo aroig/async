@@ -28,7 +28,6 @@ class AnnexDir(BaseDir):
     """Directory synced via git annex"""
     def __init__(self, conf):
         super(AnnexDir, self).__init__(conf)
-        self.annex_copy_data = conf['annex_copy_data']
         self.annex_remotes = conf['annex_remotes']
 
         self.git_hooks_path = conf['conf_path']
@@ -63,15 +62,14 @@ class AnnexDir(BaseDir):
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 
-        if self.annex_copy_data:
-            try:
-                if not opts.force == 'up':
-                    ui.print_debug('git annex %s' % ' '.join(annex_get_args))
-                    if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=silent)
+        try:
+            if not opts.force == 'up' and self.name in local.annex_push and self.name in remote.annex_pull:
+                ui.print_debug('git annex %s' % ' '.join(annex_get_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=silent)
 
-                if not opts.force == 'down':
-                    ui.print_debug('git annex %s' % ' '.join(annex_send_args))
-                    if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args, silent=silent)
+            if not opts.force == 'down' and self.name in local.annex_pull and self.name in remote.annex_push:
+                ui.print_debug('git annex %s' % ' '.join(annex_send_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args, silent=silent)
 
             except subprocess.CalledProcessError as err:
                 raise SyncError(str(err))

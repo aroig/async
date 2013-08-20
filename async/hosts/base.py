@@ -63,6 +63,9 @@ class BaseHost(object):
         self.luks = conf['luks']
         self.ecryptfs = conf['ecryptfs']
 
+        self.annex_pull = set(conf['annex_pull'])
+        self.annex_push = set(conf['annex_push'])
+
         if conf['vol_keys']: self.vol_keys = self.read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
 

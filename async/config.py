@@ -116,6 +116,9 @@ class AsyncConfig(ConfigParser):
         'check'          : ([], parse_list),
         'type'           : (None, parse_string),
         'instance'       : (None, parse_string),
+
+        'annex_pull'     : ([], parse_list),         # directories where we pull annexed files from remote
+        'annex_push'     : ([], parse_list),         # directories where we push annexed files to remote
     }
 
     INSTANCE_FIELDS={
@@ -152,7 +155,6 @@ class AsyncConfig(ConfigParser):
         'unison_profile'  : (None, parse_string),
         'unison_args'     : ([], parse_list_args),
         'rsync_args'      : ([], parse_list_args),
-        'annex_copy_data' : (True, parse_bool),
 
         'pre_sync_hook'   : (None, parse_path),
         'post_sync_hook'  : (None, parse_path),
