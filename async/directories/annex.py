@@ -63,6 +63,13 @@ class AnnexDir(BaseDir):
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 
+        # merge remote working tree
+        try:
+            if not dryrun: remote.run_cmd("git annex merge", tgtpath=tgt)
+
+        except CmdError as err:
+            raise SyncError(str(err))
+
         try:
             # copy annexed files to the remote
             if not opts.force == 'up' and self.name in local.annex_push and self.name in remote.annex_pull:
