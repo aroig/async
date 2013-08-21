@@ -99,5 +99,11 @@ class UnisonDir(BaseDir):
 
 
 
+    def check(self, local, silent=False, dryrun=False, opts=None):
+        # Nothing to check for unison dirs
+        if not silent: ui.print_color("No checks available")
+        return
+
+
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

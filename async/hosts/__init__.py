@@ -23,6 +23,7 @@ from async.hosts.directory import DirectoryHost
 from async.hosts.local import LocalHost
 
 from async.hosts.base import HostError
+from async.hosts.base import CmdError
 from async.hosts.ssh import SshError
 
 

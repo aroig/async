@@ -89,6 +89,9 @@ Commands:
   setup:      %prog setup <host>
               Setup directory structure on host.
 
+  check:      %prog check
+              Checks localhost directories.
+
   shell:      %prog shell <host>
               Launch a shell on host.
 
@@ -212,6 +215,11 @@ try:
     elif cmd == "setup":
         if len(args) == 0:    ret = remote.setup(dryrun=opts.dryrun,
                                                  silent=opts.quiet, opts=opts)
+        else:                 ui.print_error("Too many arguments.")
+
+    elif cmd == "check":
+        if len(args) == 0:    ret = local.check(dryrun=opts.dryrun,
+                                                silent=opts.quiet, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":

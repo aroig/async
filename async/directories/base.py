@@ -26,6 +26,10 @@ class DirError(Exception):
     def __init__(self, msg=None):
         super(DirError, self).__init__(msg)
 
+class CheckError(Exception):
+    def __init__(self, msg=None):
+        super(CheckError, self).__init__(msg)
+
 class SyncError(Exception):
     def __init__(self, msg=None):
         super(SyncError, self).__init__(msg)
@@ -138,6 +142,10 @@ class BaseDir(object):
 
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
+        raise NotImplementedError
+
+
+    def check(self, local, silent=False, dryrun=False, opts=None):
         raise NotImplementedError
 
 

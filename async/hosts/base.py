@@ -58,10 +58,10 @@ class BaseHost(object):
         self.path = conf['path']
 
         # mounts
-        self.check = conf['check']
-        self.mounts = conf['mounts']
-        self.luks = conf['luks']
-        self.ecryptfs = conf['ecryptfs']
+        self.check_mounts     = conf['check']
+        self.mounts           = conf['mounts']
+        self.luks_mounts      = conf['luks']
+        self.ecryptfs_mounts  = conf['ecryptfs']
 
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
@@ -125,7 +125,7 @@ class BaseHost(object):
         """Mounts local devices on the host. Takes care of luks and ecryptfs partitions.
            The order is: open luks, mount devices, setup ecryptfs partitions."""
         # open luks partitions
-        for dev, name in self.luks.items():
+        for dev, name in self.luks_mounts.items():
             passphrase = self.vol_keys[name]
             try:
                 self.run_cmd('echo -n %s | sudo cryptsetup --key-file=- open --type luks %s %s' % \
@@ -143,7 +143,7 @@ class BaseHost(object):
 
         # mount ecryptfs
         # TODO: needs testing
-        for cryp, mp in self.ecryptfs.items():
+        for cryp, mp in self.ecryptfs_mounts.items():
             passphrase = self.vol_keys[mp]
 
             try:
@@ -164,7 +164,7 @@ class BaseHost(object):
 
     def umount_devices(self):
         # umount ecryptfs
-        for cryp, mp in self.ecryptfs.items():
+        for cryp, mp in self.ecryptfs_mounts.items():
             try:
                 self.run_cmd('umount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
@@ -178,7 +178,7 @@ class BaseHost(object):
                 raise HostError("Can't umount %s. Message: %s" % (mp, err.stdout.strip()))
 
         # close luks partitions
-        for dev, name in self.luks.items():
+        for dev, name in self.luks_mounts.items():
             try:
                 self.run_cmd('sudo cryptsetup close --type luks %s' % shquote(name), tgtpath='/', catchout=True)
             except CmdError as err:
@@ -208,7 +208,7 @@ class BaseHost(object):
         if not check_devices():
             raise HostException("There are unmounted devices")
 
-        for p in self.check:
+        for p in self.check_mounts:
             path = os.path.join(self.path, p)
             if not self.path_exists(path):
                 ui.print_debug("path %s does nit exist" % path)

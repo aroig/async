@@ -42,8 +42,6 @@ class SshHost(BaseHost):
         ui.print_debug("begin SshHost.__init__")
         super(SshHost, self).__init__(conf)
 
-        self.check = conf['check']
-
         # ssh related config
         self.ssh_hostname     = conf['hostname']         # the hostname
         self.user             = conf['user']             # the user on the remote

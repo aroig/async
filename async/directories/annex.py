@@ -18,8 +18,9 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from async.directories.base import BaseDir, DirError, SyncError, SetupError
-import subprocess
+from async.hosts.base import CmdError
 
+import subprocess
 import os
 import async.cmd as cmd
 import async.archui as ui
@@ -102,6 +103,7 @@ class AnnexDir(BaseDir):
             if not silent: ui.print_color("Initializing git repo")
             try:
                 if not dryrun: host.run_cmd('git init', tgtpath=path)
+
             except CmdError as err:
                 ui.print_error("git init failed: %s" % str(err))
                 return
@@ -112,6 +114,7 @@ class AnnexDir(BaseDir):
             if not silent: ui.print_color("Initializing annex")
             try:
                 if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
+
             except CmdError as err:
                 ui.print_error("git annex init failed: %s" % str(err))
                 return
@@ -145,7 +148,25 @@ class AnnexDir(BaseDir):
             try:
                 if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
                                             tgtpath=path, stdin=script)
+
             except CmdError as err:
                 ui.print_error("hook setup failed: %s" % str(err))
+
+
+
+    def check(self, local, silent=False, dryrun=False, opts=None):
+        src = self.fullpath(local)
+
+        # check
+        ui.print_debug('git annex fsck')
+        try:
+            if not silent: ui.print_color("Performing annex fsck")
+            if not dryrun: local.run_cmd("git annex fsck", tgtpath=src)
+
+        except CmdError as err:
+            ui.print_error(str(err))
+
+
+
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

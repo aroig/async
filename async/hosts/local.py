@@ -20,7 +20,7 @@
 
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
-from async.directories import SyncError, SetupError, LocalDir, HookError
+from async.directories import SyncError, SetupError, CheckError, LocalDir, HookError
 from async.pathdict import PathDict
 
 import async.archui as ui
@@ -114,6 +114,52 @@ class LocalHost(DirectoryHost):
             ui.print_color("  directories: %s" % ', '.join(failed))
             ui.print_color("")
             return False
+
+
+
+    def check(self, silent=False, dryrun=False, opts=None):
+        """Check directories for local machine"""
+        failed = []
+
+        dirs = self._get_common_dirs(self.dirs, self.dirs, dirs=opts.dirs)
+        dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
+        keys = sorted(dirs.keys())
+        num = len(dirs)
+        ret = True
+
+        try:
+            ui.print_status("Checking localhost directories. %s" % datetime.now().strftime("%a %d %b %Y %H:%M"))
+            ui.print_color("")
+
+            for i, k in enumerate(keys):
+                d = dirs[k]
+                if not silent: ui.print_enum(i+1, num, "checking #*y%s#t (%s)" % (d.name, d.type))
+
+                try:
+                    d.check(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
+
+                except CheckError as err:
+                    ui.print_error("check failed: %s" % str(err))
+                    failed.append(d.name)
+
+                ui.print_color("")
+
+        except HostError as err:
+            ui.print_error(str(err))
+            ret = False
+
+        # success message
+        if len(failed) == 0 and ret == True:
+            ui.print_color("Check #*gsuceeded#t.")
+            ui.print_color("")
+            return True
+
+        elif len(failed) > 0 or ret == False:
+            ui.print_color("Check #*rfailed#t.")
+            ui.print_color("  directories: %s" % ', '.join(failed))
+            ui.print_color("")
+            return False
+
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
