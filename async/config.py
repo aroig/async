@@ -96,7 +96,7 @@ class AsyncConfig(ConfigParser):
 
     HOST_FIELDS={
         'dirs'           : ([], parse_list),
-        'nosync'         : ([], parse_list),
+        'ignore'         : ([], parse_list_path),
         'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
 
         'hostname'       : (None, parse_string),

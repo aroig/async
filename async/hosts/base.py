@@ -74,6 +74,8 @@ class BaseHost(object):
         for name, dconf in conf['dirs'].items():
             self.dirs[name] = get_directory(dconf, unison_as_rsync=conf['unison_as_rsync'])
 
+        # ignore paths
+        self.ignore = conf['ignore']
 
     # Utilities
     # ----------------------------------------------------------------

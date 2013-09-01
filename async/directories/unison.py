@@ -65,10 +65,8 @@ class UnisonDir(BaseDir):
 
         args = args + self.unison_args
 
-        for p in self.ignore:
-            args = args + ['-ignore', 'Path %s' % p]
-
-        for p in opts.ignore:
+        ignore = set(self.ignore) | set(opts.ignore) | set(local.ignore) | set(remote.ignore)
+        for p in ignore:
             args = args + ['-ignore', 'Path %s' % p]
 
         if opts.auto:  args = args + ['-auto']

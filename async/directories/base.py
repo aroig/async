@@ -51,6 +51,7 @@ class BaseDir(object):
 
         self.perms      = int(conf['perms'], base=8)
         self.symlink    = conf['symlink']
+        self.ignore     = []
 
         self.path_rename = conf['path_rename']
 
