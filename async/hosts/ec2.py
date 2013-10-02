@@ -525,10 +525,10 @@ class Ec2Host(SshHost):
         self.state = 'unknown'
         if self.instance == None:                                  self.state = 'terminated'
         if self.instance != None:                                  self.state = 'offline'
-        if self.state == 'offline'  and self.check_instance() \
-           and self.ssh.alive():                                   self.state = 'online'
-        if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
-        if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
+        if self.state == 'offline' and self.check_instance():      self.state = 'online'
+        if self.ssh.alive():
+            if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
+            if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
 
         return self.state
 
