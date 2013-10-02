@@ -56,7 +56,7 @@ class SshHost(BaseHost):
             pass
         self.ssh = SSHConnection(socket=socket)
 
-        self.ssh_args = []
+        self.ssh_args = ['-o ServerAliveInterval=60']
         if self.ssh_trust:
             self.ssh_args = self.ssh_args + ['-o LogLevel=quiet',
                                              '-o UserKnownHostsFile=/dev/null',
@@ -159,7 +159,7 @@ class SshHost(BaseHost):
             try:
                 if not self.ssh.alive():
                     self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
-                                     timeout=5, args=self.ssh_args)
+                                     timeout=10, args=self.ssh_args)
 
             except SSHConnectionError as err:
                 raise SshError("Can't connect to %s: %s" % (self.ssh_hostname,
