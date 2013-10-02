@@ -504,9 +504,8 @@ class Ec2Host(SshHost):
 
         # establish a ssh connection
         if self.instance:
-            super(Ec2Host, self).connect(silent=silent, dryrun=dryrun)
-        else:
-            self.state = 'terminated'
+            if self.get_state() in set(['online', 'attached', 'mounted']):
+                super(Ec2Host, self).connect(silent=silent, dryrun=dryrun)
 
 
     def disconnect(self, silent=False, dryrun=False):
