@@ -139,7 +139,7 @@ class BaseHost(object):
         # mount devices
         for dev, mp in self.mounts.items():
             try:
-                self.run_cmd('mount %s' % shquote(mp), tgtpath='/', catchout=True)
+                self.run_cmd('sudo mount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't mount %s. Message: %s" % (mp, err.stdout.strip()))
 
@@ -168,14 +168,14 @@ class BaseHost(object):
         # umount ecryptfs
         for cryp, mp in self.ecryptfs_mounts.items():
             try:
-                self.run_cmd('umount %s' % shquote(mp), tgtpath='/', catchout=True)
+                self.run_cmd('sudo umount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't umount ecryptfs directory %s. Message: %s" % (mp, err.stdout.strip()))
 
         # umount devices
         for dev, mp in self.mounts.items():
             try:
-                self.run_cmd('umount %s' % shquote(mp), tgtpath='/', catchout=True)
+                self.run_cmd('sudo umount %s' % shquote(mp), tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't umount %s. Message: %s" % (mp, err.stdout.strip()))
 
