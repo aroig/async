@@ -26,8 +26,6 @@ import re
 
 from io import StringIO
 from threading  import Thread, Event
-from Queue import Queue, Empty
-
 import async.archui as ui
 
 
