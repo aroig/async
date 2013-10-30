@@ -41,7 +41,7 @@ build:
 		"or '$(PYTHON) setup.py --help' for more information".
 
 clean:
-	-python setup.py clean --all
+	-$(PYTHON) setup.py clean --all
 	-find . -name '*.pyc' -exec rm -f {} \;
 	-find . -name '.cache*' -exec rm -f {} \;
 	-find . -name '*.html' -exec rm -f {} \;
