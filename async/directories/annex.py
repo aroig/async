@@ -67,7 +67,6 @@ class AnnexDir(BaseDir):
             raise SyncError(str(err))
 
         # merge remote working tree
-        # TODO: if annex hooks work, this will be useless
         try:
             if not dryrun: remote.run_cmd("git annex merge", tgtpath=tgt)
 
@@ -75,7 +74,6 @@ class AnnexDir(BaseDir):
             raise SyncError(str(err))
 
         # copy annexed files from the remote. This is fast as it uses mtimes
-
         if not opts.force == 'down' and self.name in local.annex_pull and self.name in remote.annex_push:
             try:
                 if not silent: ui.print_color("copying missing annexed files from remote")
