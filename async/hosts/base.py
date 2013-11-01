@@ -419,6 +419,10 @@ class BaseHost(object):
         num = len(keys)
         ret = True
 
+        ui.print_status("Initializing directories on #m%s#t. %s" % (self.name,
+                                                                    datetime.now().strftime("%a %d %b %Y %H:%M")))
+        ui.print_color("")
+
         for i, k in enumerate(keys):
             d = dirs[k]
             if not silent: ui.print_enum(i+1, num, "init #*y%s#t (%s)" % (d.name, d.type))
@@ -452,16 +456,15 @@ class BaseHost(object):
         failed = []
 
         dirs = self._get_common_dirs(self.dirs, self.dirs, dirs=opts.dirs)
-        dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
         keys = sorted(dirs.keys())
         num = len(dirs)
         ret = True
 
-        try:
-            ui.print_status("Checking %s directories. %s" % (self.name,
-                                                             datetime.now().strftime("%a %d %b %Y %H:%M")))
-            ui.print_color("")
+        ui.print_status("Checking directories on #m%s#t. %s" % (self.name,
+                                                                datetime.now().strftime("%a %d %b %Y %H:%M")))
+        ui.print_color("")
 
+        try:
             for i, k in enumerate(keys):
                 d = dirs[k]
                 if not silent: ui.print_enum(i+1, num, "checking #*y%s#t (%s)" % (d.name, d.type))
