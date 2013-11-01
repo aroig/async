@@ -34,6 +34,13 @@ class AnnexDir(BaseDir):
         self.git_hooks_path = conf['conf_path']
 
 
+    def _get_uuid(self, hostn, dirn):
+        if hostn in self.annex_remotes:
+            if dirn in self.annex_remotes[hostn]['uuid']:
+                return self.annex_remotes[hostn]['uuid'][dirn]
+        return None
+
+
     # Interface
     # ----------------------------------------------------------------
 
@@ -135,6 +142,12 @@ class AnnexDir(BaseDir):
             annex_desc = "%s : %s" % (host.name, self.name)
             if not silent: ui.print_color("Initializing annex")
             try:
+                # set the uuid if we know it
+                uuid = self._get_uuid(host.name, self.name)
+                if uuid:
+                    if not silent: ui.print_color("uuid: %s" % uuid)
+                    if not dryrun: host.run_cmd('git config annex.uuid "%s"' % uuid, tgtpath=path)
+
                 if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
 
             except CmdError as err:
