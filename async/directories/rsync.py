@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir, DirError, SyncError, SetupError, HookError
+from async.directories.base import BaseDir, DirError, SyncError, InitError, HookError
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd

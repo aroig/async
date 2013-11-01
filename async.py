@@ -86,8 +86,8 @@ Commands:
   sync:       %prog sync <host>
               Sync host.
 
-  setup:      %prog setup <host>
-              Setup directory structure on host.
+  init:       %prog init <host>
+              Initialize directory structure on host.
 
   check:      %prog check
               Checks localhost directories.
@@ -195,7 +195,7 @@ try:
     else:
         remote = None
 
-    logging_cmds = set(['setup', 'sync'])
+    logging_cmds = set(['init', 'sync'])
     if cmd in logging_cmds and conf.async['logfile'] != None:
         # setup_tee(conf.async['logfile'])
         ui.start_logging(conf.async['logfile'], level=4)
@@ -212,8 +212,8 @@ try:
                                                silent=opts.quiet, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
-    elif cmd == "setup":
-        if len(args) == 0:    ret = remote.setup(dryrun=opts.dryrun,
+    elif cmd == "init":
+        if len(args) == 0:    ret = remote.init(dryrun=opts.dryrun,
                                                  silent=opts.quiet, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 

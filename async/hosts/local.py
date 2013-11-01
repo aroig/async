@@ -20,7 +20,7 @@
 
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
-from async.directories import SyncError, SetupError, CheckError, LocalDir, HookError
+from async.directories import SyncError, InitError, CheckError, LocalDir, HookError
 from async.pathdict import PathDict
 
 import async.archui as ui

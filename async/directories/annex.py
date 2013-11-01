@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir, DirError, SyncError, SetupError
+from async.directories.base import BaseDir, DirError, SyncError, InitError
 from async.hosts.base import CmdError
 
 import subprocess
@@ -117,12 +117,12 @@ class AnnexDir(BaseDir):
 
 
 
-    def setup(self, host, silent=False, dryrun=False, opts=None):
+    def init(self, host, silent=False, dryrun=False, opts=None):
         # TODO: finish repo initialization
         path = self.fullpath(host)
 
         # create directory and run hooks
-        super(AnnexDir, self).setup(host, silent, dryrun, opts)
+        super(AnnexDir, self).init(host, silent, dryrun, opts)
 
         # initialize git
         if not host.path_exists(os.path.join(path, '.git')):

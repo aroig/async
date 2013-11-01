@@ -34,9 +34,9 @@ class SyncError(Exception):
     def __init__(self, msg=None):
         super(SyncError, self).__init__(msg)
 
-class SetupError(Exception):
+class InitError(Exception):
     def __init__(self, msg=None):
-        super(SetupError, self).__init__(msg)
+        super(InitError, self).__init__(msg)
 
 class HookError(Exception):
     def __init__(self, msg=None):
@@ -58,7 +58,7 @@ class BaseDir(object):
         self.hooks = {}
         self.hooks['pre_sync']  = conf['pre_sync_hook']
         self.hooks['post_sync'] = conf['post_sync_hook']
-        self.hooks['setup']     = conf['setup_hook']
+        self.hooks['init']     = conf['init_hook']
 
         self.hooks_path = conf['conf_path']
 
@@ -75,7 +75,7 @@ class BaseDir(object):
             try:
                 if not dryrun: host.symlink(self.symlink, path)
             except Exception as err:
-                raise SetupError(str(err))
+                raise InitError(str(err))
             return True
 
         else:
@@ -85,7 +85,7 @@ class BaseDir(object):
             try:
                 if not dryrun: host.mkdir(path, mode=mode)
             except Exception as err:
-                raise SetupError(str(err))
+                raise InitError(str(err))
             return True
 
 
@@ -124,7 +124,7 @@ class BaseDir(object):
                 ui.print_color(ret)
 
 
-    def setup(self, host, silent=False, dryrun=False, opts=None):
+    def init(self, host, silent=False, dryrun=False, opts=None):
         path = self.fullpath(host)
 
         if not host.path_exists(path):
@@ -136,10 +136,10 @@ class BaseDir(object):
             return
 
         # run hooks if the path is new
-        if self.hooks['setup']:
+        if self.hooks['init']:
             if not silent:
-                ui.print_color("Running setup hook")
-            if not dryrun: self.run_hook(host, 'setup', tgt=path)
+                ui.print_color("Running init hook")
+            if not dryrun: self.run_hook(host, 'init', tgt=path)
 
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):

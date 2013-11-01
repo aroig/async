@@ -408,9 +408,9 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    def setup(self, silent=False, dryrun=False, opts=None):
+    def init(self, silent=False, dryrun=False, opts=None):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
-        from async.directories import SetupError, HookError
+        from async.directories import InitError, HookError
 
         failed = []
 
@@ -421,13 +421,13 @@ class BaseHost(object):
 
         for i, k in enumerate(keys):
             d = dirs[k]
-            if not silent: ui.print_enum(i+1, num, "setup #*y%s#t (%s)" % (d.name, d.type))
+            if not silent: ui.print_enum(i+1, num, "init #*y%s#t (%s)" % (d.name, d.type))
 
             try:
-                d.setup(self, silent=silent, dryrun=dryrun, opts=opts)
+                d.init(self, silent=silent, dryrun=dryrun, opts=opts)
 
-            except SetupError as err:
-                ui.print_error("setup failed: %s" % str(err))
+            except InitError as err:
+                ui.print_error("init failed: %s" % str(err))
                 failed.append(d.name)
 
             except HookError as err:
@@ -437,11 +437,11 @@ class BaseHost(object):
             ui.print_color("")
 
         if len(failed) == 0:
-            ui.print_color("Setup #*gsuceeded#t.\n")
+            ui.print_color("Init #*gsuceeded#t.\n")
             return True
 
         elif len(failed) > 0:
-            ui.print_color("Setup #*rfailed#t.")
+            ui.print_color("Init #*rfailed#t.")
             ui.print_color("  directories: %s" % ', '.join(failed))
             ui.print_color("\n")
             return False
