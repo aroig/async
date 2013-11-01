@@ -183,7 +183,11 @@ try:
     if not sys.stdout.isatty(): ui.use_color(False)
 
     # extract command and hostname
-    cmd = args[0]
+    if len(args) > 0:
+        cmd = args[0]
+    else:
+        ui.print_error("Need a command")
+        sys.exit(1)
 
     # get local and remote hosts
     local = get_local_host(conf)
@@ -193,7 +197,8 @@ try:
         remote = get_remote_host(name, conf)
 
     else:
-        remote = None
+        ui.print_error("Need a host")
+        sys.exit(1)
 
     logging_cmds = set(['init', 'sync'])
     if cmd in logging_cmds and conf.async['logfile'] != None:
