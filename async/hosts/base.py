@@ -22,7 +22,9 @@ import sys
 import subprocess
 import time
 import shlex
+from datetime import datetime
 
+from async.pathdict import PathDict
 import async.archui as ui
 
 
@@ -118,6 +120,19 @@ class BaseHost(object):
                 if m: keys[m.group(1).strip()] = m.group(2).strip()
 
         return keys
+
+
+    def _get_common_dirs(self, A, B, dirs):
+        """returns a dict of dir objects that are common in A and B as paths. Only allows for
+        directories with name in dirs, if dirs != None."""
+        if dirs != None: dirs = set(dirs)
+
+        pdA = PathDict({d.relpath: d for k, d in A.items()})
+        pdB = PathDict({d.relpath: d for k, d in B.items()})
+        pdI = pdA & pdB
+        return {d.name: d for p, d in pdI.items() if dirs==None or d.name in dirs}
+
+
 
 
     # Filesystem manipulations
@@ -404,95 +419,95 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    def sync(self, remote, silent=False, dryrun=False, opts=None):
-        raise NotImplementedError
-
-
-    def init(self, silent=False, dryrun=False, opts=None):
-        """Prepares a host for the initial sync. sets up directories, and git annex repos"""
-        from async.directories import InitError, HookError
+    def run_on_dirs(self, dirs, func, action, silent=False):
+        """Utility function to run a function on a set of directories.
+           func(d) operates on a dir object d."""
+        from async.directories import InitError, HookError, SyncError, CheckError
 
         failed = []
-
-        dirs = {k: d for k, d in self.dirs.items() if opts.dirs==None or k in opts.dirs}
         keys = sorted(dirs.keys())
         num = len(keys)
         ret = True
 
-        ui.print_status("Initializing directories on #m%s#t. %s" % (self.name,
-                                                                    datetime.now().strftime("%a %d %b %Y %H:%M")))
+        ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
+                                                datetime.now().strftime("%a %d %b %Y %H:%M")))
         ui.print_color("")
 
         for i, k in enumerate(keys):
             d = dirs[k]
-            if not silent: ui.print_enum(i+1, num, "init #*y%s#t (%s)" % (d.name, d.type))
+            if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
 
             try:
-                d.init(self, silent=silent, dryrun=dryrun, opts=opts)
+                func(d)
 
-            except InitError as err:
-                ui.print_error("init failed: %s" % str(err))
+            except (CheckError, InitError, SyncError) as err:
+                ui.print_error("%s failed: %s" % (action.lower(), str(err)))
                 failed.append(d.name)
 
             except HookError as err:
                 ui.print_error("hook failed: %s" % str(err))
                 failed.append(d.name)
 
+            ret = False
+
             ui.print_color("")
 
         if len(failed) == 0:
-            ui.print_color("Init #*gsuceeded#t.\n")
+            ui.print_color("%s #*gsuceeded#t.\n" % action)
             return True
 
         elif len(failed) > 0:
-            ui.print_color("Init #*rfailed#t.")
+            ui.print_color("%s #*rfailed#t." % action)
             ui.print_color("  directories: %s" % ', '.join(failed))
             ui.print_color("\n")
             return False
 
 
-    def check(self, silent=False, dryrun=False, opts=None):
-        """Check directories for local machine"""
-        failed = []
 
+    def sync(self, remote, silent=False, dryrun=False, opts=None):
+        raise NotImplementedError
+
+
+
+    def init(self, silent=False, dryrun=False, opts=None):
+        """Prepares a host for the initial sync. sets up directories, and git annex repos"""
         dirs = self._get_common_dirs(self.dirs, self.dirs, dirs=opts.dirs)
-        keys = sorted(dirs.keys())
-        num = len(dirs)
-        ret = True
-
-        ui.print_status("Checking directories on #m%s#t. %s" % (self.name,
-                                                                datetime.now().strftime("%a %d %b %Y %H:%M")))
-        ui.print_color("")
 
         try:
-            for i, k in enumerate(keys):
-                d = dirs[k]
-                if not silent: ui.print_enum(i+1, num, "checking #*y%s#t (%s)" % (d.name, d.type))
+            self.connect(silent=silent, dryrun=False)
 
-                try:
-                    d.check(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
+            def func(d):
+                d.init(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
-                except CheckError as err:
-                    ui.print_error("check failed: %s" % str(err))
-                    failed.append(d.name)
-
-                ui.print_color("")
+            return self.run_on_dirs(dirs, func, "Init", silent=silent)
 
         except HostError as err:
-            ui.print_error(str(err))
-            ret = False
-
-        # success message
-        if len(failed) == 0 and ret == True:
-            ui.print_color("Check #*gsuceeded#t.")
-            ui.print_color("")
-            return True
-
-        elif len(failed) > 0 or ret == False:
-            ui.print_color("Check #*rfailed#t.")
-            ui.print_color("  directories: %s" % ', '.join(failed))
-            ui.print_color("")
+            ui.print_error("can't connect to host: %s" % str(err))
             return False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+
+
+    def check(self, silent=False, dryrun=False, opts=None):
+        """Check directories for local machine"""
+        dirs = self._get_common_dirs(self.dirs, self.dirs, dirs=opts.dirs)
+
+        try:
+            self.connect(silent=silent, dryrun=False)
+
+            def func(d):
+                d.check(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
+
+            return self.run_on_dirs(dirs, func, "Check", silent=silent)
+
+        except HostError as err:
+            ui.print_error("can't connect to host: %s" % str(err))
+            return False
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
 
 
 

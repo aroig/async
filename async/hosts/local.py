@@ -21,7 +21,6 @@
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, InitError, CheckError, LocalDir, HookError
-from async.pathdict import PathDict
 
 import async.archui as ui
 from datetime import datetime
@@ -35,85 +34,31 @@ class LocalHost(DirectoryHost):
         super(LocalHost, self).__init__(conf)
 
 
-    def _get_common_dirs(self, A, B, dirs):
-        """returns a dict of dir objects that are common in A and B as paths. Only allows for
-        directories with name in dirs, if dirs != None."""
-        if dirs != None: dirs = set(dirs)
-
-        pdA = PathDict({d.relpath: d for k, d in A.items()})
-        pdB = PathDict({d.relpath: d for k, d in B.items()})
-        pdI = pdA & pdB
-        return {d.name: d for p, d in pdI.items() if dirs==None or d.name in dirs}
-
-
 
     # Interface
     # ----------------------------------------------------------------
 
     def sync(self, remote, silent=False, dryrun=False, opts=None):
         """Syncs local machine to this host"""
-        failed = []
-
         dirs = self._get_common_dirs(self.dirs, remote.dirs, dirs=opts.dirs)
-        dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
-        keys = sorted(dirs.keys())
-        num = len(dirs)
-        ret = True
 
         try:
+            self.connect(silent=silent, dryrun=False)
             remote.connect(silent=silent, dryrun=False)
 
-            # mount remote
-            remote_state = remote.get_state()
-            if not remote.set_state('mounted') == 'mounted':
-                ui.print_error("Remote host is not in 'mounted' state")
-                return False
+            def func(d):
+                d.sync(self, remote, silent=silent or opts.terse, dryrun=dryrun,
+                       opts=opts)
 
-            ui.print_status("Synchronizing with #*m%s#t. %s" % (remote.name,
-                                                                datetime.now().strftime("%a %d %b %Y %H:%M")))
-            ui.print_color("")
-
-            for i, k in enumerate(keys):
-                d = dirs[k]
-                if not silent: ui.print_enum(i+1, num, "syncing #*y%s#t (%s)" % (d.name, d.type))
-
-                try:
-                    d.sync(self, remote, silent=silent or opts.terse,
-                           dryrun=dryrun, opts=opts)
-
-                except SyncError as err:
-                    ui.print_error("synchronization failed: %s" % str(err))
-                    failed.append(d.name)
-
-                except HookError as err:
-                    ui.print_error("hook failed: %s" % str(err))
-                    failed.append(d.name)
-
-                ui.print_color("")
-
-            # recover old remote state
-            remote.set_state(remote_state)
+            return self.run_on_dirs(dirs, func, "Sync", silent=silent)
 
         except HostError as err:
-            ui.print_error(str(err))
-            ret = False
+            ui.print_error("can't connect to host: %s" % str(err))
+            return False
 
         finally:
             remote.disconnect(silent=silent, dryrun=False)
-
-        ui.print_color("")
-
-        # success message
-        if len(failed) == 0 and ret == True:
-            ui.print_color("Synchronization with #*m%s#t #*gsuceeded#t." % remote.name)
-            ui.print_color("")
-            return True
-
-        elif len(failed) > 0 or ret == False:
-            ui.print_color("Synchronization with #*m%s#t #*rfailed#t." % remote.name)
-            ui.print_color("  directories: %s" % ', '.join(failed))
-            ui.print_color("")
-            return False
+            self.disconnect(silent=silent, dryrun=False)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
