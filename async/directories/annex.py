@@ -163,12 +163,26 @@ class AnnexDir(BaseDir):
             # discard remotes named as the host
             if name == host.name: continue
 
+            # get the uuid
+            if 'uuid' in r: uuid = r['uuid'].get(self.name, None)
+            else:           uuid = None
+
+            if uuid == None:
+                ui.print_warning("no configured uuid for remote %s. skipping" % name)
+                continue
+
             if not name in remotes:
                 if not silent: ui.print_color("Adding remote '%s'" % name)
                 try:
                     if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
                 except CmdError as err:
                     ui.print_error("git remote add failed: %s" % str(err))
+
+            # set remote config
+            if uuid:
+                if not silent: ui.print_color("setting uuid for %s: %s" % (name, uuid))
+                if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
+
 
         # setup hooks
         for h, p in r['git_hooks'].items():
