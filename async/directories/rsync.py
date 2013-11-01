@@ -37,6 +37,8 @@ class RsyncDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
+        super(RsyncDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
+
         src = '%s/' % self.fullpath(local)
         args = [] + self.rsync_args
 
@@ -70,10 +72,13 @@ class RsyncDir(BaseDir):
 
 
 
-    def check(self, local, silent=False, dryrun=False, opts=None):
-        # Nothing to check for rsync dirs
-        if not silent: ui.print_color("No checks available")
-        return
+    def init(self, host, silent=False, dryrun=False, opts=None):
+        super(RsyncDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+
+
+
+    def check(self, host, silent=False, dryrun=False, opts=None):
+        super(RsyncDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
 
 
 

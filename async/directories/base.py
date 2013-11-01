@@ -89,7 +89,7 @@ class BaseDir(object):
             return True
 
 
-    # Interface
+    # Utilities
     # ----------------------------------------------------------------
 
     @property
@@ -124,6 +124,14 @@ class BaseDir(object):
                 ui.print_color(ret)
 
 
+    # Interface
+    # ----------------------------------------------------------------
+
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
+        return
+
+
+
     def init(self, host, silent=False, dryrun=False, opts=None):
         path = self.fullpath(host)
 
@@ -142,12 +150,13 @@ class BaseDir(object):
             if not dryrun: self.run_hook(host, 'init', tgt=path)
 
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        raise NotImplementedError
 
+    def check(self, host, silent=False, dryrun=False, opts=None):
+        path = self.fullpath(host)
 
-    def check(self, local, silent=False, dryrun=False, opts=None):
-        raise NotImplementedError
+        if not os.path.exists(path):
+            raise CheckError("path does not exist: %s" % path)
+
 
 
 

@@ -89,8 +89,8 @@ Commands:
   init:       %prog init <host>
               Initialize directory structure on host.
 
-  check:      %prog check
-              Checks localhost directories.
+  check:      %prog check <host>
+              Checks directory structure on host.
 
   shell:      %prog shell <host>
               Launch a shell on host.
@@ -214,12 +214,12 @@ try:
 
     elif cmd == "init":
         if len(args) == 0:    ret = remote.init(dryrun=opts.dryrun,
-                                                 silent=opts.quiet, opts=opts)
+                                                silent=opts.quiet, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "check":
-        if len(args) == 0:    ret = local.check(dryrun=opts.dryrun,
-                                                silent=opts.quiet, opts=opts)
+        if len(args) == 0:    ret = remote.check(dryrun=opts.dryrun,
+                                                 silent=opts.quiet, opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":

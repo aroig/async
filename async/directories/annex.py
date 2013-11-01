@@ -38,6 +38,8 @@ class AnnexDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
+        super(AnnexDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
+
         # TODO: implement ignore
         # TODO: implement force
         src = self.fullpath(local)
@@ -118,11 +120,8 @@ class AnnexDir(BaseDir):
 
 
     def init(self, host, silent=False, dryrun=False, opts=None):
-        # TODO: finish repo initialization
+        super(AnnexDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
         path = self.fullpath(host)
-
-        # create directory and run hooks
-        super(AnnexDir, self).init(host, silent, dryrun, opts)
 
         # initialize git
         if not host.path_exists(os.path.join(path, '.git')):
@@ -131,8 +130,7 @@ class AnnexDir(BaseDir):
                 if not dryrun: host.run_cmd('git init', tgtpath=path)
 
             except CmdError as err:
-                ui.print_error("git init failed: %s" % str(err))
-                return
+                raise InitError("git init failed: %s" % str(err))
 
         # initialize annex
         if not host.path_exists(os.path.join(path, '.git/annex')):
@@ -142,8 +140,7 @@ class AnnexDir(BaseDir):
                 if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
 
             except CmdError as err:
-                ui.print_error("git annex init failed: %s" % str(err))
-                return
+                raise InitError("git annex init failed: %s" % str(err))
 
         # setup remotes
         remotes_raw = host.run_cmd('git remote show', tgtpath=path, catchout=True)
@@ -180,18 +177,18 @@ class AnnexDir(BaseDir):
 
 
 
-    def check(self, local, silent=False, dryrun=False, opts=None):
-        src = self.fullpath(local)
+    def check(self, host, silent=False, dryrun=False, opts=None):
+        super(AnnexDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
+        path = self.fullpath(host)
 
-        # check
+        # run git annex fsck
         ui.print_debug('git annex fsck')
         try:
             if not silent: ui.print_color("Performing annex fsck")
-            if not dryrun: local.run_cmd("git annex fsck", tgtpath=src)
+            if not dryrun: host.run_cmd("git annex fsck", tgtpath=path)
 
         except CmdError as err:
-            ui.print_error(str(err))
-
+            raise CheckError("git annex fsck failed: %s" % str(err))
 
 
 

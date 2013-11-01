@@ -32,9 +32,13 @@ class LocalDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        return
+        super(LocalDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
 
+    def init(self, host, silent=False, dryrun=False, opts=None):
+        super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
 
+    def check(self, host, silent=False, dryrun=False, opts=None):
+        super(LocalDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

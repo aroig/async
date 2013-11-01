@@ -38,6 +38,8 @@ class UnisonDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
+        super(UnisonDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
+
         src = '%s/' % local.path
 
         if isinstance(remote, SshHost):
@@ -96,10 +98,13 @@ class UnisonDir(BaseDir):
 
 
 
-    def check(self, local, silent=False, dryrun=False, opts=None):
-        # Nothing to check for unison dirs
-        if not silent: ui.print_color("No checks available")
-        return
+    def init(self, host, silent=False, dryrun=False, opts=None):
+        super(UnisonDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+
+
+
+    def check(self, host, silent=False, dryrun=False, opts=None):
+        super(UnisonDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
 
 
 
