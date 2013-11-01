@@ -448,6 +448,10 @@ class BaseHost(object):
                 ui.print_error("hook failed: %s" % str(err))
                 failed.append(d.name)
 
+            except HostError as err:
+                ui.print_error("host error: %s" % str(err))
+                failed.append(d.name)
+
             ret = False
 
             ui.print_color("")
@@ -503,7 +507,7 @@ class BaseHost(object):
             return self.run_on_dirs(dirs, func, "Check", silent=silent)
 
         except HostError as err:
-            ui.print_error("can't connect to host: %s" % str(err))
+            ui.print_error("host error: %s" % str(err))
             return False
 
         finally:
