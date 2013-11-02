@@ -126,15 +126,15 @@ def parse_keyval(key, val, dic, parse_val=parse_string):
     if len(spl) == 0:
         return
 
-    elif len(spl) == 2:
+    elif len(spl) == 1:
+        parse_val(spl[0], val, dic)
+
+    elif len(spl) >= 2:
         key = spl[0]
-        nk = spl[1]
+        rest = spl[1]
+        if not key in dic: dic[key] = {}
 
-    else:
-        raise ValueError("Wrong key for a keyval field: %s" % key)
-
-    if not key in dic: dic[key] = {}
-    if val: parse_val(nk, val, dic[key])
+        parse_keyval(rest, val, dic[key], parse_val)
 
 
 
@@ -142,10 +142,12 @@ def parse_dict_path(key, val, dic):
     return parse_dict(key, val, dic, parse_path)
 
 
-
 def parse_list_path(key, val, dic):
     return parse_list(key, val, dic, parse_path)
 
+
+def parse_keyval_path(key, val, dic):
+    return parse_keyval(key, val, dic, parse_path)
 
 
 class AsyncConfig(ConfigParser):
@@ -196,7 +198,7 @@ class AsyncConfig(ConfigParser):
 
     REMOTE_FIELDS={
         'url'            : (None, parse_string),
-        'git_hooks'      : ({}, parse_dict_path),
+        'git_hooks\..*'  : ({}, parse_keyval_path),
         'uuid\..*'       : ({}, parse_keyval),
     }
 
