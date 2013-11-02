@@ -116,9 +116,7 @@ class BaseDir(object):
 
 
     def run_hook(self, host, name, tgt=None, silent=False, dryrun=False):
-        """Runs hooks. Returns true if executed without errors, and false if some hook
-           failed"""
-        ok = True
+        """Runs hooks"""
         if name in self.hooks:
             for hook in self.hooks[name]:
                 if not silent: ui.print_color("running %s hook: %s" % (name, hook))
@@ -129,10 +127,8 @@ class BaseDir(object):
                         ui.print_color(ret)
 
                     except CmdError as err:
-                        ui.print_error("error running hook %s: %s" % (name, str(err)))
-                        ok = False
+                        raise HookError("error running hook %s: %s" % (name, str(err)))
 
-        return ok
 
 
     # Interface
