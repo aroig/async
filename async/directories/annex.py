@@ -175,8 +175,9 @@ class AnnexDir(BaseDir):
                 if not silent: ui.print_color("adding remote '%s'" % name)
                 try:
                     if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
+
                 except CmdError as err:
-                    ui.print_error("git remote add failed: %s" % str(err))
+                    raise InitError("git remote add failed: %s" % str(err))
 
             # set remote config
             if uuid:
@@ -185,20 +186,26 @@ class AnnexDir(BaseDir):
 
 
         # setup hooks
-        for h, p in r['git_hooks'].items():
-            srcpath = os.path.join(self.git_hooks_path, p)
-            tgtpath = os.path.join(path, '.git/hooks', h)
+        remote = self.annex_remotes.get(host.name, None)
+        if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
+            hooks = remote['git_hooks'][self.name]
 
-            with open(srcpath, 'r') as fd:
-                script = fd.read()
+            for h, p in hooks.items():
+                srcpath = os.path.join(self.git_hooks_path, p)
+                tgtpath = os.path.join(path, '.git/hooks', h)
 
-            if not silent: ui.print_color("updating git hook '%s'" % h)
-            try:
-                if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
-                                            tgtpath=path, stdin=script)
+                try:
+                    with open(srcpath, 'r') as fd:
+                        script = fd.read()
+                        if not silent: ui.print_color("updating git hook '%s'" % h)
+                        if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
+                                                    tgtpath=path, stdin=script)
 
-            except CmdError as err:
-                ui.print_error("hook setup failed: %s" % str(err))
+                except CmdError as err:
+                    raise InitError("hook setup failed: %s" % str(err))
+
+                except IOError as err:
+                    raise InitError("hook setup failed: %s" % str(err))
 
 
 
