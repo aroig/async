@@ -153,82 +153,84 @@ def parse_keyval_path(key, val, dic):
 class AsyncConfig(ConfigParser):
 
     # default values and parsing functions
-    HOST_FIELDS={
-        'dirs'           : ([], parse_list),
-        'ignore'         : ([], parse_list_path),
-        'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
+    FIELDS={
+        'host': {
+            'dirs'           : ([], parse_list),
+            'ignore'         : ([], parse_list_path),
+            'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
 
-        'hostname'       : (None, parse_string),
-        'user'           : (None, parse_string),
-        'mac_address'    : (None, parse_string),
+            'hostname'       : (None, parse_string),
+            'user'           : (None, parse_string),
+            'mac_address'    : (None, parse_string),
 
-        'ssh_key'        : (None, parse_path),
-        'ssh_trust'      : (False, parse_bool),
-        'unison_as_rsync': (False, parse_bool),
+            'ssh_key'        : (None, parse_path),
+            'ssh_trust'      : (False, parse_bool),
+            'unison_as_rsync': (False, parse_bool),
 
-        'mounts'         : ({}, parse_dict),
-        'luks'           : ({}, parse_dict),
-        'ecryptfs'       : ({}, parse_dict),
-        'vol_keys'       : (None, parse_path),
+            'mounts'         : ({}, parse_dict),
+            'luks'           : ({}, parse_dict),
+            'ecryptfs'       : ({}, parse_dict),
+            'vol_keys'       : (None, parse_path),
 
-        'path'           : (None, parse_path),
-        'check'          : ([], parse_list),
-        'type'           : (None, parse_string),
-        'instance'       : (None, parse_string),
+            'path'           : (None, parse_path),
+            'check'          : ([], parse_list),
+            'type'           : (None, parse_string),
+            'instance'       : (None, parse_string),
 
-        'annex_pull'     : ([], parse_list),         # directories where we pull annexed files from remote
-        'annex_push'     : ([], parse_list),         # directories where we push annexed files to remote
+            'annex_pull'     : ([], parse_list),         # directories where we pull annexed files from remote
+            'annex_push'     : ([], parse_list),         # directories where we push annexed files to remote
+        },
+
+        'instance': {
+            'ec2_ami'        : (None, parse_string),
+            'ec2_owner'      : (None, parse_string),
+            'ec2_region'     : (None, parse_string),
+            'ec2_itype'      : (None, parse_string),
+
+            'ec2_keypair'    : (None, parse_string),
+            'ec2_security_group' : (None, parse_string),
+
+            'aws_keys'       : (None, parse_path),
+            'volumes'        : ({}, parse_dict),
+
+            'zone'           : (None, parse_string),
+            'user'           : (None, parse_string),
+        },
+
+        'remote': {
+            'url'            : (None, parse_string),
+            'git_hooks\..*'  : ({}, parse_keyval_path),
+            'uuid\..*'       : ({}, parse_keyval),
+        },
+
+        'directory': {
+            'perms'           : ('700', parse_string),   # directory perms
+            'type'            : (None, parse_string),    # sync method
+            'symlink'         : (None, parse_path),      # the directory is a symlink to this target
+            'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
+            'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
+
+            'check'           : ([], parse_list),
+            'ignore'          : ([], parse_list_path),
+            'unison_profile'  : (None, parse_string),
+            'unison_args'     : ([], parse_list_args),
+            'rsync_args'      : ([], parse_list_args),
+
+            'init_hook'              : ([], parse_list_path),  # scripts to run on initialization
+            'pre_sync_hook'          : ([], parse_list_path),  # scripts to run before sync
+            'post_sync_hook'         : ([], parse_list_path),  # scripts to run after sync
+            'pre_sync_remote_hook'   : ([], parse_list_path),  # scripts to run on the remote before sync
+            'post_sync_remote_hook'  : ([], parse_list_path),  # scripts to run on the remote after sync
+        },
+
+        'async': {
+            'color'           : (True, parse_bool),     # color UI
+            'logfile'         : (None, parse_path),     # logfile
+        },
     }
 
-    INSTANCE_FIELDS={
-        'ec2_ami'        : (None, parse_string),
-        'ec2_owner'      : (None, parse_string),
-        'ec2_region'     : (None, parse_string),
-        'ec2_itype'      : (None, parse_string),
 
-        'ec2_keypair'    : (None, parse_string),
-        'ec2_security_group' : (None, parse_string),
-
-        'aws_keys'       : (None, parse_path),
-        'volumes'        : ({}, parse_dict),
-
-        'zone'           : (None, parse_string),
-        'user'           : (None, parse_string),
-    }
-
-    REMOTE_FIELDS={
-        'url'            : (None, parse_string),
-        'git_hooks\..*'  : ({}, parse_keyval_path),
-        'uuid\..*'       : ({}, parse_keyval),
-    }
-
-    DIRECTORY_FIELDS={
-        'perms'           : ('700', parse_string),   # directory perms
-        'type'            : (None, parse_string),    # sync method
-        'symlink'         : (None, parse_path),      # the directory is a symlink to this target
-        'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
-        'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
-
-        'check'           : ([], parse_list),
-        'ignore'          : ([], parse_list_path),
-        'unison_profile'  : (None, parse_string),
-        'unison_args'     : ([], parse_list_args),
-        'rsync_args'      : ([], parse_list_args),
-
-        'init_hook'              : ([], parse_list_path),  # scripts to run on initialization
-        'pre_sync_hook'          : ([], parse_list_path),  # scripts to run before sync
-        'post_sync_hook'         : ([], parse_list_path),  # scripts to run after sync
-        'pre_sync_remote_hook'   : ([], parse_list_path),  # scripts to run on the remote before sync
-        'post_sync_remote_hook'  : ([], parse_list_path),  # scripts to run on the remote after sync
-    }
-
-    ASYNC_FIELDS={
-        'color'           : (True, parse_bool),     # color UI
-        'logfile'         : (None, parse_path),     # logfile
-    }
-
-
-    def _parse_config(self, sec, fields, defaults):
+    def _parse_config(self, conf, fields, defaults):
         dic = {'conf_path': self.path}
         for key, pair in fields.items():
             func   = pair[1]
@@ -236,18 +238,23 @@ class AsyncConfig(ConfigParser):
 
             # if key contains a star, it is a regexp. match it!
             if '*' in key:
-                L = [k for k, v in self.items(sec) if re.match(key, k)]
+                Lconf = [k for k, v in conf.items()     if re.match(key, k)]
+                Ldef =  [k for k, v in defaults.items() if re.match(key, k)]
             else:
-                L = [key]
+                Lconf = [key]
+                Ldef  = [key]
                 if not key in dic: dic[key] = initval
 
-            for key in L:
-                if self.has_option(sec, key): val = self.get(sec, key)
-                else:                         val = None
-
+            # parse defaults
+            for key in Ldef:
                 defval = defaults.get(key, None)
-                func(key, defval, dic)                 # parse the default value
-                func(key, val, dic)                    # parse the value
+                func(key, defval, dic)
+
+            # parse config
+            for key in Lconf:
+                val = conf.get(key, None)
+                func(key, val, dic)
+
         return dic
 
 
@@ -262,13 +269,16 @@ class AsyncConfig(ConfigParser):
         self.directory = {}
         self.async     = {}
 
-        host_defaults = dict(self.items('host_defaults'))
-        remote_defaults = dict(self.items('remote_defaults'))
-        directory_defaults = dict(self.items('directory_defaults'))
-        instance_defaults = dict(self.items('instance_defaults'))
+        # put objects in a dict for easier acces
+        objects = {
+            'host': self.host,
+            'remote': self.remote,
+            'instance': self.instance,
+            'directory': self.directory,
+        }
 
         # parse async settings
-        self.async = self._parse_config('async', AsyncConfig.ASYNC_FIELDS, {})
+        self.async = self._parse_config(dict(self.items('async')), AsyncConfig.FIELDS['async'], {})
 
         # parse sections
         sec_re = re.compile(r'^\s*(.*)\s+([^"]*|"[^"]*")\s*$')
@@ -277,26 +287,14 @@ class AsyncConfig(ConfigParser):
             if m:
                 obj  = m.group(1).strip()
                 name = m.group(2).strip('"')
+                if not obj in objects.keys():
+                    raise AsyncConfigError("Unknown object section '%s'" % obj)
 
-                if obj == 'instance':
-                    self.instance[name] = self._parse_config(sec, AsyncConfig.INSTANCE_FIELDS, instance_defaults)
-                    self.instance[name]['name'] = name
+                defaults = dict(self.items('%s_defaults' % obj))
+                conf     = dict(self.items(sec))
 
-                elif obj == 'directory':
-                    self.directory[name] = self._parse_config(sec, AsyncConfig.DIRECTORY_FIELDS, directory_defaults)
-                    self.directory[name]['name'] = name
-
-                elif obj == 'remote':
-                    self.remote[name] = self._parse_config(sec, AsyncConfig.REMOTE_FIELDS, remote_defaults)
-                    self.remote[name]['name'] = name
-
-                elif obj == 'host':
-                    self.host[name] = self._parse_config(sec, AsyncConfig.HOST_FIELDS, host_defaults)
-                    self.host[name]['name'] = name
-
-                else:
-                    continue
-
+                objects[obj][name] = self._parse_config(conf, AsyncConfig.FIELDS[obj], defaults)
+                objects[obj][name]['name'] = name
 
         # match instance to ec2 hosts
         for k, val in self.host.items():
@@ -306,12 +304,10 @@ class AsyncConfig(ConfigParser):
                 else:
                     raise AsyncConfigError("Unknown instance for host: %s" % k)
 
-
         # match remotes to annex dirs
         for k, val in self.directory.items():
             if val['type'] == 'annex':
                 val['annex_remotes'] = self.remote
-
 
         # attach dirs data to hosts
         for k, val in self.host.items():
