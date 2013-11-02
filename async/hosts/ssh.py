@@ -229,9 +229,7 @@ class SshHost(BaseHost):
             return ret
 
         except SSHCmdError as err:
-            newerr = CmdError(str(err))
-            if err.stdout: newerr.stdout = err.stdout
-            raise newerr
+            raise CmdError(str(err), err.returncode, err.output)
 
 
     def interactive_shell(self):

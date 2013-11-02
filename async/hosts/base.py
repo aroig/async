@@ -40,9 +40,10 @@ class HostError(Exception):
 
 
 class CmdError(HostError):
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, returncode=None, output=""):
         super(CmdError, self).__init__(msg)
-        self.stdout = ""
+        self.output = output
+        self.returncode = returncode
 
 
 class BaseHost(object):
@@ -404,6 +405,33 @@ class BaseHost(object):
 
         except HostError as err:
             ui.print_error(str(err))
+
+        finally:
+            self.disconnect(silent=silent, dryrun=False)
+
+
+    def run(self, script, silent=False, dryrun=False):
+        """Runs a local script on the host"""
+        try:
+            self.connect()
+
+            # mount remote
+            remote_state = self.get_state()
+            if not self.set_state('mounted') == 'mounted':
+                ui.print_error("Remote host is not in 'mounted' state")
+                return False
+
+            ui.print_color("")
+            self.run_script(script)
+
+            # recover old remote state
+            self.set_state(remote_state)
+
+        except HostError as err:
+            ui.print_error(str(err))
+
+        except CmdError as err:
+            ui.print_error("Command error on %s: %s" % (self.name, str(err)))
 
         finally:
             self.disconnect(silent=silent, dryrun=False)

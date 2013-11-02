@@ -104,10 +104,9 @@ class DirectoryHost(BaseHost):
             raw = cmd.bash_cmd(tgtdir=path, cmd=cm,
                                catchout=catchout, stdin=stdin)
             return raw
+
         except subprocess.CalledProcessError as err:
-            newerr = CmdError(str(err))
-            if err.output: newerr.stdout = err.output
-            raise newerr
+            raise CmdError(str(err), err.returncode, err.output)
 
 
     def interactive_shell(self):

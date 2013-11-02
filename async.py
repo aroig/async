@@ -93,7 +93,10 @@ Commands:
               Checks directory structure on host.
 
   shell:      %prog shell <host>
-              Launch a shell on host.
+              Launch an interactive shell on host.
+
+  run:        %prog run <host> <script>
+              Run a local script on host
 
   start:      %prog start <host>
               Start the host.
@@ -250,6 +253,12 @@ try:
     elif cmd == "shell":
         if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun,
                                                  silent=opts.quiet)
+        else:                 ui.print_error("Too many arguments.")
+
+    elif cmd == "run":
+        if len(args) == 1:    ret = remote.run(script=args[0], dryrun=opts.dryrun,
+                                               silent=opts.quiet)
+        elif len(args) == 0:  ui.print_error("Missing script.")
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "ping":
