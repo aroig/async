@@ -130,7 +130,7 @@ class AnnexDir(BaseDir):
 
         # initialize git
         if not host.path_exists(os.path.join(path, '.git')):
-            if not silent: ui.print_color("Initializing git repo")
+            if not silent: ui.print_color("initializing git repo")
             try:
                 if not dryrun: host.run_cmd('git init', tgtpath=path)
 
@@ -140,12 +140,12 @@ class AnnexDir(BaseDir):
         # initialize annex
         if not host.path_exists(os.path.join(path, '.git/annex')):
             annex_desc = "%s : %s" % (host.name, self.name)
-            if not silent: ui.print_color("Initializing annex")
+            if not silent: ui.print_color("initializing annex")
             try:
                 # set the uuid if we know it
                 uuid = self._get_uuid(host.name, self.name)
                 if uuid:
-                    if not silent: ui.print_color("uuid: %s" % uuid)
+                    if not silent: ui.print_color("setting repo uuid: %s" % uuid)
                     if not dryrun: host.run_cmd('git config annex.uuid "%s"' % uuid, tgtpath=path)
 
                 if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
@@ -172,7 +172,7 @@ class AnnexDir(BaseDir):
                 continue
 
             if not name in remotes:
-                if not silent: ui.print_color("Adding remote '%s'" % name)
+                if not silent: ui.print_color("adding remote '%s'" % name)
                 try:
                     if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
                 except CmdError as err:
@@ -180,7 +180,7 @@ class AnnexDir(BaseDir):
 
             # set remote config
             if uuid:
-                if not silent: ui.print_color("setting uuid for %s: %s" % (name, uuid))
+                if not silent: ui.print_color("setting remote uuid for %s: %s" % (name, uuid))
                 if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
 
 
@@ -192,7 +192,7 @@ class AnnexDir(BaseDir):
             with open(srcpath, 'r') as fd:
                 script = fd.read()
 
-            if not silent: ui.print_color("Updating git hook '%s'" % h)
+            if not silent: ui.print_color("updating git hook '%s'" % h)
             try:
                 if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
                                             tgtpath=path, stdin=script)
@@ -209,7 +209,7 @@ class AnnexDir(BaseDir):
         # run git annex fsck
         ui.print_debug('git annex fsck')
         try:
-            if not silent: ui.print_color("Performing annex fsck")
+            if not silent: ui.print_color("checking annex")
             if not dryrun: host.run_cmd("git annex fsck", tgtpath=path)
 
         except CmdError as err:

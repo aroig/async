@@ -118,7 +118,7 @@ class BaseDir(object):
     def run_hook(self, host, name, tgt=None, silent=False, dryrun=False):
         if name in self.hooks:
             for hook in self.hooks[name]:
-                if not silent: ui.print_color("running hook: %s" % hook)
+                if not silent: ui.print_color("running %s hook: %s" % (name, hook))
                 hookpath = os.path.join(self.hooks_path, hook)
                 if not dryrun:
                     ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
