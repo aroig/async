@@ -56,11 +56,13 @@ class BaseDir(object):
         self.path_rename = conf['path_rename']
 
         self.hooks = {}
-        self.hooks['pre_sync']  = conf['pre_sync_hook']
-        self.hooks['post_sync'] = conf['post_sync_hook']
-        self.hooks['init']     = conf['init_hook']
-
         self.hooks_path = conf['conf_path']
+
+        self.hooks['init']             = conf['init_hook']
+        self.hooks['pre_sync']         = conf['pre_sync_hook']
+        self.hooks['post_sync']        = conf['post_sync_hook']
+        self.hooks['pre_sync_remote']  = conf['pre_sync_remote_hook']
+        self.hooks['post_sync_remote'] = conf['post_sync_remote_hook']
 
 
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
@@ -113,15 +115,14 @@ class BaseDir(object):
         return os.path.join(host.path, rpath)
 
 
-    def run_hook(self, host, name, tgt=None):
+    def run_hook(self, host, name, tgt=None, silent=False, dryrun=False):
         if name in self.hooks:
-            hook = self.hooks[name]
-            if hook:
-                # newenv = dict(os.environ)
-                # newenv['PATH'] = "%s:%s" % (self.hooks_path, newenv['PATH'])
+            for hook in self.hooks[name]:
+                if not silent: ui.print_color("running hook: %s" % hook)
                 hookpath = os.path.join(self.hooks_path, hook)
-                ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
-                ui.print_color(ret)
+                if not dryrun:
+                    ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
+                    ui.print_color(ret)
 
 
     # Interface
@@ -141,13 +142,9 @@ class BaseDir(object):
             self._create_directory(host, path, self.perms, silent, dryrun)
         else:
             ui.print_warning("path already exists: %s" % path)
-            return
 
-        # run hooks if the path is new
-        if self.hooks['init']:
-            if not silent:
-                ui.print_color("Running init hook")
-            if not dryrun: self.run_hook(host, 'init', tgt=path)
+        # run hooks
+        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 

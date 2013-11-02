@@ -62,8 +62,8 @@ class AnnexDir(BaseDir):
         annex_send_args = ['copy', '--quiet', '--fast', '--to=%s' % remote.name]
 
         # pre-sync hook
-        ui.print_debug('pre_sync hook')
-        if not dryrun: self.run_hook(local, 'pre_sync')
+        self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
+        self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
 
         # sync
         ui.print_debug('git annex %s' % ' '.join(annex_sync_args))
@@ -119,8 +119,8 @@ class AnnexDir(BaseDir):
                 raise SyncError(str(err))
 
         # post-sync hook
-        ui.print_debug('post_sync hook')
-        if not dryrun: self.run_hook(local, 'post_sync')
+        self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
+        self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 

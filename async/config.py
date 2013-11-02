@@ -204,7 +204,6 @@ class AsyncConfig(ConfigParser):
         'perms'           : ('700', parse_string),   # directory perms
         'type'            : (None, parse_string),    # sync method
         'symlink'         : (None, parse_path),      # the directory is a symlink to this target
-        'init_hook'       : (None, parse_path),      # script to run on initialization
         'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
         'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
 
@@ -214,8 +213,11 @@ class AsyncConfig(ConfigParser):
         'unison_args'     : ([], parse_list_args),
         'rsync_args'      : ([], parse_list_args),
 
-        'pre_sync_hook'   : (None, parse_path),
-        'post_sync_hook'  : (None, parse_path),
+        'init_hook'              : ([], parse_list_path),  # scripts to run on initialization
+        'pre_sync_hook'          : ([], parse_list_path),  # scripts to run before sync
+        'post_sync_hook'         : ([], parse_list_path),  # scripts to run after sync
+        'pre_sync_remote_hook'   : ([], parse_list_path),  # scripts to run on the remote before sync
+        'post_sync_remote_hook'  : ([], parse_list_path),  # scripts to run on the remote after sync
     }
 
     ASYNC_FIELDS={
