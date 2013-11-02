@@ -123,15 +123,27 @@ class BaseHost(object):
         return keys
 
 
-    def _get_common_dirs(self, A, B, dirs):
-        """returns a dict of dir objects that are common in A and B as paths. Only allows for
-        directories with name in dirs, if dirs != None."""
+    def _get_common_dirs(self, local, remote, dirs):
+        """Returns a dict of dir objects that are common in local and remote as paths.
+           Only allows for directories with name in dirs, if dirs != None.
+           Avoid subdirectories ignored by one of the hosts."""
         if dirs != None: dirs = set(dirs)
+        A = local.dirs
+        B = remote.dirs
 
+        igA = PathDict({rel: rel for rel in local.ignore})
+        igB = PathDict({rel: rel for rel in remote.ignore})
+
+        # A pathdict has paths as keys. the we can do intersections or unions of the keys
+        # and chooses the value for the most specific of the keys.
         pdA = PathDict({d.relpath: d for k, d in A.items()})
         pdB = PathDict({d.relpath: d for k, d in B.items()})
         pdI = pdA & pdB
-        return {d.name: d for p, d in pdI.items() if dirs==None or d.name in dirs}
+
+        return {d.name: d for p, d in pdI.items()
+                if (dirs==None or d.name in dirs) and
+                not d.relpath in igA and
+                not d.relpath in igB}
 
 
 
@@ -503,7 +515,7 @@ class BaseHost(object):
 
     def init(self, silent=False, dryrun=False, opts=None):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
-        dirs = self._get_common_dirs(self.dirs, self.dirs, dirs=opts.dirs)
+        dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
 
         try:
             self.connect(silent=silent, dryrun=False)
@@ -524,7 +536,7 @@ class BaseHost(object):
 
     def check(self, silent=False, dryrun=False, opts=None):
         """Check directories for local machine"""
-        dirs = self._get_common_dirs(self.dirs, self.dirs, dirs=opts.dirs)
+        dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
 
         try:
             self.connect(silent=silent, dryrun=False)

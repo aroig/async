@@ -40,7 +40,7 @@ class LocalHost(DirectoryHost):
 
     def sync(self, remote, silent=False, dryrun=False, opts=None):
         """Syncs local machine to this host"""
-        dirs = self._get_common_dirs(self.dirs, remote.dirs, dirs=opts.dirs)
+        dirs = self._get_common_dirs(self, remote, dirs=opts.dirs)
 
         # ignore LocalDir directores. Don't want to sync them
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
