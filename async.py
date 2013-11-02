@@ -26,7 +26,7 @@ import subprocess
 from optparse import OptionParser
 
 from async import __version__
-from async.config import AsyncConfig
+from async.config import AsyncConfig, AsyncConfigError
 
 import async.archui as ui
 from async import get_remote_host, get_local_host
@@ -315,6 +315,8 @@ try:
     if ret: sys.exit(0)
     else:   sys.exit(1)
 
+except AsyncConfigError as err:
+    ui.print_error("invalid config: %s" % str(err))
 
 except KeyboardInterrupt:
     print("")
