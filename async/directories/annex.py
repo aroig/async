@@ -94,15 +94,17 @@ class AnnexDir(BaseDir):
         if not opts.force == 'up' and self.name in local.annex_push and self.name in remote.annex_pull:
             if not silent: ui.print_color("copying missing annexed files to remote")
 
-            # get a list of files with missing annex on the remote
+            # get a list of files with missing annex on the remote. we just check for broken symlinks.
+            # This is fast enough on SSD, but not as fast as I'd like on usb disks...
             try:
-                raw = remote.run_cmd("find -L . -type l -not -path './.git/*' -print0", tgtpath=tgt, catchout=True)
+                raw = remote.run_cmd("find . -path './.git' -prune -or -type l -xtype l -print0",
+                                     tgtpath=tgt, catchout=True)
                 missing = raw.split('\0')
             except CmdError as err:
                 missing = None
 
             try:
-                # this is faster, but may miss annexed files not linked in the working dir
+                # This is faster than 'copy --from', but misses annexed files not linked in the working dir
                 # TODO: check whether the remote is in direct mode.
                 if missing != None and not opts.slow:
                     for f in missing:
