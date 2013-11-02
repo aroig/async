@@ -631,7 +631,7 @@ class BaseHost(object):
 
 
     def run_script(self, scrpath, tgtpath=None, catchout=False):
-        """Run script on a local path on the host"""
+        """Run a script in a local path on the host"""
 
         with open(scrpath, 'r') as fd:
             script=fd.read()
