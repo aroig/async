@@ -160,7 +160,7 @@ class SshHost(BaseHost):
             try:
                 if not self.ssh.alive():
                     self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
-                                     timeout=10, args=self.ssh_args)
+                                     timeout=30, args=self.ssh_args)
 
             except SSHConnectionError as err:
                 raise SshError("Can't connect to %s: %s" % (self.ssh_hostname,
