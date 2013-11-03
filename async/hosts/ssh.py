@@ -49,7 +49,8 @@ class SshHost(BaseHost):
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
-        socket = os.path.expandvars('$XDG_RUNTIME_DIR/async/ssh.socket')
+        socketfile="ssh-%s.socket" % str(os.getpid())
+        socket = os.path.expandvars('$XDG_RUNTIME_DIR/async/%s' % socketfile)
         try:
             os.makedirs(os.path.dirname(socket))
         except:
