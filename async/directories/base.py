@@ -122,6 +122,7 @@ class BaseDir(object):
                 if not silent: ui.print_color("running %s hook: %s" % (name, hook))
                 hookpath = os.path.join(self.hooks_path, hook)
                 if not dryrun:
+                    from async.hosts import CmdError
                     try:
                         ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
                         ui.print_color(ret)
