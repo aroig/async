@@ -56,7 +56,7 @@ class LocalHost(DirectoryHost):
             return self.run_on_dirs(dirs, func, "Sync", silent=silent)
 
         except HostError as err:
-            ui.print_error("can't connect to host: %s" % str(err))
+            ui.print_error(str(err))
             return False
 
         finally:

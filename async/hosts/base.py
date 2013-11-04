@@ -469,6 +469,11 @@ class BaseHost(object):
         num = len(keys)
         ret = True
 
+        # mount remote
+        remote_state = self.get_state()
+        if not self.set_state('mounted') == 'mounted':
+            raise HostError("host is not in 'mounted' state")
+
         ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
                                                 datetime.now().strftime("%a %d %b %Y %H:%M")))
         ui.print_color("")
@@ -526,7 +531,7 @@ class BaseHost(object):
             return self.run_on_dirs(dirs, func, "Init", silent=silent)
 
         except HostError as err:
-            ui.print_error("can't connect to host: %s" % str(err))
+            ui.print_error(str(err))
             return False
 
         finally:
@@ -547,7 +552,7 @@ class BaseHost(object):
             return self.run_on_dirs(dirs, func, "Check", silent=silent)
 
         except HostError as err:
-            ui.print_error("host error: %s" % str(err))
+            ui.print_error(str(err))
             return False
 
         finally:
