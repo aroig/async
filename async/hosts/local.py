@@ -46,22 +46,17 @@ class LocalHost(DirectoryHost):
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
 
         try:
-            self.connect(silent=silent, dryrun=False)
-            remote.connect(silent=silent, dryrun=False)
+            with remote.in_state('mounted', silent=silent, dryrun=dryrun):
+                def func(d):
+                    d.sync(self, remote, silent=silent or opts.terse, dryrun=dryrun,
+                           opts=opts)
 
-            def func(d):
-                d.sync(self, remote, silent=silent or opts.terse, dryrun=dryrun,
-                       opts=opts)
-
-            return self.run_on_dirs(dirs, func, "Sync", silent=silent)
+                return self.run_on_dirs(dirs, func, "Sync", silent=silent)
 
         except HostError as err:
             ui.print_error(str(err))
             return False
 
-        finally:
-            remote.disconnect(silent=silent, dryrun=False)
-            self.disconnect(silent=silent, dryrun=False)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

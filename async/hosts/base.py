@@ -46,6 +46,33 @@ class CmdError(HostError):
         self.returncode = returncode
 
 
+class HostController:
+    """ Object to handle with statement on hosts"""
+    def __init__(self, host, tgtstate=None, silent=False, dryrun=False):
+        self.host = host
+        self.tgtstate = tgtstate
+        self.curstate = None
+        self.silent = silent
+        self.dryrun = dryrun
+
+    def __enter__(self):
+        self.host.connect(silent=self.silent, dryrun=self.dryrun)
+        self.curstate = self.host.get_state()
+
+        # change state if tgtstate is given
+        if self.tgtstate and not self.host.set_state(self.tgtstate) == self.tgtstate:
+            raise HostError("Could not bring '%s' host to '%s' state" % (self.host.name, self.tgtstate))
+
+        return self.host
+
+    def __exit__(self, type, value, traceback):
+        # do not get to current state if target state was not specified
+        if self.curstate and self.tgtstate:
+            self.host.set_state(self.curstate)
+        self.host.disconnect(silent=self.silent, dryrun=self.dryrun)
+
+
+
 class BaseHost(object):
     STATES = ['offline', 'online', 'mounted']
 
@@ -395,49 +422,30 @@ class BaseHost(object):
         return True
 
 
+
     def shell(self, silent=False, dryrun=False):
         """Opens a shell to host"""
         try:
-            self.connect()
+            with self.in_state('mounted', silent=silent, dryrun=dryrun):
 
-            # mount remote
-            remote_state = self.get_state()
-            if not self.set_state('mounted') == 'mounted':
-                ui.print_error("Remote host is not in 'mounted' state")
-                return False
-
-            ui.print_color("")
-            ret = self.interactive_shell()
-            if ret != 0:
-                ui.print_error("Shell returned with code %d" % ret)
-            ui.print_color("")
-
-            # recover old remote state
-            self.set_state(remote_state)
+                ui.print_color("")
+                ret = self.interactive_shell()
+                if ret != 0:
+                    ui.print_error("Shell returned with code %d" % ret)
+                ui.print_color("")
 
         except HostError as err:
             ui.print_error(str(err))
 
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
 
     def run(self, script, silent=False, dryrun=False):
         """Runs a local script on the host"""
         try:
-            self.connect()
+            with self.in_state('mounted', silent=silent, dryrun=dryrun):
 
-            # mount remote
-            remote_state = self.get_state()
-            if not self.set_state('mounted') == 'mounted':
-                ui.print_error("Remote host is not in 'mounted' state")
-                return False
-
-            ui.print_color("")
-            self.run_script(script)
-
-            # recover old remote state
-            self.set_state(remote_state)
+                ui.print_color("")
+                self.run_script(script)
 
         except HostError as err:
             ui.print_error(str(err))
@@ -445,8 +453,6 @@ class BaseHost(object):
         except CmdError as err:
             ui.print_error("Command error on %s: %s" % (self.name, str(err)))
 
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
 
     def backup(self, silent=False, dryrun=False):
@@ -469,37 +475,33 @@ class BaseHost(object):
         num = len(keys)
         ret = True
 
-        # mount remote
-        remote_state = self.get_state()
-        if not self.set_state('mounted') == 'mounted':
-            raise HostError("host is not in 'mounted' state")
-
-        ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
-                                                datetime.now().strftime("%a %d %b %Y %H:%M")))
-        ui.print_color("")
-
-        for i, k in enumerate(keys):
-            d = dirs[k]
-            if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
-
-            try:
-                func(d)
-
-            except (CheckError, InitError, SyncError) as err:
-                ui.print_error("%s failed: %s" % (action.lower(), str(err)))
-                failed.append(d.name)
-
-            except HookError as err:
-                ui.print_error("hook failed: %s" % str(err))
-                failed.append(d.name)
-
-            except HostError as err:
-                ui.print_error("host error: %s" % str(err))
-                failed.append(d.name)
-
-            ret = False
-
+        with self.in_state('mounted', silent=silent, dryrun=dryrun):
+            ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
+                                                    datetime.now().strftime("%a %d %b %Y %H:%M")))
             ui.print_color("")
+
+            for i, k in enumerate(keys):
+                d = dirs[k]
+                if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
+
+                try:
+                    func(d)
+
+                except (CheckError, InitError, SyncError) as err:
+                    ui.print_error("%s failed: %s" % (action.lower(), str(err)))
+                    failed.append(d.name)
+
+                except HookError as err:
+                    ui.print_error("hook failed: %s" % str(err))
+                    failed.append(d.name)
+
+                except HostError as err:
+                    ui.print_error("host error: %s" % str(err))
+                    failed.append(d.name)
+
+                ret = False
+
+                ui.print_color("")
 
         if len(failed) == 0:
             ui.print_color("%s #*gsuceeded#t.\n" % action)
@@ -523,8 +525,6 @@ class BaseHost(object):
         dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
 
         try:
-            self.connect(silent=silent, dryrun=False)
-
             def func(d):
                 d.init(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
@@ -534,9 +534,6 @@ class BaseHost(object):
             ui.print_error(str(err))
             return False
 
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
-
 
 
     def check(self, silent=False, dryrun=False, opts=None):
@@ -544,8 +541,6 @@ class BaseHost(object):
         dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
 
         try:
-            self.connect(silent=silent, dryrun=False)
-
             def func(d):
                 d.check(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
@@ -554,9 +549,6 @@ class BaseHost(object):
         except HostError as err:
             ui.print_error(str(err))
             return False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
 
 
@@ -600,6 +592,11 @@ class BaseHost(object):
         elif isinstance(self, LocalHost):   return "local"
         else:
             raise DirError("Unknown host class %s" % str(type(self)))
+
+
+    def in_state(self, tgtstate=None, silent=False, dryrun=False):
+        """Returns a controller to be used in with statements"""
+        return HostController(self, tgtstate=tgtstate, silent=silent, dryrun=dryrun)
 
 
     def connect(self, silent=False, dryrun=False):
