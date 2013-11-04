@@ -42,7 +42,7 @@ def get_remote_host(hostname, conf):
             ui.print_error("Unknown host type %s (%s)" % (typ, hostname))
             sys.exit(1)
 
-    elif hostname == 'localhost':
+    elif hostname == 'localhost' or hostname == 'here':
         return get_local_host(conf)
 
     else:
