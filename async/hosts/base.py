@@ -675,9 +675,14 @@ class BaseHost(object):
     def run_script(self, scrpath, tgtpath=None, catchout=False):
         """Run a script in a local path on the host"""
 
-        with open(scrpath, 'r') as fd:
-            script=fd.read()
-            ret = self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script)
+        try:
+            with open(scrpath, 'r') as fd:
+                script=fd.read()
+                ret = self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script)
+
+        except IOError as err:
+            raise HostError("Can't run script '%s' on %s host" % (scrpath, self.name))
+
 
         return ret
 
