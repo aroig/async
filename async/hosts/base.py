@@ -356,16 +356,13 @@ class BaseHost(object):
         st = 'offline'
         ret = True
         try:
-            self.connect(silent=silent, dryrun=False)
-            if self.STATES.index(self.state) >= self.STATES.index('online'):
-                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+            with self.in_state(silent=silent, dryrun=dryrun):
+                if self.STATES.index(self.state) >= self.STATES.index('online'):
+                    ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
@@ -375,16 +372,13 @@ class BaseHost(object):
         st = 'mounted'
         ret = True
         try:
-            self.connect(silent=silent, dryrun=False)
-            if self.STATES.index(self.state) < self.STATES.index('mounted'):
-                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+            with self.in_state(silent=silent, dryrun=dryrun):
+                if self.STATES.index(self.state) < self.STATES.index('mounted'):
+                    ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
@@ -394,30 +388,24 @@ class BaseHost(object):
         st = self.STATES[self.STATES.index('mounted') - 1]
         ret = True
         try:
-            self.connect(silent=silent, dryrun=False)
-            if self.STATES.index(self.state) >= self.STATES.index('mounted'):
-                ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
+            with self.in_state(silent=silent, dryrun=dryrun):
+                if self.STATES.index(self.state) >= self.STATES.index('mounted'):
+                    ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
 
     def print_status(self, silent=False, dryrun=False):
         try:
-            self.connect(silent=silent, dryrun=False)
-            self._print_status()
+            with self.in_state(silent=silent, dryrun=dryrun):
+                self._print_status()
 
         except HostError as err:
             ui.print_error(str(err))
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return True
 
