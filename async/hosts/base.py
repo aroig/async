@@ -461,7 +461,7 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    def run_on_dirs(self, dirs, func, action, silent=False):
+    def run_on_dirs(self, dirs, func, action, silent=False, dryrun=False):
         """Utility function to run a function on a set of directories.
            func(d) operates on a dir object d."""
         from async.directories import InitError, HookError, SyncError, CheckError
@@ -524,7 +524,7 @@ class BaseHost(object):
             def func(d):
                 d.init(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
-            return self.run_on_dirs(dirs, func, "Init", silent=silent)
+            return self.run_on_dirs(dirs, func, "Init", silent=silent, dryrun=dryrun)
 
         except HostError as err:
             ui.print_error(str(err))
@@ -540,7 +540,7 @@ class BaseHost(object):
             def func(d):
                 d.check(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
-            return self.run_on_dirs(dirs, func, "Check", silent=silent)
+            return self.run_on_dirs(dirs, func, "Check", silent=silent, dryrun=dryrun)
 
         except HostError as err:
             ui.print_error(str(err))
