@@ -426,7 +426,7 @@ class BaseHost(object):
     def shell(self, silent=False, dryrun=False):
         """Opens a shell to host"""
         try:
-            with self.in_state('mounted', silent=silent, dryrun=dryrun):
+            with self.in_state(silent=silent, dryrun=dryrun):
 
                 ui.print_color("")
                 ret = self.interactive_shell()
@@ -442,7 +442,7 @@ class BaseHost(object):
     def run(self, script, silent=False, dryrun=False):
         """Runs a local script on the host"""
         try:
-            with self.in_state('mounted', silent=silent, dryrun=dryrun):
+            with self.in_state(silent=silent, dryrun=dryrun):
 
                 ui.print_color("")
                 self.run_script(script)
