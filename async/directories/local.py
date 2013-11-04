@@ -32,10 +32,18 @@ class LocalDir(BaseDir):
     # ----------------------------------------------------------------
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        super(LocalDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
+        return
+
+
 
     def init(self, host, silent=False, dryrun=False, opts=None):
         super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+        path = self.fullpath(host)
+
+        # run hooks
+        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+
+
 
     def check(self, host, silent=False, dryrun=False, opts=None):
         super(LocalDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)

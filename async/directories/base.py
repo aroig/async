@@ -150,9 +150,6 @@ class BaseDir(object):
         else:
             ui.print_warning("path already exists: %s" % path)
 
-        # run hooks
-        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
-
 
 
     def check(self, host, silent=False, dryrun=False, opts=None):

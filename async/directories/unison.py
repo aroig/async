@@ -100,6 +100,10 @@ class UnisonDir(BaseDir):
 
     def init(self, host, silent=False, dryrun=False, opts=None):
         super(UnisonDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+        path = self.fullpath(host)
+
+        # run hooks
+        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 

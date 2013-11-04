@@ -209,6 +209,10 @@ class AnnexDir(BaseDir):
                 except IOError as err:
                     raise InitError("hook setup failed: %s" % str(err))
 
+        # run hooks
+        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+
+
 
 
     def check(self, host, silent=False, dryrun=False, opts=None):
