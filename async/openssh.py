@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from io import StringIO
 import os
 import re
 import sys
@@ -160,15 +159,15 @@ class SSHConnection(object):
             stdo = subprocess.PIPE
             stde = subprocess.STDOUT
 
-        if stdin:
-            stdi = StringIO(stdin)
+        if stdin != None:      stdi = subprocess.PIPE
+        else:                  stdi = None
 
         proc = self._ssh(sshargs + [self.decorated_host, qcmd],
                          timeout=timeout,
                          stdout=stdo, stderr=stde, stdin=stdi)
 
         # stderr is piped to stdout
-        stdout, stderr = proc.communicate()
+        stdout, stderr = proc.communicate(stdin)
 
         if proc.returncode != 0:
             raise SSHCmdError("SSH command failed: %s" % cmd, proc.returncode, stdout)
