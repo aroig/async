@@ -70,7 +70,10 @@ class Ec2Host(SshHost):
 
     def detach_volume(self, vol):
         try:
-            vol.detach()
+            vol.update()
+            if vol.attachment_state() != 'detached':
+                vol.detach()
+
         except EC2ResponseError as err:
             raise HostError(str(err))
 
@@ -85,7 +88,10 @@ class Ec2Host(SshHost):
 
     def attach_volume(self, vol, inst, dev):
         try:
-            vol.attach(inst, dev)
+            vol.update()
+            if vol.attachment_state() == 'attached':
+                vol.attach(inst, dev)
+
         except EC2ResponseError as err:
             raise HostError(str(err))
 
