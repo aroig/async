@@ -22,6 +22,7 @@ import re
 import sys
 import time
 import shlex
+import signal
 import subprocess
 
 
@@ -63,7 +64,11 @@ class SSHConnection(object):
         sshargs = ['-o', 'ConnectTimeout=%s' % str(timeout)]
         sshargs = sshargs + args
         try:
-            proc = subprocess.Popen(['ssh'] + sshargs,
+            # disable sigint for the subprocess. On sigint I'll handle the disconnect.
+            def no_sigint():
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+            proc = subprocess.Popen(['ssh'] + sshargs, preexec_fn=no_sigint,
                                     stdout=stdout, stderr=stderr, stdin=stdin)
 
         except subprocess.CalledProcessError as err:
