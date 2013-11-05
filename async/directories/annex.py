@@ -22,6 +22,7 @@ from async.hosts.base import CmdError
 
 import subprocess
 import os
+import re
 import async.cmd as cmd
 import async.archui as ui
 
@@ -41,6 +42,49 @@ class AnnexDir(BaseDir):
         return None
 
 
+
+    def _get_keys_in_host(self, host, uuid, silent=False, dryrun=False):
+        """greps git-annex branch for all the keys in host. Faster than git-annex builtin
+           because it does not perform individual location log queries"""
+        path = self.fullpath(host)
+        git_args =['grep', '--files-with-matches', '-e', uuid, 'git-annex', '--', '*/*/*.log']
+        key_re = re.compile('git-annex:.../.../(.*)\.log')
+
+        try:
+            raw = cmd.git(tgtdir=path, args=git_args, silent=silent, catchout=True).strip()
+
+        except CmdError as err:
+            raise SyncError("couldn't retrieve keys: %s" % str(err))
+
+        L = []
+        fail = []
+        for key in raw.split('\n'):
+            m = key_re.match(key)
+            if m:  L.append(m.group(1))
+            else:  fail.append(key)
+
+        if len(fail) > 0:
+            raise SyncError("Couldn't match %d keys on the location log:\n%s" % (len(fail), '\n'.join(fail)))
+
+        return L
+
+
+
+    def _get_keys_in_working_dir(self, host, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        try:
+            raw = host.run_cmd("find . -path './.git' -prune -or -type l -print0",
+                               tgtpath=path, catchout=True)
+
+            # TODO: unref symlinks or what? I don't like this...
+
+        except CmdError as err:
+            raise SyncError("couldn't retrieve keys: %s" % str(err))
+
+        L = raw.split('\0')
+
+
+
     def _init_git(self, host, silent=False, dryrun=False):
         path = self.fullpath(host)
         if not silent: ui.print_color("initializing git repo")
@@ -49,6 +93,7 @@ class AnnexDir(BaseDir):
 
         except CmdError as err:
             raise InitError("git init failed: %s" % str(err))
+
 
 
     def _init_annex(self, host, silent=False, dryrun=False):
@@ -140,6 +185,21 @@ class AnnexDir(BaseDir):
                 ui.print_debug('git annex %s' % ' '.join(annex_args))
                 if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
 
+            elif method == 'test':
+                uuidA = self._get_uuid(local.name, self.name)
+                uuidB = self._get_uuid(remote.name, self.name)
+
+                if uuidA and uuidB:
+                    keysA = set(self._get_keys_in_host(local, uuidA, silent=silent, dryrun=dryrun))
+                    keysB = set(self._get_keys_in_host(local, uuidB, silent=silent, dryrun=dryrun))
+                    # TODO: filter out whatever is not on the working dir
+
+                    for f in keysA - keysB:
+                        if len(f.strip()) == 0: continue
+                        ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), f))
+                        if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [f], silent=silent)
+                else:
+                    raise SyncError("Can't find uuid for local and remote")
 
             # run code on the remote to get the missing files.
             # We just check for broken symlinks. This is fast enough on SSD, but
@@ -151,7 +211,7 @@ class AnnexDir(BaseDir):
                     missing = raw.split('\0')
 
                 except CmdError as err:
-                    missing = []
+                    raise SyncError("Failed to retrieve dangling symlinks on the remote")
 
                 for f in missing:
                     if len(f.strip()) == 0: continue
