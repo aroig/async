@@ -39,7 +39,7 @@ class SSHConnectionError(Exception):
 class SSHCmdError(Exception):
     def __init__(self, msg=None, returncode=None, output=""):
         super(SSHCmdError, self).__init__(msg)
-        self.output = ""
+        self.output = output
         self.returncode = returncode
 
 
