@@ -124,6 +124,85 @@ class AnnexDir(BaseDir):
             raise InitError("hook setup failed: %s" % str(err))
 
 
+
+    def _push_annexed_files(self, local, remote, method='local', silent=False, dryrun=False):
+        annex_args = ['copy', '--quiet', '--fast', '--to=%s' % remote.name]
+        src = self.fullpath(local)
+        tgt = self.fullpath(remote)
+
+        if not silent: ui.print_color("copying missing annexed files to remote")
+
+        try:
+            # get the missing files on the remote from local location log.
+            # This is much slower than copy --from, since git-annex must go through the
+            # location log. We can't stat to decide whether an annexed file is missing
+            if method == 'local':
+                ui.print_debug('git annex %s' % ' '.join(annex_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
+
+
+            # run code on the remote to get the missing files.
+            # We just check for broken symlinks. This is fast enough on SSD, but
+            # not as fast as I'd like on usb disks aws instances...
+            elif method == 'remote':
+                try:
+                    raw = remote.run_cmd("find . -path './.git' -prune -or -type l -xtype l -print0",
+                                         tgtpath=tgt, catchout=True)
+                    missing = raw.split('\0')
+
+                except CmdError as err:
+                    missing = []
+
+                for f in missing:
+                    if len(f.strip()) == 0: continue
+                    ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), f))
+                    if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [f], silent=silent)
+
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
+
+
+
+    def _pull_annexed_files(self, local, remote, method='local', silent=False, dryrun=False):
+        annex_args  = ['copy', '--quiet', '--fast', '--from=%s' % remote.name]
+        src = self.fullpath(local)
+        tgt = self.fullpath(remote)
+
+        try:
+            if method == 'local':
+                if not silent: ui.print_color("copying missing annexed files from remote")
+                ui.print_debug('git annex %s' % ' '.join(annex_args))
+                if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
+
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
+
+
+
+    def _annex_sync(self, local, remote, silent=False, dryrun=False):
+        annex_args = ['sync', remote.name]
+        src = self.fullpath(local)
+        tgt = self.fullpath(remote)
+
+        ui.print_debug('git annex %s' % ' '.join(annex_args))
+        try:
+            if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
+
+        except subprocess.CalledProcessError as err:
+            raise SyncError(str(err))
+
+
+    def _annex_merge(self, host, silent=False, dryrun=False):
+        """ do an annex merge on the host """
+        path = self.fullpath(host)
+        try:
+            if not dryrun: host.run_cmd("git annex merge", tgtpath=path)
+
+        except CmdError as err:
+            raise SyncError(str(err))
+
+
+
     # Interface
     # ----------------------------------------------------------------
     def status(self, host):
@@ -135,79 +214,24 @@ class AnnexDir(BaseDir):
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         super(AnnexDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
-
         # TODO: implement ignore
-        # TODO: implement force
-        src = self.fullpath(local)
-        tgt = self.fullpath(remote)
-
-        annex_sync_args = ['sync', remote.name]
-
-        # I use quiet because git annex copy -to=... runs over all files and produces
-        # too much output.
-        # NOTE: git annex copy --to is much slower than copy --from, as it needs to
-        # query the location log for each file, while --from just does stat.
-        annex_get_args  = ['copy', '--quiet', '--fast', '--from=%s' % remote.name]
-        annex_send_args = ['copy', '--quiet', '--fast', '--to=%s' % remote.name]
+        # TODO: implement force to resolve merge conflicts
 
         # pre-sync hook
         self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
         self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
 
-        # sync
-        ui.print_debug('git annex %s' % ' '.join(annex_sync_args))
-        try:
-            if not dryrun: cmd.annex(tgtdir=src, args=annex_sync_args, silent=silent)
-
-        except subprocess.CalledProcessError as err:
-            raise SyncError(str(err))
-
-        # merge remote working tree
-        try:
-            if not dryrun: remote.run_cmd("git annex merge", tgtpath=tgt)
-
-        except CmdError as err:
-            raise SyncError(str(err))
+        # sync & merge on remote
+        self._annex_sync(local, remote, silent=silent, dryrun=dryrun)
+        self._annex_merge(remote, silent=silent, dryrun=dryrun)
 
         # copy annexed files from the remote. This is fast as it uses mtimes
         if not opts.force == 'up' and self.name in local.annex_pull and self.name in remote.annex_push:
-            try:
-                if not silent: ui.print_color("copying missing annexed files from remote")
-                ui.print_debug('git annex %s' % ' '.join(annex_get_args))
-                if not dryrun: cmd.annex(tgtdir=src, args=annex_get_args, silent=silent)
-
-            except subprocess.CalledProcessError as err:
-                raise SyncError(str(err))
+            self._pull_annexed_files(local, remote, method='local', silent=silent, dryrun=dryrun)
 
         # copy annexed files to the remote
         if not opts.force == 'down' and self.name in local.annex_push and self.name in remote.annex_pull:
-            if not silent: ui.print_color("copying missing annexed files to remote")
-
-            # get a list of files with missing annex on the remote. we just check for broken symlinks.
-            # This is fast enough on SSD, but not as fast as I'd like on usb disks...
-            try:
-                raw = remote.run_cmd("find . -path './.git' -prune -or -type l -xtype l -print0",
-                                     tgtpath=tgt, catchout=True)
-                missing = raw.split('\0')
-            except CmdError as err:
-                missing = None
-
-            try:
-                # This is faster than 'copy --from', but misses annexed files not linked in the working dir
-                # TODO: check whether the remote is in direct mode.
-                if missing != None and not opts.slow:
-                    for f in missing:
-                        if len(f.strip()) == 0: continue
-                        ui.print_debug('git annex %s "%s"' % (' '.join(annex_send_args), f))
-                        if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args + [f], silent=silent)
-
-                # this may take some time as it must check the location log for every file
-                else:
-                    ui.print_debug('git annex %s' % ' '.join(annex_send_args))
-                    if not dryrun: cmd.annex(tgtdir=src, args=annex_send_args, silent=silent)
-
-            except subprocess.CalledProcessError as err:
-                raise SyncError(str(err))
+            self._push_annexed_files(local, remote, method='local', silent=silent, dryrun=dryrun)
 
         # post-sync hook
         self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
@@ -222,25 +246,25 @@ class AnnexDir(BaseDir):
 
         # initialize git
         if not host.path_exists(os.path.join(path, '.git')):
-            self._init_git(host, silent=False, dryrun=False)
+            self._init_git(host, silent=silent, dryrun=dryrun)
 
         # initialize annex
         if not host.path_exists(os.path.join(path, '.git/annex')):
-            self._init_annex(host, silent=False, dryrun=False)
+            self._init_annex(host, silent=silent, dryrun=dryrun)
 
         # setup remotes
         for k, r in self.annex_remotes.items():
             # discard remotes named as the host
             if r['name'] == host.name: continue
 
-            self._configure_annex_remote(host, r, silent=False, dryrun=False)
+            self._configure_annex_remote(host, r, silent=silent, dryrun=dryrun)
 
         # setup hooks
         remote = self.annex_remotes.get(host.name, None)
         if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
             hooks = remote['git_hooks'][self.name]
             for h, p in hooks.items():
-                self._configure_annex_hook(host, h, p, silent=False, dryrun=False)
+                self._configure_annex_hook(host, h, p, silent=silent, dryrun=dryrun)
 
         # run async hooks
         self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
