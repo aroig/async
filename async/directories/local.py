@@ -30,6 +30,13 @@ class LocalDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
+    def status(self, host):
+        status = super(LocalDir, self).status(host)
+        status['type'] = 'local'
+
+        return status
+
+
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         return

@@ -36,6 +36,13 @@ class UnisonDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
+    def status(self, host):
+        status = super(UnisonDir, self).status(host)
+        status['type'] = 'unison'
+
+        return status
+
+
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         super(UnisonDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)

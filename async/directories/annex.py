@@ -43,6 +43,12 @@ class AnnexDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
+    def status(self, host):
+        status = super(AnnexDir, self).status(host)
+        status['type'] = 'annex'
+        return status
+
+
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         super(AnnexDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)

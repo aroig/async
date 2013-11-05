@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import subprocess
 
 import async.archui as ui
@@ -134,6 +135,39 @@ class BaseDir(object):
 
     # Interface
     # ----------------------------------------------------------------
+
+    def status(self, host):
+        """Returns a dict of the status of the directory on host"""
+        path = os.path.join(host.path, self.relpath)
+        status = {
+            'name'     : self.name,
+            'relpath'  : self.relpath,
+            'path'     : path,
+            'type'     : 'base',
+        }
+        try:
+            raw  = host.run_cmd('stat -L -c "%%a %%U:%%G" "%s"' % path, catchout=True)
+            m = re.match('^(\d+) ([a-zA-Z]+):([a-zA-Z]+)$', raw)
+            status['perms'] = m.group(1)
+            status['user']  = m.group(2)
+            status['group'] = m.group(3)
+
+        except:
+            status['path'] = None
+            status['perms'] = '???'
+            status['user']  = 'unknown'
+            status['group'] = 'unknown'
+
+# NOTE: this is awfully slow
+#        size   = 0
+#        raw    = host.run_cmd('du -s "%s"' % path, catchout=True)
+#        if raw:
+#            m = re.match('^(\d+).*$', raw)
+#            if m: size = int(m.group(1))
+
+        return status
+
+
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         return

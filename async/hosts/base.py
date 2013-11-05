@@ -429,6 +429,7 @@ class BaseHost(object):
 
 
     def print_status(self, silent=False, dryrun=False):
+        """Prints a host status information"""
         try:
             with self.in_state(silent=silent, dryrun=dryrun):
                 info = self.get_info()
@@ -463,6 +464,42 @@ class BaseHost(object):
                     ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
 
                 ui.print_color("")
+
+        except HostError as err:
+            ui.print_error(str(err))
+
+        return True
+
+
+
+    def print_dirstate(self, silent=False, dryrun=False, opts=None):
+        """Prints the state of directories in a host"""
+        dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
+        keys = sorted(dirs.keys())
+
+        types={
+            'local' : '#Mlocal#t',
+            'unison': '#Yunison#t',
+            'rsync' : '#Brsync#t',
+            'annex' : '#Gannex#t',
+        }
+
+        try:
+            with self.in_state(silent=silent, dryrun=dryrun):
+                ui.print_color("Directories on #*y%s#t (%s)\n" % (self.name, self.path))
+                for k in keys:
+                    d = dirs[k]
+                    status = d.status(self)
+                    nameperms = '  #*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
+
+                    if status['path']:
+                        dirstate = '{0:<8}'.format(types[status['type']])
+                    else:
+                        dirstate = '{0:<8}'.format('#Rgone!#t')
+
+                    ui.print_color(nameperms + dirstate)
+
+                print("")
 
         except HostError as err:
             ui.print_error(str(err))

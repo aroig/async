@@ -35,6 +35,13 @@ class RsyncDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
+    def status(self, host):
+        status = super(RsyncDir, self).status(host)
+        status['type'] = 'rsync'
+
+        return status
+
+
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None):
         super(RsyncDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)

@@ -83,6 +83,9 @@ Commands:
   status:     %prog status <host>
               Print host status.
 
+     ls:      %prog host <host>
+              Print state data for directories.
+
   sync:       %prog sync <host>
               Sync host.
 
@@ -213,6 +216,10 @@ try:
     ret = True
     if cmd == "status":
         if len(args) == 0:    ret = remote.print_status()
+        else:                 ui.print_error("Too many arguments.")
+
+    if cmd == "ls":
+        if len(args) == 0:    ret = remote.print_dirstate(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
