@@ -493,11 +493,16 @@ class BaseHost(object):
                     nameperms = '  #*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
 
                     if status['path']:
-                        dirstate = '{0:<8}'.format(types[status['type']])
+                        dirtype = '{0:<15}'.format(types[status['type']])
                     else:
-                        dirstate = '{0:<8}'.format('#Rgone!#t')
+                        dirtype = '{0:<15}'.format('#Rgone!#t')
 
-                    ui.print_color(nameperms + dirstate)
+                    if status['type'] == 'annex':
+                        dirstate = '{0[changed]:<6} {0[missing]:<6}'.format(status)
+                    else:
+                        dirstate = ''
+
+                    ui.print_color(nameperms + dirtype + dirstate)
 
                 print("")
 

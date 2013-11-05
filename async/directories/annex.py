@@ -267,7 +267,30 @@ class AnnexDir(BaseDir):
     # ----------------------------------------------------------------
     def status(self, host):
         status = super(AnnexDir, self).status(host)
+        path = os.path.join(host.path, self.relpath)
         status['type'] = 'annex'
+
+        # changed files since last commit
+        try:
+            raw = host.run_cmd("git status --porcelain" ,tgtpath=path, catchout=True).strip()
+            if len(raw) == 0:    status['changed'] = 0
+            else:                status['changed'] = len(raw.split('\n'))
+
+        except:
+            status['changed'] = -1
+
+        # missing annexed files
+        try:
+        # Painfully slow. When I manage to get the keys for the working tree fast, I'll be
+        # in business to fix this.
+#            raw = host.run_cmd("git annex find --not --in=here" ,tgtpath=path, catchout=True).strip()
+#            if len(raw) == 0:    status['missing'] = 0
+#            else:                status['missing'] = len(raw.split('\n'))
+
+            status['missing'] = 0
+        except:
+            status['missing'] = -1
+
         return status
 
 
