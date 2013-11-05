@@ -303,33 +303,54 @@ class BaseHost(object):
             raise HostError("Can't check disk usage")
 
 
-    def _print_status(self):
-        info = self.get_info()
 
-        ui.print_status("Status of #*m%s#t" % self.name)
-        ui.print_color("")
+    def run_on_dirs(self, dirs, func, action, silent=False, dryrun=False):
+        """Utility function to run a function on a set of directories.
+           func(d) operates on a dir object d."""
+        from async.directories import InitError, HookError, SyncError, CheckError
 
-        if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+        failed = []
+        keys = sorted(dirs.keys())
+        num = len(keys)
+        ret = True
 
-        if 'ami_name' in info and 'ami_id' in info:
-            ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'], info['ami_name']))
-        if 'instance' in info and 'itype' in info:
-            ui.print_color('    #*winst:#t %s (%s)' % (info['instance'], info['itype']))
-        if 'block' in info:
-            ui.print_color('   #*wblock:#t %s' % ', '.join(
-                ['%s (%s)' % (k, s) for k, s in info['block'].items()]))
+        with self.in_state('mounted', silent=silent, dryrun=dryrun):
+            ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
+                                                    datetime.now().strftime("%a %d %b %Y %H:%M")))
+            ui.print_color("")
 
-        if 'host' in info:
-            ui.print_color('    #*whost:#t %s' % info['host'])
-        if 'ip' in info:
-            ui.print_color('      #*wip:#t %s' % info['ip'])
+            for i, k in enumerate(keys):
+                d = dirs[k]
+                if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
 
-        if 'size' in info:
-            ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
-        if 'free' in info:
-            ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
+                try:
+                    func(d)
 
-        ui.print_color("")
+                except (CheckError, InitError, SyncError) as err:
+                    ui.print_error("%s failed: %s" % (action.lower(), str(err)))
+                    failed.append(d.name)
+
+                except HookError as err:
+                    ui.print_error("hook failed: %s" % str(err))
+                    failed.append(d.name)
+
+                except HostError as err:
+                    ui.print_error("host error: %s" % str(err))
+                    failed.append(d.name)
+
+                ret = False
+
+                ui.print_color("")
+
+        if len(failed) == 0:
+            ui.print_color("%s #*gsuceeded#t.\n" % action)
+            return True
+
+        elif len(failed) > 0:
+            ui.print_color("%s #*rfailed#t." % action)
+            ui.print_color("  directories: %s" % ', '.join(failed))
+            ui.print_color("\n")
+            return False
 
 
 
@@ -410,7 +431,38 @@ class BaseHost(object):
     def print_status(self, silent=False, dryrun=False):
         try:
             with self.in_state(silent=silent, dryrun=dryrun):
-                self._print_status()
+                info = self.get_info()
+
+                ui.print_status("Status of #*m%s#t" % self.name)
+                ui.print_color("")
+
+                if 'state' in info: ui.print_color('   #*wstate:#t %s' % info['state'])
+
+                if 'ami_name' in info and 'ami_id' in info:
+                    ui.print_color('     #*wami:#t %s (%s)' % (info['ami_id'],
+                                                               info['ami_name']))
+
+                if 'instance' in info and 'itype' in info:
+                    ui.print_color('    #*winst:#t %s (%s)' % (info['instance'],
+                                                               info['itype']))
+
+                if 'block' in info:
+                    ui.print_color('   #*wblock:#t %s' % ', '.join(
+                        ['%s (%s)' % (k, s) for k, s in info['block'].items()]))
+
+                if 'host' in info:
+                    ui.print_color('    #*whost:#t %s' % info['host'])
+
+                if 'ip' in info:
+                    ui.print_color('      #*wip:#t %s' % info['ip'])
+
+                if 'size' in info:
+                    ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
+
+                if 'free' in info:
+                    ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
+
+                ui.print_color("")
 
         except HostError as err:
             ui.print_error(str(err))
@@ -459,55 +511,6 @@ class BaseHost(object):
     def snapshot(self, silent=False, dryrun=False):
         """Creates a server backup"""
         raise NotImplementedError
-
-
-    def run_on_dirs(self, dirs, func, action, silent=False, dryrun=False):
-        """Utility function to run a function on a set of directories.
-           func(d) operates on a dir object d."""
-        from async.directories import InitError, HookError, SyncError, CheckError
-
-        failed = []
-        keys = sorted(dirs.keys())
-        num = len(keys)
-        ret = True
-
-        with self.in_state('mounted', silent=silent, dryrun=dryrun):
-            ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
-                                                    datetime.now().strftime("%a %d %b %Y %H:%M")))
-            ui.print_color("")
-
-            for i, k in enumerate(keys):
-                d = dirs[k]
-                if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
-
-                try:
-                    func(d)
-
-                except (CheckError, InitError, SyncError) as err:
-                    ui.print_error("%s failed: %s" % (action.lower(), str(err)))
-                    failed.append(d.name)
-
-                except HookError as err:
-                    ui.print_error("hook failed: %s" % str(err))
-                    failed.append(d.name)
-
-                except HostError as err:
-                    ui.print_error("host error: %s" % str(err))
-                    failed.append(d.name)
-
-                ret = False
-
-                ui.print_color("")
-
-        if len(failed) == 0:
-            ui.print_color("%s #*gsuceeded#t.\n" % action)
-            return True
-
-        elif len(failed) > 0:
-            ui.print_color("%s #*rfailed#t." % action)
-            ui.print_color("  directories: %s" % ', '.join(failed))
-            ui.print_color("\n")
-            return False
 
 
 
