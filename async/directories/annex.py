@@ -41,6 +41,89 @@ class AnnexDir(BaseDir):
         return None
 
 
+    def _init_git(self, host, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        if not silent: ui.print_color("initializing git repo")
+        try:
+            if not dryrun: host.run_cmd('git init', tgtpath=path)
+
+        except CmdError as err:
+            raise InitError("git init failed: %s" % str(err))
+
+
+    def _init_annex(self, host, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        annex_desc = "%s : %s" % (host.name, self.name)
+        if not silent: ui.print_color("initializing annex")
+        try:
+            # set the uuid if we know it
+            uuid = self._get_uuid(host.name, self.name)
+            if uuid:
+                if not silent: ui.print_color("setting repo uuid: %s" % uuid)
+                if not dryrun: host.run_cmd('git config annex.uuid "%s"' % uuid, tgtpath=path)
+
+            if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
+
+        except CmdError as err:
+            raise InitError("git annex init failed: %s" % str(err))
+
+
+
+    def _configure_annex_remote(self, host, rmt, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        name = rmt['name']
+        url = rmt['url'].replace('%d', self.relpath)
+
+        # get the uuid for current host from config
+        if 'uuid' in rmt: uuid = rmt['uuid'].get(self.name, None)
+        else:             uuid = None
+
+        if uuid == None:
+            ui.print_warning("no configured uuid for remote %s. skipping" % name)
+            return
+
+        # get the actual uuid and url
+        cur_uuid = host.run_cmd('git config remote.%s.annex-uuid' % name,
+                                tgtpath=path, catchout=True).strip()
+
+        cur_url = host.run_cmd('git config remote.%s.url' % name,
+                               tgtpath=path, catchout=True).strip()
+
+        # add repo if not configured
+        if len(cur_url) == 0:
+            if not silent: ui.print_color("adding remote '%s'" % name)
+            try:
+                if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
+
+            except CmdError as err:
+                raise InitError("git remote add failed: %s" % str(err))
+
+        # update uuid only if missing
+        if len(cur_uuid) == 0:
+            if not silent: ui.print_color("setting remote uuid for %s: %s" % (name, uuid))
+            if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
+
+
+
+    def _configure_annex_hook(self, host, hook, hook_path, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        srcpath = os.path.join(self.git_hooks_path, hook_path)
+        tgtpath = os.path.join(path, '.git/hooks', hook)
+
+        try:
+            with open(srcpath, 'r') as fd:
+                script = fd.read()
+                if not silent: ui.print_color("updating git hook '%s'" % hook)
+                if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
+                                            tgtpath=path, stdin=script)
+
+        except CmdError as err:
+            raise InitError("hook setup failed: %s" % str(err))
+
+        except IOError as err:
+            raise InitError("hook setup failed: %s" % str(err))
+
+
     # Interface
     # ----------------------------------------------------------------
     def status(self, host):
@@ -132,90 +215,34 @@ class AnnexDir(BaseDir):
 
 
 
+
     def init(self, host, silent=False, dryrun=False, opts=None):
         super(AnnexDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
         path = self.fullpath(host)
 
         # initialize git
         if not host.path_exists(os.path.join(path, '.git')):
-            if not silent: ui.print_color("initializing git repo")
-            try:
-                if not dryrun: host.run_cmd('git init', tgtpath=path)
-
-            except CmdError as err:
-                raise InitError("git init failed: %s" % str(err))
+            self._init_git(host, silent=False, dryrun=False)
 
         # initialize annex
         if not host.path_exists(os.path.join(path, '.git/annex')):
-            annex_desc = "%s : %s" % (host.name, self.name)
-            if not silent: ui.print_color("initializing annex")
-            try:
-                # set the uuid if we know it
-                uuid = self._get_uuid(host.name, self.name)
-                if uuid:
-                    if not silent: ui.print_color("setting repo uuid: %s" % uuid)
-                    if not dryrun: host.run_cmd('git config annex.uuid "%s"' % uuid, tgtpath=path)
-
-                if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
-
-            except CmdError as err:
-                raise InitError("git annex init failed: %s" % str(err))
+            self._init_annex(host, silent=False, dryrun=False)
 
         # setup remotes
-        remotes_raw = host.run_cmd('git remote show', tgtpath=path, catchout=True)
-        remotes = set([r.strip() for r in remotes_raw.split('\n') if len(r.strip()) > 0])
         for k, r in self.annex_remotes.items():
-            name = r['name']
-            url = r['url'].replace('%d', self.relpath)
-
             # discard remotes named as the host
-            if name == host.name: continue
+            if r['name'] == host.name: continue
 
-            # get the uuid
-            if 'uuid' in r: uuid = r['uuid'].get(self.name, None)
-            else:           uuid = None
-
-            if uuid == None:
-                ui.print_warning("no configured uuid for remote %s. skipping" % name)
-                continue
-
-            if not name in remotes:
-                if not silent: ui.print_color("adding remote '%s'" % name)
-                try:
-                    if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
-
-                except CmdError as err:
-                    raise InitError("git remote add failed: %s" % str(err))
-
-            # set remote config
-            if uuid:
-                if not silent: ui.print_color("setting remote uuid for %s: %s" % (name, uuid))
-                if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
-
+            self._configure_annex_remote(host, r, silent=False, dryrun=False)
 
         # setup hooks
         remote = self.annex_remotes.get(host.name, None)
         if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
             hooks = remote['git_hooks'][self.name]
-
             for h, p in hooks.items():
-                srcpath = os.path.join(self.git_hooks_path, p)
-                tgtpath = os.path.join(path, '.git/hooks', h)
+                self._configure_annex_hook(host, h, p, silent=False, dryrun=False)
 
-                try:
-                    with open(srcpath, 'r') as fd:
-                        script = fd.read()
-                        if not silent: ui.print_color("updating git hook '%s'" % h)
-                        if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
-                                                    tgtpath=path, stdin=script)
-
-                except CmdError as err:
-                    raise InitError("hook setup failed: %s" % str(err))
-
-                except IOError as err:
-                    raise InitError("hook setup failed: %s" % str(err))
-
-        # run hooks
+        # run async hooks
         self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
