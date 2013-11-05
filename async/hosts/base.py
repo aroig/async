@@ -343,15 +343,15 @@ class BaseHost(object):
                 ui.print_color("")
 
         if len(failed) == 0:
-            ui.print_color("%s #*gsuceeded#t.\n" % action)
+            ui.print_color("#*w%s #Gsuceeded#*w.#t" % action)
             return True
 
         elif len(failed) > 0:
-            ui.print_color("%s #*rfailed#t." % action)
+            ui.print_color("#*w%s #Rfailed#*w.#t" % action)
             ui.print_color("  directories: %s" % ', '.join(failed))
-            ui.print_color("\n")
             return False
 
+        ui.print_color("\n")
 
 
     # Interface
