@@ -185,7 +185,7 @@ class BaseHost(object):
         for dev, name in self.luks_mounts.items():
             passphrase = self.vol_keys[name]
             try:
-                self.run_cmd('sudo cryptsetup status | grep -qs inactive && ' +
+                self.run_cmd('sudo cryptsetup status %s | grep -qs inactive && ' % shquote(name) +
                              'echo -n %s | sudo cryptsetup --key-file=- open --type luks %s %s' % \
                              (shquote(passphrase), shquote(dev), shquote(name)), tgtpath='/', catchout=True)
 
