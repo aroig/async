@@ -239,7 +239,6 @@ class AnnexDir(BaseDir):
 
 
 
-
     def init(self, host, silent=False, dryrun=False, opts=None):
         super(AnnexDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
         path = self.fullpath(host)
@@ -268,7 +267,6 @@ class AnnexDir(BaseDir):
 
         # run async hooks
         self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
-
 
 
 
