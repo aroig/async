@@ -56,7 +56,7 @@ class HostController:
         self.dryrun = dryrun
 
     def __enter__(self):
-        self.host.connect(silent=self.silent, dryrun=self.dryrun)
+        self.host.connect(silent=self.silent, dryrun=False)
         self.curstate = self.host.get_state()
 
         # change state if tgtstate is given
@@ -69,7 +69,7 @@ class HostController:
         # do not get to current state if target state was not specified
         if self.curstate and self.tgtstate:
             self.host.set_state(self.curstate)
-        self.host.disconnect(silent=self.silent, dryrun=self.dryrun)
+        self.host.disconnect(silent=self.silent, dryrun=False)
 
 
 
