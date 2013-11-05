@@ -36,7 +36,7 @@ class Ec2Error(Exception):
 class Ec2Host(SshHost):
     """An ec2 instance"""
     # ordered list of states. terminate does not belong here as it destroys the instance.
-    STATES = ['terminated', 'offline', 'online', 'attached', 'mounted']
+    STATES = ['terminated', 'offline', 'running', 'online', 'attached', 'mounted']
 
     def __init__(self, conf):
         ui.print_debug("begin Ec2Host.__init__")
@@ -200,15 +200,21 @@ class Ec2Host(SshHost):
     def check_ami(self):
         """Returns true if the ami is available"""
         if self.ami: self.ami.update()
-        if self.ami: return self.ami.state == 'available'
-        else:        return False
+        if self.ami:
+            ui.print_debug("check_ami. ami: %s, state: %s" % (self.ami.id, self.ami.state))
+            return self.ami.state == 'available'
+        else:
+            return False
 
 
     def check_instance(self):
         """Returns true if there is an instance running"""
         if self.instance: self.instance.update()
-        if self.instance: return self.instance.state == 'running'
-        else:             return False
+        if self.instance:
+            ui.print_debug("check_instance. instance: %s, state: %s" % (self.instance.id, self.instance.state))
+            return self.instance.state == 'running'
+        else:
+            return False
 
 
     def check_volumes(self):
@@ -216,7 +222,9 @@ class Ec2Host(SshHost):
         attached = True
         for dev, vol in self.volumes.items():
             vol.update()
-            if not vol.attachment_state() == 'attached':
+            state = vol.attachment_state()
+            ui.print_debug("check_volumes. vol: %s, state: %s" % (dev, state))
+            if not state == 'attached':
                 attached = False
         return attached
 
@@ -434,8 +442,11 @@ class Ec2Host(SshHost):
         elif state == 'offline':
             pass
 
-        elif state == 'online':
+        elif state == 'running':
             self.start_instance(self.instance.id)
+
+        elif state == 'online':
+            pass
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
@@ -455,8 +466,11 @@ class Ec2Host(SshHost):
         elif state == 'offline':
             self.conn.terminate_instances([self.instance.id])
 
-        elif state == 'online':
+        elif state == 'running':
             self.stop_instance(self.instance.id)
+
+        elif state == 'online':
+            pass
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
@@ -510,7 +524,7 @@ class Ec2Host(SshHost):
 
         # establish a ssh connection
         if self.instance:
-            if self.get_state() in set(['online', 'attached', 'mounted']):
+            if self.get_state() in set(['running', 'online', 'attached', 'mounted']):
                 super(Ec2Host, self).connect(silent=silent, dryrun=dryrun)
 
 
@@ -531,10 +545,10 @@ class Ec2Host(SshHost):
         self.state = 'unknown'
         if self.instance == None:                                  self.state = 'terminated'
         if self.instance != None:                                  self.state = 'offline'
-        if self.state == 'offline' and self.check_instance():      self.state = 'online'
-        if self.ssh.alive():
-            if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
-            if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
+        if self.state == 'offline' and self.check_instance():      self.state = 'running'
+        if self.ssh.alive():                                       self.state = 'online'
+        if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
+        if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
 
         return self.state
 

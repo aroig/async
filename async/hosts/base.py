@@ -608,6 +608,9 @@ class BaseHost(object):
     def set_state(self, state, silent=False, dryrun=False):
         """Sets the host to the given state, passing through all the states in between."""
         self.state = self.get_state()
+        if state == 'unknown': return state
+
+        ui.print_debug("set_state. %s --> %s" % (self.state, state))
 
         try:
             if not state in self.STATES:
