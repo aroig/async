@@ -85,12 +85,17 @@ class RsyncDir(BaseDir):
 
 
     def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
-        super(RsyncDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
         path = self.fullpath(host)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun, runhooks=False)
+
+        super(RsyncDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
         # run hooks
         if runhooks:
-            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 

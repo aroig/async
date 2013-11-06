@@ -216,11 +216,13 @@ class AsyncConfig(ConfigParser):
             'unison_args'     : ([], parse_list_args),
             'rsync_args'      : ([], parse_list_args),
 
-            'init_hook'              : ([], parse_list_path),  # scripts to run on initialization
+            'pre_init_hook'          : ([], parse_list_path),  # scripts to run before initialization
+            'post_init_hook'         : ([], parse_list_path),  # scripts to run after initialization
             'pre_sync_hook'          : ([], parse_list_path),  # scripts to run before sync
             'post_sync_hook'         : ([], parse_list_path),  # scripts to run after sync
             'pre_sync_remote_hook'   : ([], parse_list_path),  # scripts to run on the remote before sync
             'post_sync_remote_hook'  : ([], parse_list_path),  # scripts to run on the remote after sync
+            'check_hook'             : ([], parse_list_path),  # scripts to run before check
         },
 
         'async': {

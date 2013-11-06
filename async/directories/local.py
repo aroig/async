@@ -55,12 +55,17 @@ class LocalDir(BaseDir):
 
 
     def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
-        super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
         path = self.fullpath(host)
 
-        # run hooks
+        # run async hooks if asked to
         if runhooks:
-            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
+
+        super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 

@@ -187,6 +187,10 @@ class BaseDir(object):
     def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
 
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
+
         if not host.path_exists(path):
             if not silent:
                 ui.print_color("Creating %s with permissions %o" % (path, self.perms))
@@ -196,7 +200,7 @@ class BaseDir(object):
 
         # run async hooks if asked to
         if runhooks:
-            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 
