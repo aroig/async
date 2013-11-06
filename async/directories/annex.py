@@ -73,15 +73,16 @@ class AnnexDir(GitDir):
     def _get_keys_in_working_dir(self, host, silent=False, dryrun=False):
         path = self.fullpath(host)
         try:
-            raw = host.run_cmd("find . -path './.git' -prune -or -type l -print0",
-                               tgtpath=path, catchout=True)
-
-            # TODO: unref symlinks or what? I don't like this...
+            cmd = 'git ls-tree -r HEAD | cut -f 1 | grep -e "^120000" | ' + \
+               'cut -d " " -f 3 | git cat-file --batch | ' + \
+               'sed s"|^\(\.\./\)*\.git/annex/objects/../../\(.*\)$|\2|;tx;d;:x" '
+            raw = host.run_cmd(cmd, tgtpath=path, catchout=True)
 
         except CmdError as err:
             raise SyncError("couldn't retrieve keys: %s" % str(err))
 
-        L = raw.split('\0')
+        L = raw.strip().split('\n')
+        return L
 
 
 
