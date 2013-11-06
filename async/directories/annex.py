@@ -228,8 +228,8 @@ class AnnexDir(GitDir):
 
     # Interface
     # ----------------------------------------------------------------
-    def status(self, host):
-        status = super(AnnexDir, self).status(host)
+    def status(self, host, slow=False):
+        status = super(AnnexDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
         status['type'] = 'annex'
 

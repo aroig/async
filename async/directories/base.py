@@ -138,7 +138,7 @@ class BaseDir(object):
     # Interface
     # ----------------------------------------------------------------
 
-    def status(self, host):
+    def status(self, host, slow=False):
         """Returns a dict of the status of the directory on host"""
         path = os.path.join(host.path, self.relpath)
         status = {

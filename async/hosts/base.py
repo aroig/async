@@ -456,27 +456,47 @@ class BaseHost(object):
             'annex' : '#Gannex#t',
         }
 
+        if opts: slow = opts.slow
+        else:    slow = True
+
         try:
             with self.in_state(silent=silent, dryrun=dryrun):
                 ui.print_color("Directories on #*y%s#t (%s)\n" % (self.name, self.path))
                 for k in keys:
                     d = dirs[k]
-                    status = d.status(self)
+                    status = d.status(self, slow=slow)
                     nameperms = '  #*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
 
+                    # directory type
+                    dirtype = ''
                     if status['path']:
                         dirtype = '{0:<15}'.format(types[status['type']])
                     else:
                         dirtype = '{0:<15}'.format('#Rgone!#t')
 
-                    numfiles = number2human(status['numfiles'], fmt='%(value)3.0f %(symbol)s')
-                    if status['type'] == 'annex':
+                    # number of files
+                    numfiles = '--'
+                    if 'numfiles' in status:
+                        numfiles = number2human(status['numfiles'], fmt='%(value)3.0f %(symbol)s')
+
+                    numchanged = ''
+                    if 'changed' in status:
                         numchanged = number2human(status['changed'], fmt='%(value)3.0f %(symbol)s')
+
+                    # directory state, depending on type
+                    dirstate = ''
+                    symstate = '  '
+                    if status['type'] == 'annex' or status['type'] == 'git':
                         dirstate = '{0:>5} {1:<5}'.format(numfiles, '(%s)' % numchanged)
+
+                        if status['changed'] > 0:    symstate = '#R*#t '
+                        elif status['changed'] == 0: symstate = '#G√#t '
+                        else:                        symstate = '#M?#t '
+
                     else:
                         dirstate = '{0:>5} {1:<5}'.format(numfiles, '')
 
-                    ui.print_color(nameperms + dirtype + dirstate)
+                    ui.print_color(nameperms + symstate + dirtype + dirstate)
 
                 print("")
 

@@ -30,18 +30,19 @@ class LocalDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
-    def status(self, host):
-        status = super(LocalDir, self).status(host)
+    def status(self, host, slow=False):
+        status = super(LocalDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
         status['type'] = 'local'
 
         # number of files
-        try:
-            raw = host.run_cmd("find . -not -type d -and  -print | wc -l",
-                               tgtpath=path, catchout=True).strip()
-            status['numfiles'] = int(raw)
-        except:
-            status['numfiles'] = -1
+        if slow:
+            try:
+                raw = host.run_cmd("find . -not -type d -and  -print | wc -l",
+                                   tgtpath=path, catchout=True).strip()
+                status['numfiles'] = int(raw)
+            except:
+                status['numfiles'] = -1
 
         return status
 

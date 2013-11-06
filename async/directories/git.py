@@ -90,8 +90,8 @@ class GitDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
-    def status(self, host):
-        status = super(GitDir, self).status(host)
+    def status(self, host, slow=False):
+        status = super(GitDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
         status['type'] = 'git'
 
