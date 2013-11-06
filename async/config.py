@@ -307,7 +307,7 @@ class AsyncConfig(ConfigParser):
         # match remotes to annex dirs
         for k, val in self.directory.items():
             if val['type'] == 'annex':
-                val['annex_remotes'] = self.remote
+                val['git_remotes'] = self.remote
 
         # attach dirs data to hosts
         for k, val in self.host.items():

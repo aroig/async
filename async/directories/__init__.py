@@ -19,6 +19,7 @@
 
 from async.directories.unison import UnisonDir
 from async.directories.rsync import RsyncDir
+from async.directories.git import GitDir
 from async.directories.annex import AnnexDir
 from async.directories.local import LocalDir
 
@@ -30,6 +31,7 @@ def get_directory(dconf, unison_as_rsync=False):
 
     if typ == 'unison':   return UnisonDir(conf=dconf)
     elif typ == 'rsync':  return RsyncDir(conf=dconf)
+    elif typ == 'git':    return GitDir(conf=dconf)
     elif typ == 'annex':  return AnnexDir(conf=dconf)
     elif typ == 'local':  return LocalDir(conf=dconf)
     else:

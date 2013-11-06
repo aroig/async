@@ -17,7 +17,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from async.directories.base import BaseDir, DirError, SyncError, InitError
+from async.directories.git import GitDir
+from async.directories.base import DirError, SyncError, InitError
 from async.hosts.base import CmdError
 
 import subprocess
@@ -26,19 +27,18 @@ import re
 import async.cmd as cmd
 import async.archui as ui
 
-class AnnexDir(BaseDir):
+class AnnexDir(GitDir):
     """Directory synced via git annex"""
+
     def __init__(self, conf):
         super(AnnexDir, self).__init__(conf)
-        self.annex_remotes = conf['annex_remotes']
 
-        self.git_hooks_path = conf['conf_path']
 
 
     def _get_uuid(self, hostn, dirn):
-        if hostn in self.annex_remotes:
-            if dirn in self.annex_remotes[hostn]['uuid']:
-                return self.annex_remotes[hostn]['uuid'][dirn]
+        if hostn in self.git_remotes:
+            if dirn in self.git_remotes[hostn]['uuid']:
+                return self.git_remotes[hostn]['uuid'][dirn]
         return None
 
 
@@ -85,14 +85,31 @@ class AnnexDir(BaseDir):
 
 
 
-    def _init_git(self, host, silent=False, dryrun=False):
+    def _configure_annex_remote(self, host, rmt, silent=False, dryrun=False):
         path = self.fullpath(host)
-        if not silent: ui.print_color("initializing git repo")
-        try:
-            if not dryrun: host.run_cmd('git init', tgtpath=path)
+        name = rmt['name']
 
-        except CmdError as err:
-            raise InitError("git init failed: %s" % str(err))
+        url = rmt['url'].replace('%d', self.relpath)
+
+        # get the uuid for current host from config
+        if 'uuid' in rmt: uuid = rmt['uuid'].get(self.name, None)
+        else:             uuid = None
+
+        if uuid == None:
+            ui.print_warning("no configured uuid for remote %s. skipping" % name)
+            return
+
+        # get the currently configured uuid
+        cur_uuid = host.run_cmd('git config remote.%s.annex-uuid' % name,
+                                tgtpath=path, catchout=True).strip()
+
+        cur_url = host.run_cmd('git config remote.%s.url' % name,
+                               tgtpath=path, catchout=True).strip()
+
+        # update uuid only if missing and repo exists
+        if len(cur_uuid) == 0 and len(cur_url) > 0:
+            if not silent: ui.print_color("setting remote uuid for %s: %s" % (name, uuid))
+            if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
 
 
 
@@ -111,62 +128,6 @@ class AnnexDir(BaseDir):
 
         except CmdError as err:
             raise InitError("git annex init failed: %s" % str(err))
-
-
-
-    def _configure_annex_remote(self, host, rmt, silent=False, dryrun=False):
-        path = self.fullpath(host)
-        name = rmt['name']
-        url = rmt['url'].replace('%d', self.relpath)
-
-        # get the uuid for current host from config
-        if 'uuid' in rmt: uuid = rmt['uuid'].get(self.name, None)
-        else:             uuid = None
-
-        if uuid == None:
-            ui.print_warning("no configured uuid for remote %s. skipping" % name)
-            return
-
-        # get the actual uuid and url
-        cur_uuid = host.run_cmd('git config remote.%s.annex-uuid' % name,
-                                tgtpath=path, catchout=True).strip()
-
-        cur_url = host.run_cmd('git config remote.%s.url' % name,
-                               tgtpath=path, catchout=True).strip()
-
-        # add repo if not configured
-        if len(cur_url) == 0:
-            if not silent: ui.print_color("adding remote '%s'" % name)
-            try:
-                if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
-
-            except CmdError as err:
-                raise InitError("git remote add failed: %s" % str(err))
-
-        # update uuid only if missing
-        if len(cur_uuid) == 0:
-            if not silent: ui.print_color("setting remote uuid for %s: %s" % (name, uuid))
-            if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
-
-
-
-    def _configure_annex_hook(self, host, hook, hook_path, silent=False, dryrun=False):
-        path = self.fullpath(host)
-        srcpath = os.path.join(self.git_hooks_path, hook_path)
-        tgtpath = os.path.join(path, '.git/hooks', hook)
-
-        try:
-            with open(srcpath, 'r') as fd:
-                script = fd.read()
-                if not silent: ui.print_color("updating git hook '%s'" % hook)
-                if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
-                                            tgtpath=path, stdin=script)
-
-        except CmdError as err:
-            raise InitError("hook setup failed: %s" % str(err))
-
-        except IOError as err:
-            raise InitError("hook setup failed: %s" % str(err))
 
 
 
@@ -252,6 +213,7 @@ class AnnexDir(BaseDir):
             raise SyncError(str(err))
 
 
+
     def _annex_merge(self, host, silent=False, dryrun=False):
         """ do an annex merge on the host """
         path = self.fullpath(host)
@@ -270,15 +232,6 @@ class AnnexDir(BaseDir):
         path = os.path.join(host.path, self.relpath)
         status['type'] = 'annex'
 
-        # changed files since last commit
-        try:
-            raw = host.run_cmd("git status --porcelain" ,tgtpath=path, catchout=True).strip()
-            if len(raw) == 0:    status['changed'] = 0
-            else:                status['changed'] = len(raw.split('\n'))
-
-        except:
-            status['changed'] = -1
-
         # missing annexed files
         try:
         # Painfully slow. When I manage to get the keys for the working tree fast, I'll be
@@ -295,14 +248,16 @@ class AnnexDir(BaseDir):
 
 
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        super(AnnexDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
+        # NOTE: We do not call git sync on parent class. annex does things his way
+
         # TODO: implement ignore
         # TODO: implement force to resolve merge conflicts
 
         # pre-sync hook
-        self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
-        self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
 
         # sync & merge on remote
         self._annex_sync(local, remote, silent=silent, dryrun=dryrun)
@@ -317,44 +272,35 @@ class AnnexDir(BaseDir):
             self._push_annexed_files(local, remote, method='local', silent=silent, dryrun=dryrun)
 
         # post-sync hook
-        self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
-        self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 
-    def init(self, host, silent=False, dryrun=False, opts=None):
-        super(AnnexDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        super(AnnexDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
+        # NOTE: The parent initializes: git, hooks and remotes.
         path = self.fullpath(host)
-
-        # initialize git
-        if not host.path_exists(os.path.join(path, '.git')):
-            self._init_git(host, silent=silent, dryrun=dryrun)
 
         # initialize annex
         if not host.path_exists(os.path.join(path, '.git/annex')):
             self._init_annex(host, silent=silent, dryrun=dryrun)
 
-        # setup remotes
-        for k, r in self.annex_remotes.items():
+        # setup annex data on the remotes
+        for k, r in self.git_remotes.items():
             # discard remotes named as the host
             if r['name'] == host.name: continue
-
             self._configure_annex_remote(host, r, silent=silent, dryrun=dryrun)
 
-        # setup hooks
-        remote = self.annex_remotes.get(host.name, None)
-        if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
-            hooks = remote['git_hooks'][self.name]
-            for h, p in hooks.items():
-                self._configure_annex_hook(host, h, p, silent=silent, dryrun=dryrun)
-
-        # run async hooks
-        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 
-    def check(self, host, silent=False, dryrun=False, opts=None):
-        super(AnnexDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
+    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        super(AnnexDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
         path = self.fullpath(host)
 
         # run git annex fsck
