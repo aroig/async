@@ -95,6 +95,14 @@ class GitDir(BaseDir):
         path = os.path.join(host.path, self.relpath)
         status['type'] = 'git'
 
+        # number of files
+        try:
+            raw = host.run_cmd("git ls-files | wc -l",
+                               tgtpath=path, catchout=True).strip()
+            status['numfiles'] = int(raw)
+        except:
+            status['numfiles'] = -1
+
         # changed files since last commit
         try:
             raw = host.run_cmd("git status --porcelain" ,tgtpath=path, catchout=True).strip()

@@ -25,6 +25,7 @@ import shlex
 from datetime import datetime
 
 from async.pathdict import PathDict
+from async.utils import number2human, read_keys
 import async.archui as ui
 
 
@@ -96,7 +97,7 @@ class BaseHost(object):
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
 
-        if conf['vol_keys']: self.vol_keys = self.read_keys(conf['vol_keys'])
+        if conf['vol_keys']: self.vol_keys = read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
 
         # directories
@@ -119,35 +120,6 @@ class BaseHost(object):
             time_passed = time_passed + step
 
         return func() == status
-
-
-    def bytes2human(self, n, format="%(value)3.2f %(symbol)s"):
-        """
-        >>> bytes2human(10000)
-        '9 Kb'
-        >>> bytes2human(100001221)
-        '95 Mb'
-        """
-        symbols = ('b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb', 'Zb', 'Yb')
-        prefix = {}
-        for i, s in enumerate(symbols[1:]):
-            prefix[s] = 1 << (i+1)*10
-        for symbol in reversed(symbols[1:]):
-            if n >= prefix[symbol]:
-                value = float(n) / prefix[symbol]
-                return format % locals()
-        return format % dict(symbol=symbols[0], value=n)
-
-
-    def read_keys(self, path):
-        """Reads keys from a file. each line is formatted as id = key"""
-        keys = {}
-        with open(path, 'r') as fd:
-            for line in fd:
-                m = re.match(r'^(.*)=(.*)$', line)
-                if m: keys[m.group(1).strip()] = m.group(2).strip()
-
-        return keys
 
 
     def _get_common_dirs(self, local, remote, dirs):
@@ -458,7 +430,7 @@ class BaseHost(object):
                     ui.print_color('      #*wip:#t %s' % info['ip'])
 
                 if 'size' in info:
-                    ui.print_color('    #*wsize:#t %s' % self.bytes2human(1024*info['size']))
+                    ui.print_color('    #*wsize:#t %s' % number2human(1024*info['size'], suffix='b'))
 
                 if 'free' in info:
                     ui.print_color('    #*wfree:#t %3.2f%%' % (100 * float(info['free']) / float(info['size'])))
@@ -497,10 +469,12 @@ class BaseHost(object):
                     else:
                         dirtype = '{0:<15}'.format('#Rgone!#t')
 
+                    numfiles = number2human(status['numfiles'], fmt='%(value)3.0f %(symbol)s')
                     if status['type'] == 'annex':
-                        dirstate = '{0[changed]:<6} {0[missing]:<6}'.format(status)
+                        numchanged = number2human(status['changed'], fmt='%(value)3.0f %(symbol)s')
+                        dirstate = '{0:>5} {1:<5}'.format(numfiles, '(%s)' % numchanged)
                     else:
-                        dirstate = ''
+                        dirstate = '{0:>5} {1:<5}'.format(numfiles, '')
 
                     ui.print_color(nameperms + dirtype + dirstate)
 

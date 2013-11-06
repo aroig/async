@@ -30,13 +30,14 @@ def number2human(num, fmt="%(value)3.2f %(symbol)s", suffix=''):
     sub_symbols   = ('', 'm', 'u', 'n', 'p', 'f', 'a', 'z', 'y')
 
     scale = 1.0
-    if num >= 1.0:
+    symbol = ''
+    if abs(num) >= 1.0:
         for s in super_symbols[0:]:
             symbol = s
             if scale*1000.0 > num: break
             scale = scale*1000.0
 
-    else:
+    elif abs(num) >= 1e-24:
         for s in sub_symbols[0:]:
             symbol = s
             if scale <= num: break

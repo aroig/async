@@ -17,7 +17,9 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import subprocess
+
 from async.directories.base import BaseDir, DirError, SyncError, InitError, HookError
 from async.hosts import SshHost, DirectoryHost
 
@@ -38,7 +40,16 @@ class UnisonDir(BaseDir):
     # ----------------------------------------------------------------
     def status(self, host):
         status = super(UnisonDir, self).status(host)
+        path = os.path.join(host.path, self.relpath)
         status['type'] = 'unison'
+
+        # number of files
+        try:
+            raw = host.run_cmd("find . -not -type d -and -print | wc -l",
+                               tgtpath=path, catchout=True).strip()
+            status['numfiles'] = int(raw)
+        except:
+            status['numfiles'] = -1
 
         return status
 
