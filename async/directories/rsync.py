@@ -43,16 +43,16 @@ class RsyncDir(BaseDir):
 
 
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        super(RsyncDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
-
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
         src = '%s/' % self.fullpath(local)
         args = [] + self.rsync_args
 
+        # handle ignores
         ignore = set(self.ignore) | set(opts.ignore) | set(local.ignore) | set(remote.ignore)
         for p in ignore:
             args = args + ['--exclude=%s' % p]
 
+        # get target path
         if isinstance(remote, SshHost):
             tgt = '%s:%s/' % (remote.hostname, self.fullpath(remote))
 
@@ -63,8 +63,12 @@ class RsyncDir(BaseDir):
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
         # pre-sync hook
-        self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
-        self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+
+        # call sync on the parent
+        super(RsyncDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
         # sync
         ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
@@ -74,22 +78,30 @@ class RsyncDir(BaseDir):
             raise SyncError(str(err))
 
         # post-sync hook
-        self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
-        self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 
-    def init(self, host, silent=False, dryrun=False, opts=None):
-        super(RsyncDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        super(RsyncDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
         path = self.fullpath(host)
 
         # run hooks
-        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 
-    def check(self, host, silent=False, dryrun=False, opts=None):
-        super(RsyncDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
+    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        path = self.fullpath(host)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
+
+        super(RsyncDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
 
 

@@ -44,11 +44,10 @@ class UnisonDir(BaseDir):
 
 
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        super(UnisonDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts)
-
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
         src = '%s/' % local.path
 
+        # get the target dir
         if isinstance(remote, SshHost):
             tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path)
             tgtalias = 'ssh://%s/%s/' % (remote.name, remote.path)
@@ -60,6 +59,7 @@ class UnisonDir(BaseDir):
         else:
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
+        # prepare args
         sshargs = []
         sshargs = sshargs + remote.ssh_args
 
@@ -73,10 +73,12 @@ class UnisonDir(BaseDir):
 
         args = args + self.unison_args
 
+        # get the ignores
         ignore = set(self.ignore) | set(opts.ignore) | set(local.ignore) | set(remote.ignore)
         for p in ignore:
             args = args + ['-ignore', 'Path %s' % p]
 
+        # prepare other options
         if opts.auto:  args = args + ['-auto']
         if opts.slow:  args = args + ['-fastcheck' 'false']
         if opts.batch: args = args + ['-batch']
@@ -89,8 +91,12 @@ class UnisonDir(BaseDir):
         args = args + [self.unison_profile]
 
         # pre-sync hook
-        self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
-        self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+
+        # call sync on the parent
+        super(UnisonDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
         # sync
         ui.print_debug('unison %s' % ' '.join(args))
@@ -100,22 +106,30 @@ class UnisonDir(BaseDir):
             raise SyncError(str(err))
 
         # post-sync hook
-        self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
-        self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 
-    def init(self, host, silent=False, dryrun=False, opts=None):
+    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         super(UnisonDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
         path = self.fullpath(host)
 
         # run hooks
-        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun, runhooks=False)
 
 
 
-    def check(self, host, silent=False, dryrun=False, opts=None):
-        super(UnisonDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
+    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        path = self.fullpath(host)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
+
+        super(UnisonDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
 
 

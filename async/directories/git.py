@@ -156,4 +156,8 @@ class GitDir(BaseDir):
 
     def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         super(GitDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-        return
+        path = self.fullpath(host)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)

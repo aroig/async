@@ -38,22 +38,40 @@ class LocalDir(BaseDir):
 
 
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        return
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
+        # pre-sync hook
+        if runhooks:
+            self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+
+        # call sync on the parent
+        super(GitDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
+
+        # post-sync hook
+        if runhooks:
+            self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 
-    def init(self, host, silent=False, dryrun=False, opts=None):
-        super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
         path = self.fullpath(host)
 
         # run hooks
-        self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
+        if runhooks:
+            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 
-    def check(self, host, silent=False, dryrun=False, opts=None):
-        super(LocalDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts)
+    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
+        path = self.fullpath(host)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
+
+        super(LocalDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

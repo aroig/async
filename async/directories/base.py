@@ -169,12 +169,22 @@ class BaseDir(object):
 
 
 
-    def sync(self, local, remote, silent=False, dryrun=False, opts=None):
-        return
+    def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
+        # pre-sync hook
+        if runhooks:
+            self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+
+        # This does nothing, only runs the hooks
+
+        # post-sync hook
+        if runhooks:
+            self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 
-    def init(self, host, silent=False, dryrun=False, opts=None):
+    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
 
         if not host.path_exists(path):
@@ -184,10 +194,18 @@ class BaseDir(object):
         else:
             ui.print_warning("path already exists: %s" % path)
 
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'init', tgt=path, silent=silent, dryrun=dryrun)
 
 
-    def check(self, host, silent=False, dryrun=False, opts=None):
+
+    def check(self, host, silent=False, dryrun=False, opts=Nonex, runhooks=True):
         path = self.fullpath(host)
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
 
         if not os.path.exists(path):
             raise CheckError("path does not exist: %s" % path)
