@@ -117,13 +117,13 @@ class UnisonDir(BaseDir):
 
         # run async hooks if asked to
         if runhooks:
-            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun, runhooks=False)
+            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
 
-        super(UnisonDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts)
+        super(UnisonDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
         # run async hooks if asked to
         if runhooks:
-            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun, runhooks=False)
+            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)
 
 
 

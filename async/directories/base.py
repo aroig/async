@@ -59,7 +59,9 @@ class BaseDir(object):
         self.hooks = {}
         self.hooks_path = conf['conf_path']
 
-        self.hooks['init']             = conf['init_hook']
+        self.hooks['check']            = conf['check_hook']
+        self.hooks['pre_init']         = conf['pre_init_hook']
+        self.hooks['post_init']        = conf['post_init_hook']
         self.hooks['pre_sync']         = conf['pre_sync_hook']
         self.hooks['post_sync']        = conf['post_sync_hook']
         self.hooks['pre_sync_remote']  = conf['pre_sync_remote_hook']
@@ -204,7 +206,7 @@ class BaseDir(object):
 
 
 
-    def check(self, host, silent=False, dryrun=False, opts=Nonex, runhooks=True):
+    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
 
         # run async hooks if asked to
