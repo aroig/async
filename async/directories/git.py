@@ -87,6 +87,19 @@ class GitDir(BaseDir):
 
 
 
+    def _git_pre_sync_check(self, host, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        try:
+            raw = host.run_cmd("find . -path './.git' -prune -or -print | grep '\.git'",
+                               tgtpath=path, catchout=True)
+            if len(raw.strip()) > 0:
+                ui.print_warning("directory %s on %s contains a nested git repo. It will be ignored." % (self.name, host.name))
+
+        except CmdError as err:
+            raise SyncError(str(err))
+
+
+
 
     # Interface
     # ----------------------------------------------------------------
@@ -125,6 +138,9 @@ class GitDir(BaseDir):
         if runhooks:
             self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
             self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+
+        # pre sync check
+        self._git_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # TODO: fetch, merge push sequence.
 
