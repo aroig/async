@@ -454,6 +454,7 @@ class BaseHost(object):
             'unison': '#Yunison#t',
             'rsync' : '#Brsync#t',
             'annex' : '#Gannex#t',
+            'git'   : '#Bgit#t',
         }
 
         if opts: slow = opts.slow
