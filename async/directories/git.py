@@ -53,8 +53,11 @@ class GitDir(BaseDir):
         url = rmt['url'].replace('%d', self.relpath)
 
         # get currently configured url for the remote
-        cur_url = host.run_cmd('git config remote.%s.url' % name,
-                               tgtpath=path, catchout=True).strip()
+        try:
+            cur_url = host.run_cmd('git config remote.%s.url' % name,
+                                   tgtpath=path, catchout=True).strip()
+        except CmdError:
+            cur_url = ""
 
         # add repo if not configured
         if len(cur_url) == 0:

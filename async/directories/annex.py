@@ -125,11 +125,18 @@ class AnnexDir(GitDir):
             return
 
         # get the currently configured uuid
-        cur_uuid = host.run_cmd('git config remote.%s.annex-uuid' % name,
-                                tgtpath=path, catchout=True).strip()
+        try:
+            cur_uuid = host.run_cmd('git config remote.%s.annex-uuid' % name,
+                                    tgtpath=path, catchout=True).strip()
+        except CmdError:
+            cur_uuid = ""
 
-        cur_url = host.run_cmd('git config remote.%s.url' % name,
-                               tgtpath=path, catchout=True).strip()
+        try:
+            cur_url = host.run_cmd('git config remote.%s.url' % name,
+                                   tgtpath=path, catchout=True).strip()
+
+        except CmdError:
+            cur_uuid = ""
 
         # update uuid only if missing and repo exists
         if len(cur_uuid) == 0 and len(cur_url) > 0:

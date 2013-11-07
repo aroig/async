@@ -306,9 +306,9 @@ class AsyncConfig(ConfigParser):
                 else:
                     raise AsyncConfigError("Unknown instance for host: %s" % k)
 
-        # match remotes to annex dirs
+        # match remotes to git or annex dirs
         for k, val in self.directory.items():
-            if val['type'] == 'annex':
+            if val['type'] == 'annex' or val['type'] == 'git':
                 val['git_remotes'] = self.remote
 
         # attach dirs data to hosts

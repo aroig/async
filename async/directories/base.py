@@ -100,8 +100,9 @@ class BaseDir(object):
     @property
     def type(self):
         """Returns the type of the directory as a string"""
-        from async.directories import AnnexDir, UnisonDir, RsyncDir, LocalDir
+        from async.directories import AnnexDir, UnisonDir, RsyncDir, LocalDir, GitDir
         if isinstance(self, AnnexDir):    return 'annex'
+        if isinstance(self, GitDir):      return 'git'
         elif isinstance(self, UnisonDir): return 'unison'
         elif isinstance(self, RsyncDir):  return 'rsync'
         elif isinstance(self, LocalDir):  return 'local'
