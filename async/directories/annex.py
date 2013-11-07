@@ -57,7 +57,7 @@ class AnnexDir(GitDir):
         key_re = re.compile('git-annex:.../.../(.*)\.log')
 
         try:
-            raw = host.run_cmd("git grep --files-with-matches -e %s git-annex -- '*/*/*.log'" % uuid,
+            raw = host.run_cmd("git grep --files-with-matches -e '1 %s' git-annex -- '*/*/*.log'" % uuid,
                                tgtpath=path, catchout=True).strip()
 
         except CmdError as err:
