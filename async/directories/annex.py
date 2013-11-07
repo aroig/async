@@ -54,14 +54,14 @@ class AnnexDir(GitDir):
             return self.keys_host[uuid]
 
         path = self.fullpath(host)
-        git_args =['grep', '--files-with-matches', '-e', uuid, 'git-annex', '--', '*/*/*.log']
         key_re = re.compile('git-annex:.../.../(.*)\.log')
 
         try:
-            raw = cmd.git(tgtdir=path, args=git_args, silent=silent, catchout=True).strip()
+            raw = host.run_cmd("git grep --files-with-matches -e %s git-annex -- '*/*/*.log'" % uuid,
+                               tgtpath=path, catchout=True).strip()
 
         except CmdError as err:
-            raise SyncError("couldn't retrieve keys: %s" % str(err))
+            return set()
 
         self.keys_host[uuid] = set([key for key in key_re.findall(raw)])
         return self.keys_host[uuid]
@@ -318,15 +318,14 @@ class AnnexDir(GitDir):
         status['type'] = 'annex'
 
         # missing annexed files
-        try:
-        # Painfully slow. When I manage to get the keys for the working tree fast, I'll be
-        # in business to fix this.
-#            raw = host.run_cmd("git annex find --not --in=here" ,tgtpath=path, catchout=True).strip()
-#            if len(raw) == 0:    status['missing'] = 0
-#            else:                status['missing'] = len(raw.split('\n'))
+        uuid = self._get_uuid(host.name, self.name)
+        if uuid:
+            keys_local = self._get_keys_in_host(host, uuid, silent=False, dryrun=False)
+            keys_head = self._get_keys_in_head(host, silent=False, dryrun=False)
+            status['missing'] = len(set(keys_head.keys()) - keys_local)
+            status['unused']  = len(keys_local - set(keys_head.keys()))
 
-            status['missing'] = 0
-        except:
+        else:
             status['missing'] = -1
 
         # add conflicts in annex

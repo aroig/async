@@ -481,18 +481,31 @@ class BaseHost(object):
 
                     numchanged = ''
                     if 'changed' in status:
-                        numchanged = number2human(status['changed'], fmt='%(value)3.0f %(symbol)s')
+                        numchanged = number2human(status.get('changed', 0) + status.get('staged', 0),
+                                                  fmt='%(value)3.0f %(symbol)s')
 
-                    # directory state, depending on type
-                    dirstate = ''
-                    symstate = '  '
+                    nummissing = ''
+                    if 'missing' in status:
+                        nummissing = number2human(status['missing'], fmt='%(value)3.0f %(symbol)s')
+
+                    numunused = ''
+                    if 'unused' in status:
+                        numunused = number2human(status['unused'], fmt='%(value)3.0f %(symbol)s')
+
+                    # git status
                     if status['type'] == 'annex' or status['type'] == 'git':
-                        dirstate = '{0:>5} {1:<5}'.format(numfiles, '(%s)' % numchanged)
-
                         if status['conflicts'] > 0:  symstate = '#RX#t '
                         elif status['changed'] > 0:  symstate = '#R*#t '
                         elif status['staged'] > 0:   symstate = '#G*#t '
                         else:                        symstate = '#G√#t '
+                    else:
+                        symstate = '  '
+
+                    # annex status
+                    dirstate = ''
+                    if status['type'] == 'annex':
+                        dircounts = '[#R%s#t/#G%s#t]' % (nummissing, numunused)
+                        dirstate  = '{0:>5} {1:<5}'.format(numfiles, dircounts)
 
                     else:
                         dirstate = '{0:>5} {1:<5}'.format(numfiles, '')
