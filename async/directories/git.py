@@ -40,7 +40,9 @@ class GitDir(BaseDir):
         path = self.fullpath(host)
         if not silent: ui.print_color("initializing git repo")
         try:
-            if not dryrun: host.run_cmd('git init', tgtpath=path)
+            if not dryrun:
+                host.run_cmd('git init', tgtpath=path)
+                host.run_cmd('git commit --allow-empty -m "Initial commit"', tgtpath=path)
 
         except CmdError as err:
             raise InitError("git init failed: %s" % str(err))
@@ -100,6 +102,64 @@ class GitDir(BaseDir):
 
         except CmdError as err:
             raise SyncError(str(err))
+
+
+
+    def _git_current_branch(self, host):
+        path = self.fullpath(host)
+        try:
+            raw = host.run_cmd('git symbolic-ref HEAD', tgtpath=path, catchout=True)
+
+        except CmdError as err:
+            raise SyncError("can't detect current branch: %s" % str(err))
+
+        return re.sub('^refs/heads/(.*)$', '\1', raw).strip()
+
+
+
+    def _git_ref_exists(self, host, ref):
+        path = self.fullpath(host)
+        try:
+            raw = host.run_cmd('git show-ref --verify -q "%s"' % ref,
+                               tgtpath=path, catchout=True)
+            return True
+
+        except CmdError:
+            return False
+
+
+
+    def _git_sync(self, local, remote, silent=False, dryrun=False, batch=False):
+        src = self.fullpath(local)
+        tgt = self.fullpath(remote)
+
+        branch = self._git_current_branch(local)
+        synced_branch = 'synced/%s' % branch
+
+        try:
+            # merge synced/branch into branch
+            if self._git_ref_exists(local, 'refs/heads/%s' % branch):
+                local.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=path)
+            else:
+                local.run_cmd('git branch "%s"' % synced_branch, tgtpath=path)
+
+            # pull from remote into branch
+            local.run_cmd('git fetch "%s"' % remote.name, tgtpath=path)
+            local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=path)
+
+            # update synced/branch. We don't want to check it out, but as it would be a
+            # fast-forward for sure, we just update the branch ref
+            local.run_cmd('git branch -f "refs/heads/%s"' % synced_branch, tgtpath=path)
+
+            # push synced/branch to remote
+            local.run_cmd('git push "%s" "refs/heads/%s"' % (remote.name, synced_branch), tgtpath=path)
+
+            # do a merge on the remote if the branches match
+            if self._git_current_branch(remote) == branch:
+                remote.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=path)
+
+        except CmdError as err:
+            raise SyncError("sync failed: %s" % str(err))
 
 
 
@@ -179,6 +239,9 @@ class GitDir(BaseDir):
         # TODO: implement ignore
         # TODO: implement force to resolve merge conflicts
 
+        if opts: batch = opts.batch
+        else:    batch = False
+
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
@@ -187,7 +250,8 @@ class GitDir(BaseDir):
         # pre sync check
         self._git_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
-        # TODO: fetch, merge push sequence.
+        # do the sync
+        self._git_sync(local, remote, silent=silent, dryrun=dryrun, batch=batch)
 
         # post-sync hook
         if runhooks:
