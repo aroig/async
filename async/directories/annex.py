@@ -284,6 +284,26 @@ class AnnexDir(GitDir):
 
 
 
+    def _annex_pre_sync_check(self, host, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        try:
+            # catch conflicting files
+            raw = host.run_cmd("find . -path './.git' -prune -or -path '*.variant-*' -print",
+                               tgtpath=path, catchout=True).strip()
+
+                ui.print_warning("directory %s on %s contains a nested git repo. It will be ignored." % (self.name, host.name))
+
+        except CmdError as err:
+            raise SyncError(str(err))
+
+        if len(raw) > 0: conflicts = raw.split('\n')
+        else:            conflicts = []
+
+        if len(conflicts) > 0:
+            raise SyncError("There are unresolved conflicts in %s: \n%s" % (self.name, '\n'.join(conflicts)))
+
+
+
     # Interface
     # ----------------------------------------------------------------
     def status(self, host, slow=False):
@@ -320,6 +340,9 @@ class AnnexDir(GitDir):
         if runhooks:
             self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
             self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+
+        #pre sync check
+        self._annex_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # sync & merge on remote
         self._annex_sync(local, remote, silent=silent, dryrun=dryrun)
