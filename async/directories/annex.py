@@ -68,7 +68,7 @@ class AnnexDir(GitDir):
 
 
 
-    def _get_keys_in_working_dir(self, host, silent=False, dryrun=False):
+    def _get_keys_in_head(self, host, silent=False, dryrun=False):
         # use cached value if we got one
         if self.keys_wd:
             return self.keys_wd
@@ -187,9 +187,9 @@ class AnnexDir(GitDir):
 
                 keys_local = self._get_keys_in_host(local, uuid_local, silent=silent, dryrun=False)
                 keys_remote = self._get_keys_in_host(local, uuid_remote, silent=silent, dryrun=False)
-                keys_wd = self._get_keys_in_working_dir(local, silent=silent, dryrun=False)
+                keys_head = self._get_keys_in_head(local, silent=silent, dryrun=False)
 
-                for key, d in keys_wd.items():
+                for key, d in keys_head.items():
                     if key in keys_local and not key in keys_remote:
                         ui.print_color('file: %s' % d)
                         ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), d))
@@ -246,9 +246,9 @@ class AnnexDir(GitDir):
 
                 keys_local = self._get_keys_in_host(local, uuid_local, silent=silent, dryrun=False)
                 keys_remote = self._get_keys_in_host(local, uuid_remote, silent=silent, dryrun=False)
-                keys_wd = self._get_keys_in_working_dir(local, silent=silent, dryrun=False)
+                keys_head = self._get_keys_in_head(local, silent=silent, dryrun=False)
 
-                for key, d in keys_wd.items():
+                for key, d in keys_head.items():
                     if key in keys_remote and not key in keys_local:
                         ui.print_color('file: %s' % d)
                         ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), d))
