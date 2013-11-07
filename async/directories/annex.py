@@ -286,7 +286,7 @@ class AnnexDir(GitDir):
 
     def _annex_pre_sync_check(self, host, silent=False, dryrun=False):
         path = self.fullpath(host)
-        conflicts = self.get_conflicts(self, host)
+        conflicts = self._annex_get_conflicts(host)
 
         if len(conflicts) > 0:
             raise SyncError("There are unresolved conflicts in %s: \n%s" % (self.name, '\n'.join(conflicts)))
