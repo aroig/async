@@ -286,26 +286,32 @@ class AnnexDir(GitDir):
 
     def _annex_pre_sync_check(self, host, silent=False, dryrun=False):
         path = self.fullpath(host)
-        try:
-            # catch conflicting files
-            raw = host.run_cmd("find . -path './.git' -prune -or -path '*.variant-*' -print",
-                               tgtpath=path, catchout=True).strip()
-
-                ui.print_warning("directory %s on %s contains a nested git repo. It will be ignored." % (self.name, host.name))
-
-        except CmdError as err:
-            raise SyncError(str(err))
-
-        if len(raw) > 0: conflicts = raw.split('\n')
-        else:            conflicts = []
+        conflicts = self.get_conflicts(self, host)
 
         if len(conflicts) > 0:
             raise SyncError("There are unresolved conflicts in %s: \n%s" % (self.name, '\n'.join(conflicts)))
 
 
+    def _annex_get_conflicts(self, host):
+        path = self.fullpath(host)
+        con_re = re.compile('^.*\.variant-[a-zA-Z0-9]+$', flags=re.MULTILINE)
+        try:
+            # catch conflicting files
+            raw = host.run_cmd("find . -path './.git' -prune -or -path '*.variant-*' -print",
+                               tgtpath=path, catchout=True).strip()
+
+        except CmdError as err:
+            raise SyncError(str(err))
+
+        conflicts = con_re.findall(raw)
+        return conflicts
+
+
+
 
     # Interface
     # ----------------------------------------------------------------
+
     def status(self, host, slow=False):
         status = super(AnnexDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
@@ -322,6 +328,10 @@ class AnnexDir(GitDir):
             status['missing'] = 0
         except:
             status['missing'] = -1
+
+        # add conflicts in annex
+        conflicts = self._annex_get_conflicts(host)
+        status['conflicts'] = status['conflicts'] + len(conflicts)
 
         return status
 

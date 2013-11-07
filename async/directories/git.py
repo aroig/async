@@ -100,9 +100,45 @@ class GitDir(BaseDir):
 
 
 
+    def _parse_git_status(self, host):
+        path = self.fullpath(host)
+        sta_re = re.compile('^(..)\s*(.*)$', flags=re.MULTILINE)
+        try:
+            # catch status
+            raw = host.run_cmd("git status --porcelain",
+                               tgtpath=path, catchout=True)
+
+        except CmdError as err:
+            raise SyncError(str(err))
+
+        dic = {}
+        dic['staged'] = []
+        dic['ignored'] = []
+        dic['changed'] = []
+        dic['deleted'] = []
+        dic['conflicts'] = []
+        dic['untracked'] = []
+        dic['unknown'] = []
+
+        for st, f in sta_re.findall(raw):
+            X, Y = (st[0], st[1])
+            if   X in "MADRC"  and Y in " " : dic['staged'].append(f)
+            elif X in "MADRC " and Y in "MT": dic['changed'].append(f)
+            elif X in "MARC "  and Y in "D":  dic['deleted'].append(f)
+            elif X in "U" or Y in "U":        dic['conflicts'].append(f)
+            elif X in "A" and Y in "A":       dic['conflicts'].append(f)
+            elif X in "D" and Y in "D":       dic['conflicts'].append(f)
+            elif X in "?" and Y in "?":       dic['untracked'].append(f)
+            elif X in "!" and Y in "!":       dic['ignored'].append(f)
+            else:                             dic['unknown'].append(f)
+
+        return dic
+
+
 
     # Interface
     # ----------------------------------------------------------------
+
     def status(self, host, slow=False):
         status = super(GitDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
@@ -124,6 +160,12 @@ class GitDir(BaseDir):
 
         except:
             status['changed'] = -1
+
+        # git status
+        st = self._parse_git_status(host)
+        status['staged']    = len(st['staged'])
+        status['changed']   = len(st['changed']) + len(st['deleted']) + len(st['untracked']) + len(st['unknown'])
+        status['conflicts'] = len(st['conflicts'])
 
         return status
 

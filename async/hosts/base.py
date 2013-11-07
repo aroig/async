@@ -489,9 +489,10 @@ class BaseHost(object):
                     if status['type'] == 'annex' or status['type'] == 'git':
                         dirstate = '{0:>5} {1:<5}'.format(numfiles, '(%s)' % numchanged)
 
-                        if status['changed'] > 0:    symstate = '#R*#t '
-                        elif status['changed'] == 0: symstate = '#G√#t '
-                        else:                        symstate = '#M?#t '
+                        if status['conflicts'] > 0:  symstate = '#RX#t '
+                        elif status['changed'] > 0:  symstate = '#R*#t '
+                        elif status['staged'] > 0:   symstate = '#G*#t '
+                        else:                        symstate = '#G√#t '
 
                     else:
                         dirstate = '{0:>5} {1:<5}'.format(numfiles, '')
