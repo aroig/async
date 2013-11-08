@@ -371,9 +371,12 @@ class AnnexDir(GitDir):
         #pre sync check
         self._annex_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
-        # sync & merge on remote
+        # sync
         self._annex_sync(local, remote, silent=silent, dryrun=dryrun)
-        self._annex_merge(remote, silent=silent, dryrun=dryrun)
+
+        # merge on the remote if current local and remote branches match
+        if self._git_current_branch(remote) == self._git_current_branch(local):
+            self._annex_merge(remote, silent=silent, dryrun=dryrun)
 
         # copy annexed files from the remote. This is fast as it uses mtimes
         if not opts.force == 'up' and self.name in local.annex_pull and self.name in remote.annex_push:
