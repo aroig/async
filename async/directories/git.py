@@ -139,13 +139,19 @@ class GitDir(BaseDir):
         try:
             # merge synced/branch into branch
             if self._git_ref_exists(local, 'refs/heads/%s' % branch):
-                local.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=path)
+                if batch:
+                    local.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=path)
+                else:
+                    local.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=path)
             else:
                 local.run_cmd('git branch "%s"' % synced_branch, tgtpath=path)
 
             # pull from remote into branch
             local.run_cmd('git fetch "%s"' % remote.name, tgtpath=path)
-            local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=path)
+            if batch:
+                local.run_cmd('git merge --ff-only "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=path)
+            else:
+                local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=path)
 
             # update synced/branch. We don't want to check it out, but as it would be a
             # fast-forward for sure, we just update the branch ref
@@ -156,7 +162,7 @@ class GitDir(BaseDir):
 
             # do a merge on the remote if the branches match
             if self._git_current_branch(remote) == branch:
-                remote.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=path)
+                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=path)
 
         except CmdError as err:
             raise SyncError("sync failed: %s" % str(err))
