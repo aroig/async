@@ -49,21 +49,32 @@ class AnnexDir(GitDir):
         """greps git-annex branch for all the keys in host. Faster than git-annex builtin
            because it does not perform individual location log queries"""
 
+        loclog_re = re.compile('^git-annex:.../.../(.*)\.log:([0-9.]*)s\s*([0-9]).*$', flags=re.MULTILINE)
+
         # use cached value if we got one
         if uuid in self.keys_host:
             return self.keys_host[uuid]
 
         path = self.fullpath(host)
-        key_re = re.compile('git-annex:.../.../(.*)\.log')
 
         try:
-            raw = host.run_cmd("git grep --files-with-matches -e '1 %s' git-annex -- '*/*/*.log'" % uuid,
+            raw = host.run_cmd("git grep -e '%s' git-annex -- '*/*/*.log'" % uuid,
                                tgtpath=path, catchout=True).strip()
 
         except CmdError as err:
             return set()
 
-        self.keys_host[uuid] = set([key for key in key_re.findall(raw)])
+        keydict = {}
+        for key, mtime, state in loclog_re.findall(raw):
+            mtime = float(mtime)
+            state = int(state)
+            if not key in keydict:
+                keydict[key] = (mtime, state)
+            else:
+                t, s = keydict[key]
+                if mtime > t: keydict[key] = (mtime, state)
+
+        self.keys_host[uuid] = set([key for key, st in keydict.items() if st[1] == 1])
         return self.keys_host[uuid]
 
 
