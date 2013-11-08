@@ -26,6 +26,7 @@ from boto.exception import EC2ResponseError
 
 import async.archui as ui
 import async.cmd as cmd
+import async.utils as utils
 
 
 class Ec2Error(Exception):
@@ -54,7 +55,7 @@ class Ec2Host(SshHost):
         self.ec2_security_group = conf['instance']['ec2_security_group']
 
         self.ec2_region = conf['instance']['ec2_region']
-        self.aws_keys = self.read_keys(conf['instance']['aws_keys'])
+        self.aws_keys = utils.read_keys(conf['instance']['aws_keys'])
 
         self.ec2_vol = conf['instance']['volumes']
 
