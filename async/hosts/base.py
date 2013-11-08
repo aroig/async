@@ -151,6 +151,15 @@ class BaseHost(object):
     # Filesystem manipulations
     # ----------------------------------------------------------------
 
+    # NOTE: for running commands I do
+    #  ! check || cmd
+    # that produces the following truth table of exit status
+    #    check   cmd   output
+    #      F      X      T
+    #      T      T      T
+    #      T      F      F
+
+
     def mount_devices(self):
         """Mounts local devices on the host. Takes care of luks and ecryptfs partitions.
            The order is: open luks, mount devices, setup ecryptfs partitions."""
@@ -159,7 +168,7 @@ class BaseHost(object):
             ui.print_debug("mounting luks: %s %s" % (dev, name))
             passphrase = self.vol_keys[name]
             try:
-                self.run_cmd('sudo cryptsetup status %s | grep -qs inactive && ' % shquote(name) +
+                self.run_cmd('! (sudo cryptsetup status %s | grep -qs inactive) || ' % shquote(name) +
                              'echo -n %s | sudo cryptsetup --key-file=- open --type luks %s %s' % \
                              (shquote(passphrase), shquote(dev), shquote(name)), tgtpath='/', catchout=True)
 
@@ -170,7 +179,7 @@ class BaseHost(object):
         for dev, mp in self.mounts.items():
             ui.print_debug("mounting device: %s %s" % (dev, mp))
             try:
-                self.run_cmd('! grep -qs %s /proc/mounts && ' % shquote(mp) + \
+                self.run_cmd('grep -qs %s /proc/mounts || ' % shquote(mp) + \
                              'sudo mount %s' % shquote(mp),
                              tgtpath='/', catchout=True)
             except CmdError as err:
@@ -190,7 +199,7 @@ class BaseHost(object):
                           "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
                           "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
 
-                self.run_cmd('! grep -qs %s /proc/mounts && '              % shquote(mp) + \
+                self.run_cmd('grep -qs %s /proc/mounts || '                % shquote(mp) + \
                              'sudo mount -i -t ecryptfs -o %s %s.crypt %s' % (shquote(options),
                                                                               shquote(cryp),
                                                                               shquote(mp)),
@@ -202,8 +211,8 @@ class BaseHost(object):
         if self.swapfile:
             ui.print_debug("mounting swap: %s" % self.swapfile)
             try:
-                self.run_cmd('! grep -qs %s /proc/swaps && ' % shquote(self.swapfile) + \
-                             '[ -f %s ] && ' % shquote(self.swapfile) + \
+                self.run_cmd('grep -qs %s /proc/swaps || ' % shquote(self.swapfile) + \
+                             '[ ! -f %s ] || ' % shquote(self.swapfile) + \
                              'sudo swapon %s' % shquote(self.swapfile),
                              tgtpath='/', catchout=True)
 
@@ -216,7 +225,7 @@ class BaseHost(object):
         if self.swapfile:
             ui.print_debug("umounting swap: %s" % self.swapfile)
             try:
-                self.run_cmd('grep -qs %s /proc/swaps && ' % shquote(self.swapfile) + \
+                self.run_cmd('! grep -qs %s /proc/swaps || ' % shquote(self.swapfile) + \
                              'sudo swapoff %s' % shquote(self.swapfile),
                              tgtpath='/', catchout=True)
 
@@ -227,7 +236,7 @@ class BaseHost(object):
         for cryp, mp in self.ecryptfs_mounts.items():
             ui.print_debug("umounting ecryptfs: %s %s" % (cryp, mp))
             try:
-                self.run_cmd('grep -qs %s /proc/mounts && ' % shquote(mp) + \
+                self.run_cmd('! grep -qs %s /proc/mounts || ' % shquote(mp) + \
                              'sudo umount %s' % shquote(mp),
                              tgtpath='/', catchout=True)
             except CmdError as err:
@@ -237,7 +246,7 @@ class BaseHost(object):
         for dev, mp in self.mounts.items():
             ui.print_debug("umounting devices: %s %s" % (dev, mp))
             try:
-                self.run_cmd('grep -qs %s /proc/mounts && ' % shquote(mp) + \
+                self.run_cmd('! grep -qs %s /proc/mounts || ' % shquote(mp) + \
                              'sudo umount %s' % shquote(mp),
                              tgtpath='/', catchout=True)
             except CmdError as err:
