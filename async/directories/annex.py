@@ -422,6 +422,9 @@ class AnnexDir(GitDir):
     def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
 
+        if opts: slow = opts.slow
+        else:    slow = False
+
         # run async hooks if asked to
         if runhooks:
             self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
@@ -430,10 +433,12 @@ class AnnexDir(GitDir):
         super(AnnexDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
         # run git annex fsck
-        ui.print_debug('git annex fsck')
         try:
             if not silent: ui.print_color("checking annex")
-            if not dryrun: host.run_cmd("git annex fsck", tgtpath=path)
+            ui.print_debug('git annex fsck')
+            if not dryrun:
+                if slow: host.run_cmd("git annex fsck", tgtpath=path)
+                else:    host.run_cmd("git annex fsck --fast -q", tgtpath=path)
 
         except CmdError as err:
             raise CheckError("git annex fsck failed: %s" % str(err))

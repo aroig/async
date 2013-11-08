@@ -308,3 +308,12 @@ class GitDir(BaseDir):
 
         # call check on the parent
         super(GitDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
+
+        # run git fsck
+        try:
+            if not silent: ui.print_color("checking git")
+            ui.print_debug('git fsck')
+            if not dryrun: host.run_cmd("git fsck", tgtpath=path)
+
+        except CmdError as err:
+            raise CheckError("git fsck failed: %s" % str(err))
