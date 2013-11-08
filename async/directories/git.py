@@ -95,9 +95,9 @@ class GitDir(BaseDir):
     def _git_pre_sync_check(self, host, silent=False, dryrun=False):
         path = self.fullpath(host)
         try:
-            raw = host.run_cmd("find . -path './.git' -prune -or -print | grep '\.git'",
+            raw = host.run_cmd("find . -path './.git' -prune -or -print | grep '\.git/' | wc -l",
                                tgtpath=path, catchout=True)
-            if len(raw.strip()) > 0:
+            if int(raw) > 0:
                 ui.print_warning("directory %s on %s contains a nested git repo. It will be ignored." % (self.name, host.name))
 
         except CmdError as err:
@@ -113,7 +113,11 @@ class GitDir(BaseDir):
         except CmdError as err:
             raise SyncError("can't detect current branch: %s" % str(err))
 
-        return re.sub('^refs/heads/(.*)$', '\1', raw).strip()
+        m = re.match('^refs/heads/(.*)$', raw)
+        if m == None:
+            raise SyncError("can't parse output of 'git symbolic-ref HEAD'")
+
+        return m.group(1).strip()
 
 
 
@@ -137,32 +141,50 @@ class GitDir(BaseDir):
         synced_branch = 'synced/%s' % branch
 
         try:
+            # fetch from remote into branch
+            if not silent: ui.print_color("fetching from %s" % remote.name)
+            local.run_cmd('git fetch "%s"' % remote.name, tgtpath=src)
+
+            # if local synced_branch does not exist, create it
+            if not self._git_ref_exists(local, 'refs/heads/%s' % synced_branch):
+                if not silent: ui.print_color("creating local branch %s" % synced_branch)
+                local.run_cmd('git branch "%s"' % synced_branch, tgtpath=src)
+
             # merge synced/branch into branch
-            if self._git_ref_exists(local, 'refs/heads/%s' % branch):
-                if batch:
-                    local.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=path)
-                else:
-                    local.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=path)
-            else:
-                local.run_cmd('git branch "%s"' % synced_branch, tgtpath=path)
-
-            # pull from remote into branch
-            local.run_cmd('git fetch "%s"' % remote.name, tgtpath=path)
+            if not silent: ui.print_color("merging local %s into %s" % (synced_branch, branch))
             if batch:
-                local.run_cmd('git merge --ff-only "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=path)
+                local.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=src)
             else:
-                local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=path)
+                local.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=src)
 
-            # update synced/branch. We don't want to check it out, but as it would be a
+            # merge remote synced/branch into branch
+            if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, synced_branch)):
+                if not silent: ui.print_color("merging remote branch %s into %s" % (synced_branch, branch))
+                if batch:
+                    local.run_cmd('git merge --ff-only "refs/remotes/%s/%s"' % (remote.name, synced_branch), tgtpath=src)
+                else:
+                    local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, synced_branch), tgtpath=src)
+
+            # merge remote branch into branch
+            if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, branch)):
+                if not silent: ui.print_color("merging remote branch %s into %s" % (branch, branch))
+                if batch:
+                    local.run_cmd('git merge --ff-only "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=src)
+                else:
+                    local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=src)
+
+            # update synced/branch. We don't want to check it out, as it would be a
             # fast-forward for sure, we just update the branch ref
-            local.run_cmd('git branch -f "refs/heads/%s"' % synced_branch, tgtpath=path)
+            if not silent: ui.print_color("updating local branch %s" % synced_branch)
+            local.run_cmd('git branch -f "%s"' % synced_branch, tgtpath=src)
 
             # push synced/branch to remote
-            local.run_cmd('git push "%s" "refs/heads/%s"' % (remote.name, synced_branch), tgtpath=path)
+            if not silent: ui.print_color("pushing branch %s to %s" % (synced_branch, remote.name))
+            local.run_cmd('git push "%s" "refs/heads/%s"' % (remote.name, synced_branch), tgtpath=src)
 
             # do a merge on the remote if the branches match
             if self._git_current_branch(remote) == branch:
-                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=path)
+                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=tgt)
 
         except CmdError as err:
             raise SyncError("sync failed: %s" % str(err))
