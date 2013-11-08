@@ -209,7 +209,7 @@ class AnnexDir(GitDir):
 
                 for key, d in keys_head.items():
                     if key in keys_local and not key in keys_remote:
-                        ui.print_color('file: %s' % d)
+                        ui.print_color('%s' % d)
                         ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), d))
                         if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [d], silent=silent)
 
@@ -268,7 +268,7 @@ class AnnexDir(GitDir):
 
                 for key, d in keys_head.items():
                     if key in keys_remote and not key in keys_local:
-                        ui.print_color('file: %s' % d)
+                        ui.print_color('%s' % d)
                         ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), d))
                         if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [d], silent=silent)
 
