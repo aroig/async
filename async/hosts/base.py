@@ -93,6 +93,7 @@ class BaseHost(object):
         self.mounts           = conf['mounts']
         self.luks_mounts      = conf['luks']
         self.ecryptfs_mounts  = conf['ecryptfs']
+        self.swapfile         = conf['swapfile']
 
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
@@ -155,6 +156,7 @@ class BaseHost(object):
            The order is: open luks, mount devices, setup ecryptfs partitions."""
         # open luks partitions
         for dev, name in self.luks_mounts.items():
+            ui.print_debug("mounting luks: %s %s" % (dev, name))
             passphrase = self.vol_keys[name]
             try:
                 self.run_cmd('sudo cryptsetup status %s | grep -qs inactive && ' % shquote(name) +
@@ -166,6 +168,7 @@ class BaseHost(object):
 
         # mount devices
         for dev, mp in self.mounts.items():
+            ui.print_debug("mounting device: %s %s" % (dev, mp))
             try:
                 self.run_cmd('! grep -qs %s /proc/mounts && ' % shquote(mp) + \
                              'sudo mount %s' % shquote(mp),
@@ -176,6 +179,7 @@ class BaseHost(object):
         # mount ecryptfs
         # TODO: needs testing
         for cryp, mp in self.ecryptfs_mounts.items():
+            ui.print_debug("mounting ecryptfs: %s %s" % (cryp, mp))
             passphrase = self.vol_keys[mp]
 
             try:
@@ -194,10 +198,34 @@ class BaseHost(object):
             except CmdError as err:
                 raise HostError("Can't mount ecryptfs directory %s. Message: %s" % (mp, err.output.strip()))
 
+        # mount swap
+        if self.swapfile:
+            ui.print_debug("mounting swap: %s" % self.swapfile)
+            try:
+                self.run_cmd('! grep -qs %s /proc/swaps && ' % shquote(self.swapfile) + \
+                             '[ -f %s ] && ' % shquote(self.swapfile) + \
+                             'sudo swapon %s' % shquote(self.swapfile),
+                             tgtpath='/', catchout=True)
+
+            except CmdError as err:
+                raise HostError("Can't mount swap %s. Message: %s" % (self.swapfile, err.output.strip()))
+
 
     def umount_devices(self):
+        # umount swap
+        if self.swapfile:
+            ui.print_debug("umounting swap: %s" % self.swapfile)
+            try:
+                self.run_cmd('grep -qs %s /proc/swaps && ' % shquote(self.swapfile) + \
+                             'sudo swapoff %s' % shquote(self.swapfile),
+                             tgtpath='/', catchout=True)
+
+            except CmdError as err:
+                raise HostError("Can't umount %s. Message: %s" % (self.swapfile, err.output.strip()))
+
         # umount ecryptfs
         for cryp, mp in self.ecryptfs_mounts.items():
+            ui.print_debug("umounting ecryptfs: %s %s" % (cryp, mp))
             try:
                 self.run_cmd('grep -qs %s /proc/mounts && ' % shquote(mp) + \
                              'sudo umount %s' % shquote(mp),
@@ -207,6 +235,7 @@ class BaseHost(object):
 
         # umount devices
         for dev, mp in self.mounts.items():
+            ui.print_debug("umounting devices: %s %s" % (dev, mp))
             try:
                 self.run_cmd('grep -qs %s /proc/mounts && ' % shquote(mp) + \
                              'sudo umount %s' % shquote(mp),
@@ -216,6 +245,7 @@ class BaseHost(object):
 
         # close luks partitions
         for dev, name in self.luks_mounts.items():
+            ui.print_debug("umounting luks: %s %s" % (dev, name))
             try:
                 self.run_cmd('sudo cryptsetup close --type luks %s' % shquote(name), tgtpath='/', catchout=True)
             except CmdError as err:
