@@ -222,6 +222,7 @@ class SshHost(BaseHost):
     def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
+        ui.print_debug("run_cmd. cmd: %s. path: %s" % (cm, path))
 
         try:
             ret = self.ssh.run('cd "%s" && %s' % (path, cm),
