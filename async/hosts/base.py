@@ -491,7 +491,7 @@ class BaseHost(object):
         types={
             'local' : '#Mlocal#t',
             'unison': '#Yunison#t',
-            'rsync' : '#Brsync#t',
+            'rsync' : '#Yrsync#t',
             'annex' : '#Gannex#t',
             'git'   : '#Bgit#t',
         }
