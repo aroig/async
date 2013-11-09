@@ -186,7 +186,7 @@ def annex(tgtdir, args=[], silent=True):
         if silent: out=devnull
         else:      out=None
 
-        subprocess.check_call([git_cmd] + git_args, stderr=out, stdout=out, cwd=tgtdir)
+        subprocess.check_call([git_cmd] + git_args, stderr=subprocess.STDOUT, stdout=out, cwd=tgtdir)
 
 
 def git(tgtdir, args, silent=False, catchout=False):
