@@ -50,7 +50,7 @@ def parse_bool(key, val, dic):
 
         if val in set(['on', 'true', '1', 'yes']): bval = True
         elif val in set(['off', 'false', '0', 'no']): bval = False
-        else: raise ValueError("Unrecognized boolean value: %s" % s)
+        else: raise ValueError("Unrecognized boolean value: %s" % val)
 
         dic[key] = bval
     return dic.get(key, None)
@@ -200,6 +200,7 @@ class AsyncConfig(ConfigParser):
 
         'remote': {
             'url'            : (None, parse_string),
+            'dead'           : (False, parse_bool),
             'git_hooks\..*'  : ({}, parse_keyval_path),
             'uuid\..*'       : ({}, parse_keyval),
         },

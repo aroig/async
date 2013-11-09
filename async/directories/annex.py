@@ -400,6 +400,8 @@ class AnnexDir(GitDir):
         if runhooks:
             self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
 
+        # TODO: mark dead remotes as dead in annex
+
         # NOTE: The parent initializes: git, hooks and remotes.
         super(AnnexDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
@@ -409,8 +411,10 @@ class AnnexDir(GitDir):
 
         # setup annex data on the remotes
         for k, r in self.git_remotes.items():
-            # discard remotes named as the host
-            if r['name'] == host.name: continue
+
+            # discard remotes named as the host or dead
+            if r['name'] == host.name or r['dead']: continue
+
             self._configure_annex_remote(host, r, silent=silent, dryrun=dryrun)
 
         # run async hooks if asked to

@@ -61,14 +61,36 @@ class GitDir(BaseDir):
         except CmdError:
             cur_url = ""
 
-        # add repo if not configured
-        if len(cur_url) == 0:
+        # add remote if not configured and not marked as dead
+        if len(cur_url) == 0 and not rmt['dead']:
             if not silent: ui.print_color("adding remote '%s'" % name)
             try:
                 if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
 
             except CmdError as err:
                 raise InitError("git remote add failed: %s" % str(err))
+
+
+
+    def _remove_git_remote(self, host, rmt, silent=False, dryrun=False):
+        path = self.fullpath(host)
+        name = rmt['name']
+
+        # get currently configured url for the remote
+        try:
+            cur_url = host.run_cmd('git config remote.%s.url' % name,
+                                   tgtpath=path, catchout=True).strip()
+        except CmdError:
+            cur_url = ""
+
+        # if remote exists and is dead, remove it
+        if len(cur_url) > 0 and rmt['dead']:
+            if not silent: ui.print_color("removing remote '%s'" % name)
+            try:
+                if not dryrun: host.run_cmd('git remote remove "%s"' % name, tgtpath=path)
+
+            except CmdError as err:
+                raise InitError("git remote remove failed: %s" % str(err))
 
 
 
@@ -307,9 +329,12 @@ class GitDir(BaseDir):
 
         # setup git remotes
         for k, r in self.git_remotes.items():
-            # discard remotes named as the host
+
+            # discard remotes named as the host or dead
             if r['name'] == host.name: continue
-            self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
+
+            if r['dead']: self._remove_git_remote(host, r, silent=silent, dryrun=dryrun)
+            else:         self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
 
         # setup git hooks
         remote = self.git_remotes.get(host.name, None)
