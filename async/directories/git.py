@@ -133,12 +133,17 @@ class GitDir(BaseDir):
 
 
 
-    def _git_sync(self, local, remote, silent=False, dryrun=False, batch=False):
+    def _git_sync(self, local, remote, silent=False, dryrun=False, batch=False, force=None):
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
         branch = self._git_current_branch(local)
         synced_branch = 'synced/%s' % branch
+
+        args = ['--strategy=recursive']
+        if batch: args.append('--ff-only')
+        if force == 'up':     args.append('--strategy-option=ours')
+        elif force == 'down': args.append('--strategy-option=theirs')
 
         try:
             # fetch from remote into branch
@@ -152,26 +157,19 @@ class GitDir(BaseDir):
 
             # merge synced/branch into branch
             if not silent: ui.print_color("merging local %s into %s" % (synced_branch, branch))
-            if batch:
-                local.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=src)
-            else:
-                local.run_cmd('git merge "refs/heads/%s"' % synced_branch, tgtpath=src)
+            local.run_cmd('git merge %s "refs/heads/%s"' % (' '.join(args), synced_branch), tgtpath=src)
 
             # merge remote synced/branch into branch
             if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, synced_branch)):
                 if not silent: ui.print_color("merging remote branch %s into %s" % (synced_branch, branch))
-                if batch:
-                    local.run_cmd('git merge --ff-only "refs/remotes/%s/%s"' % (remote.name, synced_branch), tgtpath=src)
-                else:
-                    local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, synced_branch), tgtpath=src)
+                local.run_cmd('git merge %s "refs/remotes/%s/%s"' % (' '.join(args), remote.name, synced_branch),
+                              tgtpath=src)
 
             # merge remote branch into branch
             if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, branch)):
                 if not silent: ui.print_color("merging remote branch %s into %s" % (branch, branch))
-                if batch:
-                    local.run_cmd('git merge --ff-only "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=src)
-                else:
-                    local.run_cmd('git merge "refs/remotes/%s/%s"' % (remote.name, branch), tgtpath=src)
+                local.run_cmd('git merge %s "refs/remotes/%s/%s"' % (' '.join(args), remote.name, branch),
+                              tgtpath=src)
 
             # update synced/branch. We don't want to check it out, as it would be a
             # fast-forward for sure, we just update the branch ref
@@ -267,8 +265,13 @@ class GitDir(BaseDir):
         # TODO: implement ignore
         # TODO: implement force to resolve merge conflicts
 
-        if opts: batch = opts.batch
-        else:    batch = False
+        if opts:
+            batch = opts.batch
+            force = opts.force
+        else:
+            batch = False
+            force = None
+
 
         # pre-sync hook
         if runhooks:
@@ -279,7 +282,7 @@ class GitDir(BaseDir):
         self._git_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # do the sync
-        self._git_sync(local, remote, silent=silent, dryrun=dryrun, batch=batch)
+        self._git_sync(local, remote, silent=silent, dryrun=dryrun, batch=batch, force=force)
 
         # post-sync hook
         if runhooks:
