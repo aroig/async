@@ -176,14 +176,14 @@ class BaseDir(object):
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
-            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+            self.run_hook(remote, 'pre_sync_remote', silent=silent, dryrun=dryrun)
 
         # This does nothing, only runs the hooks
 
         # post-sync hook
         if runhooks:
             self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
-            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
+            self.run_hook(remote, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 

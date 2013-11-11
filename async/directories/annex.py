@@ -366,7 +366,7 @@ class AnnexDir(GitDir):
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
-            self.run_hook(local, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+            self.run_hook(remote, 'pre_sync_remote', silent=silent, dryrun=dryrun)
 
         #pre sync check
         self._annex_pre_sync_check(local, silent=silent, dryrun=dryrun)
@@ -389,7 +389,7 @@ class AnnexDir(GitDir):
         # post-sync hook
         if runhooks:
             self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
-            self.run_hook(local, 'post_sync_remote', silent=silent, dryrun=dryrun)
+            self.run_hook(remote, 'post_sync_remote', silent=silent, dryrun=dryrun)
 
 
 
