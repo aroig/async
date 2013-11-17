@@ -116,12 +116,12 @@ class SSHConnection(object):
             dic = hosts[hostname]
             if "HostName" in dic: hostname = dic['HostName']
 
-        raw = subprocess.check_output(['host', '-4', hostname])
-        m = re.match("^(.*) has address (\d+.\d+.\d+.\d+)\s*$", raw)
-        if m:
+        try:
+            raw = subprocess.check_output(['host', '-4', hostname])
+            m = re.match("^(.*) has address (\d+.\d+.\d+.\d+)\s*$", raw)
             return (m.group(1).strip(), m.group(2).strip())
 
-        else:
+        except:
             if re.match("^(\d+.\d+.\d+.\d+)$", hostname): return (None, hostname)
             else:                                         return (None, None)
 
