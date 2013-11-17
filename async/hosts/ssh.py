@@ -142,7 +142,8 @@ class SshHost(BaseHost):
     @property
     def hostname(self):
         hostname, ip = self.ssh.resolve(hostname=self.ssh_hostname)
-        return hostname
+        if hostname: return hostname
+        else:        return ip
 
 
     @property
