@@ -49,6 +49,9 @@ class SshHost(BaseHost):
         self.ssh_key          = conf['ssh_key']          # the key for ssh connection
         self.ssh_trust        = conf['ssh_trust']
 
+        self._hostname        = None
+        self._ip              = None
+
         socketfile="ssh-%s.socket" % str(os.getpid())
         socket = os.path.expandvars('$XDG_RUNTIME_DIR/async/%s' % socketfile)
         try:
@@ -139,17 +142,27 @@ class SshHost(BaseHost):
     # Implementation
     # ----------------------------------------------------------------
 
+    def _cache_hostname_and_ip(self):
+        hostname, ip = self.ssh.resolve(hostname=self.ssh_hostname)
+        self._ip = ip
+        if hostname: self._hostname = hostname
+        else:        self._hostname = ip
+
+
     @property
     def hostname(self):
-        hostname, ip = self.ssh.resolve(hostname=self.ssh_hostname)
-        if hostname: return hostname
-        else:        return ip
+        if self._hostname == None:
+            self._cache_hostname_and_ip()
+
+        return self._hostname
 
 
     @property
     def ip(self):
-        hostname, ip = self.ssh.resolve(hostname=self.ssh_hostname)
-        return ip
+        if self._ip == None:
+            self._cache_hostname_and_ip()
+
+        return self._ip
 
 
     def connect(self, silent=False, dryrun=False):
