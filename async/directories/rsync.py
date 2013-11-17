@@ -67,7 +67,7 @@ class RsyncDir(BaseDir):
 
         # get target path
         if isinstance(remote, SshHost):
-            tgt = '%s:%s/' % (remote.hostname, self.fullpath(remote))
+            tgt = '%s@%s:%s/' % (remote.user, remote.hostname, self.fullpath(remote))
 
         elif isinstance(remote, DirectoryHost):
             tgt = '%s/' % self.fullpath(remote)
