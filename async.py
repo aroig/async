@@ -218,7 +218,7 @@ try:
         if len(args) == 0:    ret = remote.print_status()
         else:                 ui.print_error("Too many arguments.")
 
-    if cmd == "ls":
+    elif cmd == "ls":
         if len(args) == 0:    ret = remote.print_dirstate(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
