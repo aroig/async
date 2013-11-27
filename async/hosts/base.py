@@ -43,7 +43,10 @@ class HostError(Exception):
 class CmdError(HostError):
     def __init__(self, msg=None, returncode=None, output=""):
         super(CmdError, self).__init__(msg)
-        self.output = output
+        if output:
+            self.output = output
+        else:
+            self.output = ""
         self.returncode = returncode
 
 
