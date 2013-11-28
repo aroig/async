@@ -77,8 +77,8 @@ class RsyncDir(BaseDir):
 
         # pre-sync hook
         if runhooks:
-            self.run_hook(local, 'pre_sync', silent=silent, dryrun=dryrun)
-            self.run_hook(remote, 'pre_sync_remote', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
+            self.run_hook(remote, 'pre_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
         # call sync on the parent
         super(RsyncDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
@@ -92,8 +92,8 @@ class RsyncDir(BaseDir):
 
         # post-sync hook
         if runhooks:
-            self.run_hook(local, 'post_sync', silent=silent, dryrun=dryrun)
-            self.run_hook(remote, 'post_sync_remote', silent=silent, dryrun=dryrun)
+            self.run_hook(local, 'post_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
+            self.run_hook(remote, 'post_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
 
 
