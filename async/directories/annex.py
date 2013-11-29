@@ -29,6 +29,7 @@ import async.archui as ui
 
 class AnnexDir(GitDir):
     """Directory synced via git annex"""
+    quotes_re = re.compile('^"(.*)"$')
 
     def __init__(self, conf):
         super(AnnexDir, self).__init__(conf)
@@ -85,12 +86,11 @@ class AnnexDir(GitDir):
             return self.keys_wd
 
         path = self.fullpath(host)
-        path_re = re.compile('^([a-zA-Z0-9]+)\s*(.+)$', flags=re.MULTILINE)
+        path_re = re.compile('^120000 blob ([a-zA-Z0-9]+)\s*(.+)$', flags=re.MULTILINE)
         key_re = re.compile('^([a-zA-Z0-9]+)\s*blob.*\n(?:\.\./)*\.git/annex/objects/../../.*/(.+)$', flags=re.MULTILINE)
         try:
-#   git ls-tree -r HEAD | cut -f 1 | grep -e "^120000" | cut -d " " -f 3 | git cat-file --batch
-#               'sed s"|^\(\.\./\)*\.git/annex/objects/../../\(.*\)$|\2|;tx;d;:x" '
-            raw = host.run_cmd('git ls-tree -r HEAD | grep -e "^120000" |cut -d " " -f 3-',
+            # I use -z to prevent git from escaping the string when there are accented characters in filename
+            raw = host.run_cmd('git ls-tree -r -z HEAD | grep -zZ -e "^120000" | sed "s/\\x00/\\n/g"',
                                tgtpath=path, catchout=True)
 
         except CmdError as err:
@@ -101,8 +101,6 @@ class AnnexDir(GitDir):
         path_dic = {o: d.strip() for o, d in path_re.findall(raw)}
 
         try:
-#   git ls-tree -r HEAD | cut -f 1 | grep -e "^120000" | cut -d " " -f 3 | git cat-file --batch
-#               'sed s"|^\(\.\./\)*\.git/annex/objects/../../\(.*\)$|\2|;tx;d;:x" '
             raw = host.run_cmd('git cat-file --batch',
                                stdin='\n'.join(path_dic.keys()),
                                tgtpath=path, catchout=True)
