@@ -75,11 +75,12 @@ class BaseDir(object):
             return False
 
         elif self.symlink:
+            tgtlink = os.path.join(host.path, self.symlink)
             if not silent:
-                ui.print_color("symlink: %s -> %s" % (path, self.symlink))
+                ui.print_color("symlink: %s -> %s" % (path, tgtlink))
 
             try:
-                if not dryrun: host.symlink(self.symlink, path)
+                if not dryrun: host.symlink(tgtlink, path)
             except Exception as err:
                 raise InitError(str(err))
             return True
