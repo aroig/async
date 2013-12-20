@@ -212,6 +212,7 @@ class AsyncConfig(ConfigParser):
             'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
             'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
 
+            'subdirs'         : ([], parse_list_path),
             'check'           : ([], parse_list),
             'ignore'          : ([], parse_list_path),
             'unison_profile'  : (None, parse_string),

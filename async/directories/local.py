@@ -73,6 +73,17 @@ class LocalDir(BaseDir):
 
         super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
+        # create subdirs
+        perms = 0o755
+        if not silent:
+            ui.print_color("creating subdirectories in %s with permissions %o" % (path, perms))
+
+        for sd in self.subdirs:
+            sdpath = os.path.join(path, sd)
+
+            if not host.path_exists(sdpath):
+                self._create_directory(host, sdpath, perms, silent, dryrun)
+
         # run async hooks if asked to
         if runhooks:
             self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)

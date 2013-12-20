@@ -53,6 +53,7 @@ class BaseDir(object):
         self.perms      = int(conf['perms'], base=8)
         self.symlink    = conf['symlink']
         self.ignore     = []
+        self.subdirs    = []
 
         self.path_rename = conf['path_rename']
 
@@ -196,7 +197,7 @@ class BaseDir(object):
 
         if not host.path_exists(path):
             if not silent:
-                ui.print_color("Creating %s with permissions %o" % (path, self.perms))
+                ui.print_color("creating %s with permissions %o" % (path, self.perms))
             self._create_directory(host, path, self.perms, silent, dryrun)
         else:
             ui.print_warning("path already exists: %s" % path)
