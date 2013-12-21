@@ -435,6 +435,19 @@ class Ec2Host(SshHost):
         super(Ec2Host, self).ping()
 
 
+    def print_log(self, silent=False, dryrun=False, opts=None):
+        """Prints host logs"""
+        if opts and opts.boot:
+            self.aws_connect()
+            if not dryrun:
+                cout = self.instance.get_console_output()
+                print(cout.output)
+
+        else:
+            super(Ec2Host, self).print_log(silent=silent, dryrun=dryrun, opts=opts)
+
+
+
     # State transitions
     # ----------------------------------------------------------------
 

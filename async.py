@@ -80,46 +80,49 @@ class FileSnitch(object):
 usage = """Usage: %prog [options] <cmd> <host>
 
 Commands:
-  status:     %prog status <host>
+     status:  %prog status <host>
               Print host status.
 
-     ls:      %prog host <host>
+        log:  %prog log <host>
+              Print host log.
+
+         ls:  %prog host <host>
               Print state data for directories.
 
-  sync:       %prog sync <host>
+       sync:  %prog sync <host>
               Sync host.
 
-  init:       %prog init <host>
+       init:  %prog init <host>
               Initialize directory structure on host.
 
-  check:      %prog check <host>
+      check:  %prog check <host>
               Checks directory structure on host.
 
-  shell:      %prog shell <host>
+      shell:  %prog shell <host>
               Launch an interactive shell on host.
 
-  run:        %prog run <host> <script>
+        run:  %prog run <host> <script>
               Run a local script on host
 
-  start:      %prog start <host>
+      start:  %prog start <host>
               Start the host.
 
-  stop:       %prog start <host>
+       stop:  %prog start <host>
               Stop the host.
 
-  mount:      %prog mount <host>
+      mount:  %prog mount <host>
               Mount devices on host.
 
-  umount:     %prog umount <host>
+     umount:  %prog umount <host>
               Umount devices on host.
 
-  launch:     %prog launch <host>
+     launch:  %prog launch <host>
               Launch an ec2 instance.
 
   terminate:  %prog terminate <host>
               Terminate an ec2 instance.
 
-  snapshot:   %prog snapshot <host>
+   snapshot:  %prog snapshot <host>
               Create a snapshot of a running ec2 instance.
 
 
@@ -146,6 +149,9 @@ parser.add_option("--ignore", action="store", type="string", default=None, dest=
 
 parser.add_option("-i", "--instance", action="store", type="string", default=None, dest="itype",
                   help="Instance type. Values: micro (default), small, large")
+
+parser.add_option("--boot", dest="boot", action="store_true", default=False,
+                  help="Print boot log instead of journal (ec2 instance only)")
 
 parser.add_option("--terse", dest="terse", action="store_true", default=False,
                   help="Terse output.")
@@ -216,6 +222,10 @@ try:
     ret = True
     if cmd == "status":
         if len(args) == 0:    ret = remote.print_status()
+        else:                 ui.print_error("Too many arguments.")
+
+    if cmd == "log":
+        if len(args) == 0:    ret = remote.print_log(opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "ls":

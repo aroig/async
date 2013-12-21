@@ -476,6 +476,17 @@ class BaseHost(object):
         return True
 
 
+    def print_log(self, silent=False, dryrun=False, opts=None):
+        """Prints host logs"""
+        try:
+            with self.in_state(silent=silent, dryrun=dryrun):
+                if not dryrun:
+                    self.run_cmd('sudo journalctl -b', tgtpath='/')
+                    return True
+
+        except HostError as err:
+            ui.print_error(str(err))
+
 
     def print_dirstate(self, silent=False, dryrun=False, opts=None):
         """Prints the state of directories in a host"""
