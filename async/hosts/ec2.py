@@ -274,11 +274,6 @@ class Ec2Host(SshHost):
         ret = False
 
         try:
-            try:
-                self.connect(silent=silent, dryrun=False)
-            except SshError:
-                pass
-
             if self.instance == None:
 
                 def func():
@@ -298,9 +293,6 @@ class Ec2Host(SshHost):
             ui.print_error(str(err))
             ret = False
 
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
-
         return ret
 
 
@@ -310,20 +302,12 @@ class Ec2Host(SshHost):
         ret = True
 
         try:
-            try:
-                self.connect(silent=silent, dryrun=False)
-            except SshError:
-                pass
-
             if self.STATES.index(self.state) < self.STATES.index('attached'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
@@ -333,20 +317,12 @@ class Ec2Host(SshHost):
         st = 'terminated'
         ret = True
         try:
-            try:
-                self.connect(silent=silent, dryrun=False)
-            except SshError:
-                pass
-
             if self.STATES.index(self.state) > self.STATES.index('terminated'):
                 ret =  self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
@@ -356,16 +332,12 @@ class Ec2Host(SshHost):
         st = 'attached'
         ret = True
         try:
-            self.connect(silent=silent, dryrun=False)
             if self.STATES.index(self.state) < self.STATES.index('attached'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
@@ -375,16 +347,12 @@ class Ec2Host(SshHost):
         st = self.STATES[self.STATES.index('attached') - 1]
         ret = True
         try:
-            self.connect(silent=silent, dryrun=False)
             if self.STATES.index(self.state) >= self.STATES.index('attached'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
 
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
@@ -394,8 +362,6 @@ class Ec2Host(SshHost):
         ret = False
 
         try:
-            self.connect(silent=silent, dryrun=False)
-
             # go to online state, with detached data
             self.set_state(state='online', silent=silent, dryrun=dryrun)
 
@@ -419,9 +385,6 @@ class Ec2Host(SshHost):
             ui.print_error(str(err))
             ret = False
 
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
-
         return ret
 
 
@@ -429,8 +392,6 @@ class Ec2Host(SshHost):
         """Creates a data backup"""
         ret = False
         try:
-            self.connect(silent=silent, dryrun=False)
-
             # go to online state with detached data
             self.set_state(state='online', silent=silent, dryrun=dryrun)
 
@@ -449,8 +410,6 @@ class Ec2Host(SshHost):
                                           silent=silent,
                                           dryrun=dryrun)
                     ret = True
-
-            self.disconnect(silent=silent, dryrun=False)
 
         except HostError as err:
             ui.print_error(str(err))

@@ -313,11 +313,6 @@ try:
     if cmd in logging_cmds and conf.async['logfile'] != None:
         ui.start_logging(conf.async['logfile'], level=4)
 
-#    try:
-#        remote.disconnect()
-#    except Exception as err:
-#        ui.print_error(str(err))
-
 
     if ret: sys.exit(0)
     else:   sys.exit(1)

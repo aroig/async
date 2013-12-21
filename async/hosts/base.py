@@ -60,7 +60,6 @@ class HostController:
         self.dryrun = dryrun
 
     def __enter__(self):
-        self.host.connect(silent=self.silent, dryrun=False)
         self.curstate = self.host.get_state()
 
         # change state if tgtstate is given
@@ -73,7 +72,6 @@ class HostController:
         # do not get to current state if target state was not specified
         if self.curstate and self.tgtstate:
             self.host.set_state(self.curstate)
-        self.host.disconnect(silent=self.silent, dryrun=False)
 
 
 
@@ -375,10 +373,6 @@ class BaseHost(object):
         """Starts the host if not running"""
         st = 'online'
         ret = True
-        try:
-            self.connect(silent=silent, dryrun=False)
-        except HostError:
-            pass
 
         try:
             if self.STATES.index(self.state) < self.STATES.index('online'):
@@ -387,9 +381,6 @@ class BaseHost(object):
         except HostError as err:
             ui.print_error(str(err))
             ret = False
-
-        finally:
-            self.disconnect(silent=silent, dryrun=False)
 
         return ret
 
