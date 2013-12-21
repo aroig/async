@@ -647,9 +647,12 @@ class BaseHost(object):
     # Filesystem manipulations
     # ----------------------------------------------------------------
 
-    def symlink(self, tgt, path):
+    def symlink(self, tgt, path, force=False):
         try:
+            if force and self.path_exists(path):
+                self.run_cmd('rm -Rf %s' % shquote(path))
             self.run_cmd('ln -s %s %s' % (shquote(tgt), shquote(path)))
+
         except CmdError as err:
             raise HostError("Can't create symlink on %s" % self.name)
 

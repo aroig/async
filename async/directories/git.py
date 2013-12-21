@@ -31,8 +31,10 @@ class GitDir(BaseDir):
 
     def __init__(self, conf):
         super(GitDir, self).__init__(conf)
+
+        self.git_hooks_dir = conf['githooks_dir']   # if set, symlinks hooks to this directory
         self.git_remotes = conf['git_remotes']
-        self.git_hooks_path = conf['conf_path']
+        self.git_hooks_conf = conf['conf_path']
 
 
 
@@ -96,7 +98,7 @@ class GitDir(BaseDir):
 
     def _configure_git_hook(self, host, hook, hook_path, silent=False, dryrun=False):
         path = self.fullpath(host)
-        srcpath = os.path.join(self.git_hooks_path, hook_path)
+        srcpath = os.path.join(self.git_hooks_conf, hook_path)
         tgtpath = os.path.join(path, '.git/hooks', hook)
 
         try:
@@ -335,6 +337,11 @@ class GitDir(BaseDir):
 
             if r['dead']: self._remove_git_remote(host, r, silent=silent, dryrun=dryrun)
             else:         self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
+
+        # symlink git hooks
+        if len(self.git_hooks_dir) > 0:
+            if not silent: ui.print_color("symlinking git hooks")
+            host.symlink('../%s' % self.git_hooks_dir, os.path.join(path, '.git/hooks'), force=True)
 
         # setup git hooks
         remote = self.git_remotes.get(host.name, None)

@@ -218,6 +218,7 @@ class AsyncConfig(ConfigParser):
             'unison_profile'  : (None, parse_string),
             'unison_args'     : ([], parse_list_args),
             'rsync_args'      : ([], parse_list_args),
+            'githooks_dir'    : ("", parse_path),
 
             'pre_init_hook'          : ([], parse_list_path),  # scripts to run before initialization
             'post_init_hook'         : ([], parse_list_path),  # scripts to run after initialization
