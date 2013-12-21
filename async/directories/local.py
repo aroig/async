@@ -28,6 +28,7 @@ class LocalDir(BaseDir):
         super(LocalDir, self).__init__(conf)
 
 
+
     # Interface
     # ----------------------------------------------------------------
     def status(self, host, slow=False):
@@ -72,13 +73,6 @@ class LocalDir(BaseDir):
             self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
 
         super(LocalDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-
-        # create subdirs
-        perms = 0o755
-        for sd in self.subdirs:
-            sdpath = os.path.join(path, sd)
-            if not host.path_exists(sdpath):
-                self._create_directory(host, sdpath, perms, silent, dryrun)
 
         # run async hooks if asked to
         if runhooks:
