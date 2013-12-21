@@ -685,16 +685,6 @@ class BaseHost(object):
         return HostController(self, tgtstate=tgtstate, silent=silent, dryrun=dryrun)
 
 
-    def connect(self, silent=False, dryrun=False):
-        """Establishes a connection and initialized data"""
-        raise NotImplementedError
-
-
-    def disconnect(self, silent=False, dryrun=False):
-        """Closes a connection and initialized data"""
-        raise NotImplementedError
-
-
     def set_state(self, state, silent=False, dryrun=False):
         """Sets the host to the given state, passing through all the states in between."""
         self.state = self.get_state()

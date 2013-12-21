@@ -202,16 +202,6 @@ class SshHost(BaseHost):
         return self._ip
 
 
-    def connect(self, silent=False, dryrun=False):
-        """Establishes a connection and initialized data"""
-        self.get_state()
-
-
-    def disconnect(self, silent=False, dryrun=False):
-        """Closes a connection and initialized data"""
-        self.ssh_disconnect()
-
-
     def get_state(self):
         """Queries the state of the host"""
         ui.print_debug("begin SshHost.get_state")
