@@ -36,7 +36,7 @@ class SshError(HostError):
 class SshHost(BaseHost):
     """A remote ssh host"""
 
-    STATES = ['offline', 'online', 'mounted']
+    STATES = ['offline', 'running', 'online', 'mounted']
 
     def __init__(self, conf):
         ui.print_debug("begin SshHost.__init__")
@@ -70,8 +70,10 @@ class SshHost(BaseHost):
             self.ssh_args = self.ssh_args + ['-i', self.ssh_key]
 
 
+
     def __del__(self):
-        self.ssh.close()
+        self.ssh_disconnect()
+
 
 
     # Utilities
@@ -93,6 +95,35 @@ class SshHost(BaseHost):
         return pavg
 
 
+    def ssh_connect(self):
+        # TODO: if trusthost=False, check host keys
+
+        try:
+            if not self.ssh.alive():
+                self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
+                                 timeout=30, args=self.ssh_args)
+
+        except SSHConnectionError as err:
+            raise SshError("Can't connect to %s: %s" % (self.ssh_hostname,
+                                                        str(err)))
+
+
+    def ssh_disconnect(self):
+        if self.ssh.alive():
+            self.ssh.close()
+
+
+    def check_ssh(self):
+        try:
+            self.ssh_connect()
+            return self.ssh.alive()
+
+        except:
+            pass
+
+        return False
+
+
 
     # State transitions
     # ----------------------------------------------------------------
@@ -101,8 +132,11 @@ class SshHost(BaseHost):
         if state == 'offline':
             pass
 
-        elif state == 'online':
+        elif state == 'running':
             self.wake_on_lan()
+
+        elif state == 'online':
+            pass
 
         elif state == 'mounted':
             self.mount_devices()
@@ -115,8 +149,11 @@ class SshHost(BaseHost):
         if state == 'offline':
             pass
 
-        elif state == 'online':
+        elif state == 'running':
             self.power_off()
+
+        elif state == 'online':
+            pass
 
         elif state == 'mounted':
             self.umount_devices()
@@ -167,50 +204,19 @@ class SshHost(BaseHost):
 
     def connect(self, silent=False, dryrun=False):
         """Establishes a connection and initialized data"""
-
-        def func():
-            # TODO: if trusthost=False, check host keys
-
-            try:
-                if not self.ssh.alive():
-                    self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
-                                     timeout=30, args=self.ssh_args)
-
-            except SSHConnectionError as err:
-                raise SshError("Can't connect to %s: %s" % (self.ssh_hostname,
-                                                            str(err)))
-
-            # if not self.wait_for(True, self.ssh.alive):
-            #     raise SshError("Can't connect to %s" % self.ssh_hostname)
-
-        try:
-            self.run_with_message(func=func,
-                                  msg="Connecting to %s" % self.name,
-                                  silent=silent,
-                                  dryrun=dryrun)
-        finally:
-            self.get_state()
+        self.get_state()
 
 
     def disconnect(self, silent=False, dryrun=False):
-        def func():
-            if self.ssh.alive():
-                self.ssh.close()
-
-            # if not self.wait_for(False, self.ssh.alive):
-            #    raise SshError("Can't disconnect from host: %s" % self.ssh_hostname)
-
-        self.run_with_message(func=func,
-                              msg="Disconnecting from %s" % self.name,
-                              silent=silent,
-                              dryrun=dryrun)
+        """Closes a connection and initialized data"""
+        self.ssh_disconnect()
 
 
     def get_state(self):
         """Queries the state of the host"""
         ui.print_debug("begin SshHost.get_state")
         self.state = 'offline'
-        if self.ssh.alive():                                 self.state = 'online'
+        if self.check_ssh():                                 self.state = 'online'
         if self.state == 'online' and self.check_devices():  self.state = 'mounted'
         return self.state
 

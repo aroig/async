@@ -65,6 +65,11 @@ class Ec2Host(SshHost):
         self.instance = None
 
 
+    def __del__(self):
+        self.ssh_disconnect()
+        self.aws_disconnect()
+
+
 
     # Utilities
     # ----------------------------------------------------------------
@@ -160,6 +165,30 @@ class Ec2Host(SshHost):
             raise HostError("Timed out launching instance")
 
 
+    def aws_connect(self):
+        if self.conn == None:
+            self.conn = ec2.connect_to_region(region_name = self.ec2_region,
+                                              aws_access_key_id = self.aws_keys['access_key_id'],
+                                              aws_secret_access_key = self.aws_keys['secret_access_key'])
+
+            self.load_volumes()
+            self.load_ami()
+            self.load_instance()
+
+            # use aws dynamic hostname for ssh connections
+            self.ssh_hostname = self.hostname
+
+        if self.conn == None:
+            raise Ec2Error("Could not establish a connection with aws.")
+
+
+    def aws_disconnect(self):
+        if self.conn:
+            self.conn.close()
+            self.conn = None
+            self.ssh_hostname = None
+
+
 
     # status functions
     # ------------------------------------------------------
@@ -228,6 +257,12 @@ class Ec2Host(SshHost):
             if not state == 'attached':
                 attached = False
         return attached
+
+
+    def check_aws(self):
+        self.aws_connect()
+        return self.instance != None
+
 
 
     # Interface
@@ -500,54 +535,22 @@ class Ec2Host(SshHost):
         else:             return None
 
 
-    def aws_connect(self, silent=False, dryrun=False):
-        if self.conn == None:
-            self.conn = ec2.connect_to_region(region_name = self.ec2_region,
-                                              aws_access_key_id = self.aws_keys['access_key_id'],
-                                              aws_secret_access_key = self.aws_keys['secret_access_key'])
-
-        if not self.conn:
-            raise Ec2Error("Could not establish a connection with aws.")
-
-        self.load_volumes()
-        self.load_ami()
-        self.load_instance()
-
-
     def connect(self, silent=False, dryrun=False):
         """Establishes a connection and initialized data"""
-
-        # connect to aws and grab state
-        self.aws_connect(silent=silent, dryrun=dryrun)
-
-        # use aws dynamic hostname for ssh connections
-        self.ssh_hostname = self.hostname
-
-        # establish a ssh connection
-        if self.instance:
-            if self.get_state() in set(['running', 'online', 'attached', 'mounted']):
-                super(Ec2Host, self).connect(silent=silent, dryrun=dryrun)
+        self.get_state()
 
 
     def disconnect(self, silent=False, dryrun=False):
-
-        # close the ssh connection
-        if self.instance:
-            super(Ec2Host, self).disconnect(silent=silent, dryrun=dryrun)
-
-        # close aws connection
-        if self.conn:
-            self.conn.close()
-            self.conn = None
+        """Closes a connection and initialized data"""
+        self.aws_disconnect()
 
 
     def get_state(self):
         """Queries the state of the host"""
-        self.state = 'unknown'
-        if self.instance == None:                                  self.state = 'terminated'
-        if self.instance != None:                                  self.state = 'offline'
-        if self.state == 'offline' and self.check_instance():      self.state = 'running'
-        if self.ssh.alive():                                       self.state = 'online'
+        self.state = 'terminated'
+        if self.check_aws():                                       self.state = 'offline'
+        if self.state == 'offline'  and self.check_instance():     self.state = 'running'
+        if self.state == 'running'  and self.check_ssh():          self.state = 'online'
         if self.state == 'online'   and self.check_volumes():      self.state = 'attached'
         if self.state == 'attached' and self.check_devices():      self.state = 'mounted'
 
