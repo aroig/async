@@ -95,7 +95,7 @@ class Ec2Host(SshHost):
     def attach_volume(self, vol, inst, dev):
         try:
             vol.update()
-            if vol.attachment_state() == 'attached':
+            if vol.attachment_state() != 'attached':
                 vol.attach(inst, dev)
 
         except EC2ResponseError as err:
