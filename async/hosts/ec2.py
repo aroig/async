@@ -272,6 +272,7 @@ class Ec2Host(SshHost):
         """Launches a new instance"""
         itype = itype or self.ec2_itype
         ret = False
+        self.aws_connect()
 
         try:
             if self.instance == None:
@@ -300,6 +301,7 @@ class Ec2Host(SshHost):
         """Starts the host if not running and attach."""
         st = 'attached'
         ret = True
+        if self.state == None: self.get_state()
 
         try:
             if self.STATES.index(self.state) < self.STATES.index('attached'):
@@ -316,6 +318,8 @@ class Ec2Host(SshHost):
         """Terminates the current instance"""
         st = 'terminated'
         ret = True
+        if self.state == None: self.get_state()
+
         try:
             if self.STATES.index(self.state) > self.STATES.index('terminated'):
                 ret =  self.set_state(st, silent=silent, dryrun=dryrun) == st
@@ -331,6 +335,8 @@ class Ec2Host(SshHost):
         """Attaches volumes"""
         st = 'attached'
         ret = True
+        if self.state == None: self.get_state()
+
         try:
             if self.STATES.index(self.state) < self.STATES.index('attached'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
@@ -346,6 +352,8 @@ class Ec2Host(SshHost):
         """Deataches volumes"""
         st = self.STATES[self.STATES.index('attached') - 1]
         ret = True
+        if self.state == None: self.get_state()
+
         try:
             if self.STATES.index(self.state) >= self.STATES.index('attached'):
                 ret = self.set_state(st, silent=silent, dryrun=dryrun) == st
@@ -360,6 +368,7 @@ class Ec2Host(SshHost):
     def snapshot(self, silent=False, dryrun=False):
         """Creates a snapshot of the running instance"""
         ret = False
+        if self.state == None: self.get_state()
 
         try:
             # go to online state, with detached data
@@ -391,6 +400,8 @@ class Ec2Host(SshHost):
     def backup(self, silent=False, dryrun=False):
         """Creates a data backup"""
         ret = False
+        if self.state == None: self.get_state()
+
         try:
             # go to online state with detached data
             self.set_state(state='online', silent=silent, dryrun=dryrun)
