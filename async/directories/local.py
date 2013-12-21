@@ -75,12 +75,8 @@ class LocalDir(BaseDir):
 
         # create subdirs
         perms = 0o755
-        if not silent and len(self.subdirs) > 0:
-            ui.print_color("creating subdirectories in %s with permissions %o" % (path, perms))
-
         for sd in self.subdirs:
             sdpath = os.path.join(path, sd)
-
             if not host.path_exists(sdpath):
                 self._create_directory(host, sdpath, perms, silent, dryrun)
 
