@@ -339,16 +339,17 @@ class GitDir(BaseDir):
             else:         self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
 
         # symlink git hooks
-        if len(self.git_hooks_dir) > 0:
+        if len(self.git_hooks_dir) > 0 and host.path_exists(os.path.join(path, self.git_hooks_dir)):
             if not silent: ui.print_color("symlinking git hooks")
             host.symlink('../%s' % self.git_hooks_dir, os.path.join(path, '.git/hooks'), force=True)
 
         # setup git hooks
-        remote = self.git_remotes.get(host.name, None)
-        if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
-            hooks = remote['git_hooks'][self.name]
-            for h, p in hooks.items():
-                self._configure_git_hook(host, h, p, silent=silent, dryrun=dryrun)
+        else:
+            remote = self.git_remotes.get(host.name, None)
+            if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
+                hooks = remote['git_hooks'][self.name]
+                for h, p in hooks.items():
+                    self._configure_git_hook(host, h, p, silent=silent, dryrun=dryrun)
 
         # run async hooks if asked to
         if runhooks:
