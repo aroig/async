@@ -99,6 +99,8 @@ class BaseHost(object):
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
 
+        self.log_cmd = conf['log_cmd']
+
         if conf['vol_keys']: self.vol_keys = read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
 
@@ -478,10 +480,14 @@ class BaseHost(object):
 
     def print_log(self, silent=False, dryrun=False, opts=None):
         """Prints host logs"""
+        if len(self.log_cmd) == 0:
+            ui.print_error("Log retrieval not implemented for host %s" % self.name)
+            return False
+
         try:
             with self.in_state(silent=silent, dryrun=dryrun):
                 if not dryrun:
-                    self.run_cmd('sudo journalctl -b', tgtpath='/')
+                    self.run_cmd(self.log_cmd, tgtpath='/')
                     return True
 
         except HostError as err:

@@ -180,6 +180,8 @@ class AsyncConfig(ConfigParser):
 
             'annex_pull'     : ([], parse_list),         # directories where we pull annexed files from remote
             'annex_push'     : ([], parse_list),         # directories where we push annexed files to remote
+
+            'log_cmd'        : ("", parse_path),         # parse as a path to expand shell vars
         },
 
         'instance': {
@@ -232,6 +234,7 @@ class AsyncConfig(ConfigParser):
         'async': {
             'color'           : (True, parse_bool),     # color UI
             'logfile'         : (None, parse_path),     # logfile
+            'pager_cmd'       : ("", parse_path),       # parse as a path to expand shell vars
         },
     }
 
