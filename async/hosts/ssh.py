@@ -136,7 +136,7 @@ class SshHost(BaseHost):
             self.wake_on_lan()
 
         elif state == 'online':
-            pass
+            self.ssh_connect()
 
         elif state == 'mounted':
             self.mount_devices()

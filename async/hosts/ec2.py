@@ -435,13 +435,13 @@ class Ec2Host(SshHost):
             pass
 
         elif state == 'offline':
-            pass
+            self.aws_connect()
 
         elif state == 'running':
             self.start_instance(self.instance.id)
 
         elif state == 'online':
-            pass
+            self.ssh_connect()
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():
