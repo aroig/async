@@ -26,8 +26,9 @@ from datetime import datetime
 
 from async.pathdict import PathDict
 from async.utils import number2human, read_keys
-import async.archui as ui
 
+import async.archui as ui
+import async.cmd as cmd
 
 if sys.version_info[0] < 3:
     def shquote(s):
@@ -487,7 +488,8 @@ class BaseHost(object):
         try:
             with self.in_state(silent=silent, dryrun=dryrun):
                 if not dryrun:
-                    self.run_cmd(self.log_cmd, tgtpath='/')
+                    raw = self.run_cmd(self.log_cmd, tgtpath='/', catchout=True)
+                    cmd.pager(raw)
                     return True
 
         except HostError as err:

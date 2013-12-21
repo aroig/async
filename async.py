@@ -29,6 +29,7 @@ from async import __version__
 from async.config import AsyncConfig, AsyncConfigError
 
 import async.archui as ui
+import async.cmd as cmd
 from async import get_remote_host, get_local_host
 
 from async.hosts import Ec2Host, HostError
@@ -193,6 +194,9 @@ try:
 
     # If the output is not a terminal, remove the colors
     if not sys.stdout.isatty(): ui.use_color(False)
+
+    # pager
+    cmd.set_pager_cmd(conf.async['pager_cmd'])
 
     # extract command and hostname
     if len(args) > 0:

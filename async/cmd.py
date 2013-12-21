@@ -24,9 +24,14 @@ import sys
 import os
 import re
 
-from io import StringIO
 from threading  import Thread, Event
 import async.archui as ui
+
+_pager_cmd = os.environ.get('PAGER', 'less')
+
+def set_pager_cmd(cmd):
+    global _pager_cmd
+    _pager_cmd = cmd
 
 
 def print_rsync_line(line):
@@ -260,10 +265,9 @@ def ping(host, timeout=10, num=1):
         return (None, None, None, None)
 
 
-def cat_pager(fname):
-    pager = os.environ.get('PAGER', 'less')
-    subprocess.call('cat "%s" | %s' % (fname, pager), shell=True)
-
+def pager(st):
+    proc = subprocess.Popen(_pager_cmd, shell=True, stdin=subprocess.PIPE)
+    proc.communicate(st)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
