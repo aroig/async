@@ -44,7 +44,6 @@ class GitDir(BaseDir):
         try:
             if not dryrun:
                 host.run_cmd('git init', tgtpath=path)
-                host.run_cmd('git commit --allow-empty -m "Initial commit"', tgtpath=path)
 
         except CmdError as err:
             raise InitError("git init failed: %s" % str(err))
