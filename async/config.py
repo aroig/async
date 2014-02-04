@@ -20,6 +20,7 @@
 import os
 import re
 import glob
+import shlex
 
 from ConfigParser import ConfigParser
 
@@ -83,12 +84,11 @@ def parse_list(key, val, dic, parse_val=parse_string):
 
 
 def parse_list_args(key, val, dic):
-    # TODO: handle quoted strings
     if not key in dic: dic[key] = []
 
     if val:
         dic[key] = []                  # never accumulate args
-        for it in val.split(' '):
+        for it in shlex.split(val):
             dic[key].append(it.strip())
     return dic[key]
 
