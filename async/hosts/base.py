@@ -96,6 +96,7 @@ class BaseHost(object):
         self.luks_mounts      = conf['luks']
         self.ecryptfs_mounts  = conf['ecryptfs']
         self.swapfile         = conf['swapfile']
+        self.systemd_user     = conf['systemd_user']
 
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
@@ -225,6 +226,15 @@ class BaseHost(object):
 
 
     def umount_devices(self):
+        # kill systemd user session
+        if self.systemd_user:
+            ui.print_debug("stopping systemd --user")
+            try:
+                self.run_cmd('systemctl --user exit || true', tgtpath='/', catchout=True)
+
+            except CmdError as err:
+                raise HostError("Error stopping systemd --user instance" % (err.output.strip()))
+
         # umount swap
         if self.swapfile:
             ui.print_debug("umounting swap: %s" % self.swapfile)
