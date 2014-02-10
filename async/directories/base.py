@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env on2
 # -*- coding: utf-8 -*-
 #
 # async - A tool to manage and sync different machines
@@ -71,10 +71,9 @@ class BaseDir(object):
 
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
         """Creates a directory or symlink. Returns false if it already existed"""
-        if host.path_exists(path):
-            return False
 
-        elif self.symlink:
+        # if nonexistent symlink, create it
+        if self.symlink and not host.path_exists(path):
             tgtlink = os.path.join(host.path, self.symlink)
             if not silent:
                 ui.print_color("symlink: %s -> %s" % (path, tgtlink))
@@ -85,7 +84,8 @@ class BaseDir(object):
                 raise InitError(str(err))
             return True
 
-        else:
+        # if nonexistent directory, create it
+        elif not self.symlink and not host.path_exists(path):
             if not silent:
                 ui.print_color("mkdir: %s" % path)
 
@@ -95,6 +95,21 @@ class BaseDir(object):
                 raise InitError(str(err))
             return True
 
+        # if existent directory, set perms
+        elif not self.symlink and host.path_exists(path):
+            if not silent:
+                ui.print_color("chmod %o: %s" % (mode, path))
+
+            try:
+                if not dryrun: host.chmod(path, mode)
+            except Exception as err:
+                raise InitError(str(err))
+
+            return True
+
+        # if existent directory that should be a symlinks, do nothing
+        else:
+            return False
 
     # Utilities
     # ----------------------------------------------------------------

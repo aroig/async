@@ -693,6 +693,13 @@ class BaseHost(object):
             raise HostError("Can't create directory on %s" % self.name)
 
 
+    def chmod(self, path, mode):
+        try:
+            self.run_cmd('chmod %o %s' % (mode, shquote(path)))
+        except CmdError as err:
+            raise HostError("Can't chmod directory on %s" % self.name)
+
+
 
     # Implementation
     # ----------------------------------------------------------------
