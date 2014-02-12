@@ -47,9 +47,10 @@ class SSHCmdError(Exception):
 class SSHConnection(object):
     """A ssh connection through a socket"""
 
-    def __init__(self, socket):
+    def __init__(self, socket=None):
 
-        self.socket = os.path.expanduser(socket)
+        if socket: self.socket = os.path.expanduser(socket)
+        else:      self.socket = None
         self.master_proc = None
         self.decorated_host = None
         self.args = []
@@ -134,10 +135,13 @@ class SSHConnection(object):
         if user: self.decorated_host = "%s@%s" % (user, hostname)
         else:    self.decorated_host = hostname
 
-        if os.path.exists(self.socket):
-            raise SSHConnectionError("Socket %s already exists" % self.socket)
+        sshargs = ['-N']
+        if self.socket:
+            if os.path.exists(self.socket):
+                raise SSHConnectionError("Socket %s already exists" % self.socket)
+            sshargs = sshargs + ['-M', '-o', 'ControlPath=%s' % self.socket]
+        sshargs = sshargs + self.args
 
-        sshargs = ['-M', '-N', '-o', 'ControlPath=%s' % self.socket] + self.args
         with open('/dev/null', 'w') as devnull:
             self.master_proc = self._ssh(sshargs + [self.decorated_host],
                                          timeout=timeout, stdout=devnull, stderr=devnull)
@@ -153,7 +157,11 @@ class SSHConnection(object):
 
 
     def run(self, cmd, args=[], timeout=30, catchout=False, stdin=None):
-        sshargs = ['-o', 'ControlPath=%s' % self.socket] + self.args + args
+        sshargs = []
+        if self.socket:
+            sshargs = sshargs + ['-o', 'ControlPath=%s' % self.socket]
+        sshargs = sshargs + self.args + args
+
         qcmd = 'sh -c %s' % shquote(cmd)
 
         if self.decorated_host == None:
@@ -181,23 +189,24 @@ class SSHConnection(object):
         else:        return None
 
     def close(self):
-        if os.path.exists(self.socket):
+        if self.socket and os.path.exists(self.socket):
+            pass
             # with open('/dev/null', 'w') as devnull:
             #    proc = self._ssh(['-S', self.socket, '-O', 'exit', self.decorated_host])
             #    ret = proc.wait()
             #    if ret != 0:
             #        raise SSHConnectionError("Error disconnecting socket %s" % self.socket)
 
-            if self.master_proc:
-                self.master_proc.terminate()
-                self.master_proc = None
-                self.decorated_host = None
+        if self.master_proc:
+            self.master_proc.terminate()
+            self.master_proc = None
+            self.decorated_host = None
 
 
 
     def alive(self, timeout=30):
         try:
-            alive = os.path.exists(self.socket) and \
+            alive = (self.socket == None or os.path.exists(self.socket)) and \
                     self.master_proc and \
                     self.master_proc.poll() == None
                     # and self.run('true', timeout=timeout) == 0
