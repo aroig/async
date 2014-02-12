@@ -540,20 +540,20 @@ class BaseHost(object):
                     # number of files
                     numfiles = '--'
                     if 'numfiles' in status:
-                        numfiles = number2human(status['numfiles'], fmt='%(value)3.0f %(symbol)s')
+                        numfiles = number2human(status['numfiles'], fmt='%(value).3G %(symbol)s')
 
                     numchanged = ''
                     if 'changed' in status:
                         numchanged = number2human(status.get('changed', 0) + status.get('staged', 0),
-                                                  fmt='%(value)3.0f %(symbol)s')
+                                                  fmt='%(value).3G %(symbol)s')
 
                     nummissing = ''
                     if 'missing' in status:
-                        nummissing = number2human(status['missing'], fmt='%(value)3.0f %(symbol)s')
+                        nummissing = number2human(status['missing'], fmt='%(value).3G %(symbol)s')
 
                     numunused = ''
                     if 'unused' in status:
-                        numunused = number2human(status['unused'], fmt='%(value)3.0f %(symbol)s')
+                        numunused = number2human(status['unused'], fmt='%(value).3G %(symbol)s')
 
                     # git status
                     if status['type'] == 'annex' or status['type'] == 'git':
@@ -568,10 +568,10 @@ class BaseHost(object):
                     dirstate = ''
                     if status['type'] == 'annex':
                         dircounts = '[#R%s#t/#G%s#t]' % (nummissing, numunused)
-                        dirstate  = '{0:>5} {1:<5}'.format(numfiles, dircounts)
+                        dirstate  = '{0:>6} {1:<6}'.format(numfiles, dircounts)
 
                     else:
-                        dirstate = '{0:>5} {1:<5}'.format(numfiles, '')
+                        dirstate = '{0:>6} {1:<6}'.format(numfiles, '')
 
                     ui.print_color(nameperms + symstate + dirtype + dirstate)
 
