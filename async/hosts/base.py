@@ -128,7 +128,7 @@ class BaseHost(object):
         return func() == status
 
 
-    def _get_common_dirs(self, local, remote, dirs):
+    def _get_common_dirs(self, local, remote, dirs, ignore=[]):
         """Returns a dict of dir objects that are common in local and remote as paths.
            Only allows for directories with name in dirs, if dirs != None.
            Avoid subdirectories ignored by one of the hosts."""
@@ -138,6 +138,7 @@ class BaseHost(object):
 
         igA = PathDict({rel: rel for rel in local.ignore})
         igB = PathDict({rel: rel for rel in remote.ignore})
+        igC = PathDict({rel: rel for rel in ignore})
 
         # A pathdict has paths as keys. the we can do intersections or unions of the keys
         # and chooses the value for the most specific of the keys.
@@ -148,7 +149,8 @@ class BaseHost(object):
         return {d.name: d for p, d in pdI.items()
                 if (dirs==None or d.name in dirs) and
                 not d.relpath in igA and
-                not d.relpath in igB}
+                not d.relpath in igB and
+                not d.relpath in igC}
 
 
 
@@ -508,7 +510,7 @@ class BaseHost(object):
 
     def print_dirstate(self, silent=False, dryrun=False, opts=None):
         """Prints the state of directories in a host"""
-        dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
+        dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
         keys = sorted(dirs.keys())
 
         types={
@@ -634,12 +636,13 @@ class BaseHost(object):
 
     def init(self, silent=False, dryrun=False, opts=None):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
-        dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
+        dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
 
         try:
             def func(d):
                 d.init(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
+            dirs = [d for d in dirs if not d in set(opts.ignore)]
             return self.run_on_dirs(dirs, func, "Init", silent=silent, dryrun=dryrun)
 
         except HostError as err:
@@ -650,7 +653,7 @@ class BaseHost(object):
 
     def check(self, silent=False, dryrun=False, opts=None):
         """Check directories for local machine"""
-        dirs = self._get_common_dirs(self, self, dirs=opts.dirs)
+        dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
 
         try:
             def func(d):
