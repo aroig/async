@@ -175,9 +175,6 @@ class Ec2Host(SshHost):
             self.load_ami()
             self.load_instance()
 
-            # use aws dynamic hostname for ssh connections
-            self.ssh_hostname = self.hostname
-
         if self.conn == None:
             raise Ec2Error("Could not establish a connection with aws.")
 
@@ -186,7 +183,6 @@ class Ec2Host(SshHost):
         if self.conn:
             self.conn.close()
             self.conn = None
-            self.ssh_hostname = None
 
 
 
@@ -271,7 +267,7 @@ class Ec2Host(SshHost):
     def connect(self):
         """Establish a connection to the server"""
         self.aws_connect()
-        self.ssh_connect()
+        self.ssh_connect(alt_hostname=self.hostname)
 
 
     def launch(self, itype=None, silent=False, dryrun=False):
@@ -471,7 +467,7 @@ class Ec2Host(SshHost):
             self.start_instance(self.instance.id)
 
         elif state == 'online':
-            self.ssh_connect()
+            self.ssh_connect(alt_hostname=self.hostname)
 
         elif state == 'attached':
             for dev, vol in self.volumes.items():

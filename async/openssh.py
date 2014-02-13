@@ -128,7 +128,7 @@ class SSHConnection(object):
             else:                                         return (None, None)
 
 
-    def connect(self, hostname, user=None, keyfile=None, timeout=30, args=[]):
+    def connect(self, hostname, user=None, keyfile=None, alt_hostname=None, timeout=30, args=[]):
         self.args = []
         if keyfile: self.args = self.args + ['-i', keyfile]
         self.args = self.args + args
@@ -137,6 +137,11 @@ class SSHConnection(object):
         else:    self.decorated_host = hostname
 
         sshargs = ['-N']
+
+        # replace hostname, but use the given alias if present in ~/.ssh/config.
+        if alt_hostname:
+            sshargs = sshargs + ['-o', 'Hostname=%s' % alt_hostname]
+
         if self.socket:
             if os.path.exists(self.socket):
                 raise SSHConnectionError("Socket %s already exists" % self.socket)

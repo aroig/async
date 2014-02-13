@@ -96,12 +96,12 @@ class SshHost(BaseHost):
         return pavg
 
 
-    def ssh_connect(self):
+    def ssh_connect(self, alt_hostname=None):
         # TODO: if trusthost=False, check host keys
 
         try:
             if not self.ssh.alive():
-                self.ssh.connect(hostname=self.ssh_hostname, user=self.user,
+                self.ssh.connect(hostname=self.ssh_hostname, user=self.user, alt_hostname=alt_hostname,
                                  timeout=30, args=self.ssh_args)
 
         except SSHConnectionError as err:
