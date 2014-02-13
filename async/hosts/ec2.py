@@ -510,8 +510,10 @@ class Ec2Host(SshHost):
 
     @property
     def hostname(self):
-        if self.instance: return self.instance.public_dns_name
+#        if self.instance: return self.instance.public_dns_name
+        if self.instance: return self.ssh_hostname
         else:             return None
+
 
 
     @property
