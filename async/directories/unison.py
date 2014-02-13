@@ -20,7 +20,7 @@
 import os
 import subprocess
 
-from async.directories.base import BaseDir, DirError, SyncError, InitError, HookError
+from async.directories.base import BaseDir, DirError, SyncError, InitError, HookError, CheckError
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd

@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from async.directories.git import GitDir
-from async.directories.base import DirError, SyncError, InitError
+from async.directories.base import DirError, SyncError, InitError, CheckError
 from async.hosts.base import CmdError
 
 import subprocess
