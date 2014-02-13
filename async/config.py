@@ -167,7 +167,7 @@ class AsyncConfig(ConfigParser):
             'ssh_trust'      : (False, parse_bool),
             'unison_as_rsync': (False, parse_bool),
 
-            'systemd_user'   : (True, parse_bool),
+            'kill_systemd_user' : (False, parse_bool),
             'swapfile'       : (None, parse_path),
             'mounts'         : ({}, parse_dict),
             'luks'           : ({}, parse_dict),
