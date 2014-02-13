@@ -116,7 +116,7 @@ class SshHost(BaseHost):
 
     def check_ssh(self):
         try:
-            self.ssh_connect()
+            self.connect()
             return self.ssh.alive()
 
         except:
@@ -137,7 +137,7 @@ class SshHost(BaseHost):
             self.wake_on_lan()
 
         elif state == 'online':
-            self.ssh_connect()
+            self.connect()
 
         elif state == 'mounted':
             self.mount_devices()
@@ -201,6 +201,11 @@ class SshHost(BaseHost):
             self._cache_hostname_and_ip()
 
         return self._ip
+
+
+    def connect(self):
+        """Establish a connection to the server"""
+        self.ssh_connect()
 
 
     def get_state(self):

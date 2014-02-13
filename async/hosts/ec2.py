@@ -268,11 +268,17 @@ class Ec2Host(SshHost):
     # Interface
     # ----------------------------------------------------------------
 
+    def connect(self):
+        """Establish a connection to the server"""
+        self.aws_connect()
+        self.ssh_connect()
+
+
     def launch(self, itype=None, silent=False, dryrun=False):
         """Launches a new instance"""
         itype = itype or self.ec2_itype
         ret = False
-        self.aws_connect()
+        self.connect()
 
         try:
             if self.instance == None:
@@ -431,14 +437,14 @@ class Ec2Host(SshHost):
 
     def ping(self):
         """Pings the host and prints the delay"""
-        self.aws_connect()
+        self.connect()
         super(Ec2Host, self).ping()
 
 
     def print_log(self, silent=False, dryrun=False, opts=None):
         """Prints host logs"""
         if opts and opts.boot:
-            self.aws_connect()
+            self.connect()
             if not dryrun:
                 cout = self.instance.get_console_output()
                 print(cout.output)

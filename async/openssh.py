@@ -51,6 +51,7 @@ class SSHConnection(object):
 
         if socket: self.socket = os.path.expanduser(socket)
         else:      self.socket = None
+
         self.master_proc = None
         self.decorated_host = None
         self.args = []
