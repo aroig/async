@@ -237,6 +237,10 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
+        if remote.name == local.name:
+            ui.print_error("Can't sync to local host")
+            sys.exit(1)
+
         if len(args) == 0:    ret = local.sync(remote=remote, dryrun=opts.dryrun,
                                                silent=opts.quiet, opts=opts)
         else:                 ui.print_error("Too many arguments.")
