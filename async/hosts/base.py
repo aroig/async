@@ -642,7 +642,6 @@ class BaseHost(object):
             def func(d):
                 d.init(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
-            dirs = [d for d in dirs if not d in set(opts.ignore)]
             return self.run_on_dirs(dirs, func, "Init", silent=silent, dryrun=dryrun)
 
         except HostError as err:
