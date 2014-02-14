@@ -338,7 +338,11 @@ class GitDir(BaseDir):
             else:         self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
 
         # symlink git hooks
-        if len(self.git_hooks_dir) > 0 and host.path_exists(os.path.join(path, self.git_hooks_dir)):
+        if len(self.git_hooks_dir) > 0:
+            git_hooks_dir_full = os.path.join(path, self.git_hooks_dir)
+            if not host.path_exists(git_hooks_dir_full):
+                os.mkdir(git_hooks_dir_full)
+
             if not silent: ui.print_color("symlinking git hooks")
             host.symlink('../%s' % self.git_hooks_dir, os.path.join(path, '.git/hooks'), force=True)
 
