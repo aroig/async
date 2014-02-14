@@ -337,16 +337,12 @@ class GitDir(BaseDir):
             if r['dead']: self._remove_git_remote(host, r, silent=silent, dryrun=dryrun)
             else:         self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
 
-        # symlink git hooks
+        # symlink git hooks, even if it does not exist
         if len(self.git_hooks_dir) > 0:
-            git_hooks_dir_full = os.path.join(path, self.git_hooks_dir)
-            if not host.path_exists(git_hooks_dir_full):
-                os.mkdir(git_hooks_dir_full)
-
             if not silent: ui.print_color("symlinking git hooks")
             host.symlink('../%s' % self.git_hooks_dir, os.path.join(path, '.git/hooks'), force=True)
 
-        # setup git hooks
+        # setup git hooks without symlinking
         else:
             remote = self.git_remotes.get(host.name, None)
             if remote and 'git_hooks' in remote and self.name in remote['git_hooks']:
