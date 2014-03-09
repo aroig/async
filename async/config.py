@@ -174,6 +174,7 @@ class AsyncConfig(ConfigParser):
             'ecryptfs'       : ({}, parse_dict),
             'vol_keys'       : (None, parse_path),
 
+            'default_remote' : (None, parse_string),
             'path'           : (None, parse_path),
             'check'          : ([], parse_list),
             'type'           : (None, parse_string),

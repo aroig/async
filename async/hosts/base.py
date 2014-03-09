@@ -97,6 +97,7 @@ class BaseHost(object):
         self.ecryptfs_mounts  = conf['ecryptfs']
         self.swapfile         = conf['swapfile']
         self.systemd_user     = conf['kill_systemd_user']
+        self.default_remote   = conf['default_remote']
 
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])

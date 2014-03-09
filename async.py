@@ -80,6 +80,9 @@ class FileSnitch(object):
 
 usage = """Usage: %prog [options] <cmd> <host>
 
+<host> is a remote host as in .ssh/config or either here for the local host and
+default for the configured default remote host.
+
 Commands:
      status:  %prog status <host>
               Print host status.

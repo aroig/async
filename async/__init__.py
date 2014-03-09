@@ -45,6 +45,14 @@ def get_remote_host(hostname, conf):
     elif hostname == 'localhost' or hostname == 'here':
         return get_local_host(conf)
 
+    elif hostname == 'default':
+        local = get_local_host(conf)
+        if not local.default_remote in set([None, 'default', 'here', 'localhost']):
+            return get_remote_host(local.default_remote, conf)
+        else:
+            ui.print_error("Invalid default remote: %s" % local.default_remote)
+            sys.exit(1)
+
     else:
         ui.print_error("Unknown host: %s" % hostname)
         sys.exit(1)
