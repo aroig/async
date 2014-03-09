@@ -792,13 +792,13 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    def run_script(self, scrpath, tgtpath=None, catchout=False):
+    def run_script(self, scrpath, tgtpath=None, catchout=False, silent=False):
         """Run a script in a local path on the host"""
 
         try:
             with open(scrpath, 'r') as fd:
                 script=fd.read()
-                ret = self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script)
+                ret = self.run_cmd("bash -s", tgtpath=tgtpath, catchout=catchout, stdin=script, silent=silent)
 
         except IOError as err:
             raise HostError("Can't run script '%s' on %s host" % (scrpath, self.name))

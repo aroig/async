@@ -146,7 +146,7 @@ class BaseDir(object):
                     from async.hosts import CmdError
                     try:
                         ret = host.run_script(hookpath, tgtpath=tgt, catchout=True)
-                        ui.write_color(ret)
+                        if not silent: ui.write_color(ret)
 
                     except CmdError as err:
                         raise HookError("error running hook %s: %s" % (name, str(err)))
