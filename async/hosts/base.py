@@ -331,7 +331,7 @@ class BaseHost(object):
 
 
 
-    def run_on_dirs(self, dirs, func, action, silent=False, dryrun=False):
+    def run_on_dirs(self, dirs, func, action, desc=None, silent=False, dryrun=False):
         """Utility function to run a function on a set of directories.
            func(d) operates on a dir object d."""
         from async.directories import InitError, HookError, SyncError, CheckError
@@ -342,8 +342,10 @@ class BaseHost(object):
         ret = True
 
         with self.in_state('mounted', silent=silent, dryrun=dryrun):
-            ui.print_status("%s on #*m%s#*w. %s" % (action, self.name,
-                                                    datetime.now().strftime("%a %d %b %Y %H:%M")))
+            st = "%s on #*m%s#*w." % (action, self.name)
+            if desc: st = st + ' (%s).' % desc
+            st = st + ' %s' % datetime.now().strftime("%a %d %b %Y %H:%M")
+            ui.print_status(st)
             ui.print_color("")
 
             for i, k in enumerate(keys):

@@ -51,7 +51,9 @@ class LocalHost(DirectoryHost):
                     d.sync(self, remote, silent=silent or opts.terse, dryrun=dryrun,
                            opts=opts)
 
-                return self.run_on_dirs(dirs, func, "Sync", silent=silent, dryrun=dryrun)
+                return self.run_on_dirs(dirs, func, "Sync",
+                                        desc="%s <-> %s" % (self.name, remote.name),
+                                        silent=silent, dryrun=dryrun)
 
         except HostError as err:
             ui.print_error(str(err))
