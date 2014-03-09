@@ -150,7 +150,8 @@ class AnnexDir(GitDir):
         # update uuid only if missing and repo exists
         if len(cur_uuid) == 0 and len(cur_url) > 0:
             if not silent: ui.print_color("setting remote uuid for %s: %s" % (name, uuid))
-            if not dryrun: host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path)
+            if not dryrun:
+                host.run_cmd('git config remote.%s.annex-uuid "%s"' % (name, uuid), tgtpath=path, silent=silent)
 
 
 
@@ -163,9 +164,11 @@ class AnnexDir(GitDir):
             uuid = self._get_uuid(host.name, self.name)
             if uuid:
                 if not silent: ui.print_color("setting repo uuid: %s" % uuid)
-                if not dryrun: host.run_cmd('git config annex.uuid "%s"' % uuid, tgtpath=path)
+                if not dryrun:
+                    host.run_cmd('git config annex.uuid "%s"' % uuid, tgtpath=path, silent=silent)
 
-            if not dryrun: host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path)
+            if not dryrun:
+                host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path, silent=silent)
 
         except CmdError as err:
             raise InitError("git annex init failed: %s" % str(err))
@@ -293,7 +296,8 @@ class AnnexDir(GitDir):
         """ do an annex merge on the host """
         path = self.fullpath(host)
         try:
-            if not dryrun: host.run_cmd("git annex merge", tgtpath=path)
+            if not dryrun:
+                host.run_cmd("git annex merge", tgtpath=path, silent=silent)
 
         except CmdError as err:
             raise SyncError(str(err))
@@ -439,8 +443,10 @@ class AnnexDir(GitDir):
             if not silent: ui.print_color("checking annex")
             ui.print_debug('git annex fsck')
             if not dryrun:
-                if slow: host.run_cmd("git annex fsck", tgtpath=path)
-                else:    host.run_cmd("git annex fsck --fast -q", tgtpath=path)
+                if slow:
+                    host.run_cmd("git annex fsck", tgtpath=path, silent=silent)
+                else:
+                    host.run_cmd("git annex fsck --fast -q", tgtpath=path, silent=silent)
 
         except CmdError as err:
             raise CheckError("git annex fsck failed: %s" % str(err))

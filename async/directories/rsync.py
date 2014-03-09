@@ -86,7 +86,9 @@ class RsyncDir(BaseDir):
         # sync
         ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
         try:
-            if not dryrun: cmd.rsync(src, tgt, args=args, silent=silent)
+            if not dryrun:
+                cmd.rsync(src, tgt, args=args, silent=silent)
+
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
 

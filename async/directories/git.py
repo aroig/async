@@ -43,7 +43,7 @@ class GitDir(BaseDir):
         if not silent: ui.print_color("initializing git repo")
         try:
             if not dryrun:
-                host.run_cmd('git init', tgtpath=path)
+                host.run_cmd('git init', tgtpath=path, silent=silent)
 
         except CmdError as err:
             raise InitError("git init failed: %s" % str(err))
@@ -66,7 +66,8 @@ class GitDir(BaseDir):
         if len(cur_url) == 0 and not rmt['dead']:
             if not silent: ui.print_color("adding remote '%s'" % name)
             try:
-                if not dryrun: host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path)
+                if not dryrun:
+                    host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path, silent=silent)
 
             except CmdError as err:
                 raise InitError("git remote add failed: %s" % str(err))
@@ -88,7 +89,8 @@ class GitDir(BaseDir):
         if len(cur_url) > 0 and rmt['dead']:
             if not silent: ui.print_color("removing remote '%s'" % name)
             try:
-                if not dryrun: host.run_cmd('git remote remove "%s"' % name, tgtpath=path)
+                if not dryrun:
+                    host.run_cmd('git remote remove "%s"' % name, tgtpath=path, silent=silent)
 
             except CmdError as err:
                 raise InitError("git remote remove failed: %s" % str(err))
@@ -104,8 +106,9 @@ class GitDir(BaseDir):
             with open(srcpath, 'r') as fd:
                 script = fd.read()
                 if not silent: ui.print_color("updating git hook '%s'" % hook)
-                if not dryrun: host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
-                                            tgtpath=path, stdin=script)
+                if not dryrun:
+                    host.run_cmd('cat > "%s"; chmod +x "%s"' % (tgtpath, tgtpath),
+                                 tgtpath=path, stdin=script, silent=silent)
 
         except CmdError as err:
             raise InitError("hook setup failed: %s" % str(err))
@@ -171,22 +174,23 @@ class GitDir(BaseDir):
         try:
             # fetch from remote into branch
             if not silent: ui.print_color("fetching from %s" % remote.name)
-            local.run_cmd('git fetch "%s"' % remote.name, tgtpath=src)
+            local.run_cmd('git fetch "%s"' % remote.name, tgtpath=src, silent=silent)
 
             # if local synced_branch does not exist, create it
             if not self._git_ref_exists(local, 'refs/heads/%s' % synced_branch):
                 if not silent: ui.print_color("creating local branch %s" % synced_branch)
-                local.run_cmd('git branch "%s"' % synced_branch, tgtpath=src)
+                local.run_cmd('git branch "%s"' % synced_branch, tgtpath=src, silent=silent)
 
             # merge synced/branch into branch
             if not silent: ui.print_color("merging local %s into %s" % (synced_branch, branch))
-            local.run_cmd('git merge %s "refs/heads/%s"' % (' '.join(args), synced_branch), tgtpath=src)
+            local.run_cmd('git merge %s "refs/heads/%s"' % (' '.join(args), synced_branch),
+                          tgtpath=src, silent=silent)
 
             # merge remote synced/branch into branch
             if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, synced_branch)):
                 if not silent: ui.print_color("merging remote branch %s into %s" % (synced_branch, branch))
                 local.run_cmd('git merge %s "refs/remotes/%s/%s"' % (' '.join(args), remote.name, synced_branch),
-                              tgtpath=src)
+                              tgtpath=src, silent=silent)
 
             # merge remote branch into branch
             if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, branch)):
@@ -197,15 +201,16 @@ class GitDir(BaseDir):
             # update synced/branch. We don't want to check it out, as it would be a
             # fast-forward for sure, we just update the branch ref
             if not silent: ui.print_color("updating local branch %s" % synced_branch)
-            local.run_cmd('git branch -f "%s"' % synced_branch, tgtpath=src)
+            local.run_cmd('git branch -f "%s"' % synced_branch, tgtpath=src, silent=silent)
 
             # push synced/branch to remote
             if not silent: ui.print_color("pushing branch %s to %s" % (synced_branch, remote.name))
-            local.run_cmd('git push "%s" "refs/heads/%s"' % (remote.name, synced_branch), tgtpath=src)
+            local.run_cmd('git push "%s" "refs/heads/%s"' % (remote.name, synced_branch),
+                          tgtpath=src, silent=silent)
 
             # do a merge on the remote if the branches match
             if self._git_current_branch(remote) == branch:
-                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=tgt)
+                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=tgt, silent=silent)
 
         except CmdError as err:
             raise SyncError("sync failed: %s" % str(err))
@@ -370,7 +375,7 @@ class GitDir(BaseDir):
         try:
             if not silent: ui.print_color("checking git")
             ui.print_debug('git fsck')
-            if not dryrun: host.run_cmd("git fsck", tgtpath=path)
+            if not dryrun: host.run_cmd("git fsck", tgtpath=path, silent=silent)
 
         except CmdError as err:
             raise CheckError("git fsck failed: %s" % str(err))
