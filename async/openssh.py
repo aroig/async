@@ -204,7 +204,11 @@ class SSHConnection(object):
             #        raise SSHConnectionError("Error disconnecting socket %s" % self.socket)
 
         if self.master_proc:
-            self.master_proc.terminate()
+            try:
+                self.master_proc.terminate()
+            except OSError:
+                pass
+
             self.master_proc = None
             self.decorated_host = None
 
