@@ -162,7 +162,7 @@ class SSHConnection(object):
 
 
 
-    def run(self, cmd, args=[], timeout=30, catchout=False, stdin=None):
+    def run(self, cmd, args=[], timeout=30, catchout=False, stdin=None, silent=False):
         sshargs = []
         if self.socket:
             sshargs = sshargs + ['-o', 'ControlPath=%s' % self.socket]
@@ -174,7 +174,7 @@ class SSHConnection(object):
             raise SSHConnectionError("Not authenticated")
 
         stdi = stdo = stde = None
-        if catchout:
+        if silent or catchout:
             stdo = subprocess.PIPE
             stde = subprocess.STDOUT
 

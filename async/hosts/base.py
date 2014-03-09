@@ -779,7 +779,7 @@ class BaseHost(object):
         raise NotImplementedError
 
 
-    def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None):
+    def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None, silent=False):
         """Run a shell command in a given path at host"""
         raise NotImplementedError
 

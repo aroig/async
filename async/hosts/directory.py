@@ -87,13 +87,13 @@ class DirectoryHost(BaseHost):
         return info
 
 
-    def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None):
+    def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None, silent=False):
         """Run a shell command in a given path at host"""
         path = tgtpath or self.path
         ui.print_debug("run_cmd. cmd: %s. path: %s" % (cm, path))
 
         try:
-            raw = cmd.bash_cmd(tgtdir=path, cmd=cm,
+            raw = cmd.bash_cmd(tgtdir=path, cmd=cm, silent=silent,
                                catchout=catchout, stdin=stdin)
             return raw
 
