@@ -230,7 +230,9 @@ class AsyncConfig(ConfigParser):
             'post_sync_hook'         : ([], parse_list_path),  # scripts to run after sync
             'pre_sync_remote_hook'   : ([], parse_list_path),  # scripts to run on the remote before sync
             'post_sync_remote_hook'  : ([], parse_list_path),  # scripts to run on the remote after sync
-            'check_hook'             : ([], parse_list_path),  # scripts to run before check
+            'pre_check_hook'         : ([], parse_list_path),  # scripts to run before check
+            'post_check_hook'        : ([], parse_list_path),  # scripts to run after check
+
         },
 
         'async': {

@@ -366,7 +366,7 @@ class GitDir(BaseDir):
 
         # run async hooks if asked to
         if runhooks:
-            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
+            self.run_hook(host, 'pre_check', tgt=path, silent=silent, dryrun=dryrun)
 
         # call check on the parent
         super(GitDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
@@ -379,3 +379,7 @@ class GitDir(BaseDir):
 
         except CmdError as err:
             raise CheckError("git fsck failed: %s" % str(err))
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'post_check', tgt=path, silent=silent, dryrun=dryrun)

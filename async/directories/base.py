@@ -60,7 +60,8 @@ class BaseDir(object):
         self.hooks = {}
         self.hooks_path = conf['conf_path']
 
-        self.hooks['check']            = conf['check_hook']
+        self.hooks['pre_check']        = conf['pre_check_hook']
+        self.hooks['post_check']       = conf['post_check_hook']
         self.hooks['pre_init']         = conf['pre_init_hook']
         self.hooks['post_init']        = conf['post_init_hook']
         self.hooks['pre_sync']         = conf['pre_sync_hook']
