@@ -179,7 +179,8 @@ class GitDir(BaseDir):
             # if local synced_branch does not exist, create it
             if not self._git_ref_exists(local, 'refs/heads/%s' % synced_branch):
                 if not silent: ui.print_color("creating local branch %s" % synced_branch)
-                local.run_cmd('git branch "%s"' % synced_branch, tgtpath=src, silent=silent)
+                local.run_cmd('git branch "%s"' % synced_branch,
+                              tgtpath=src, silent=silent)
 
             # merge synced/branch into branch
             if not silent: ui.print_color("merging local %s into %s" % (synced_branch, branch))
@@ -196,12 +197,13 @@ class GitDir(BaseDir):
             if self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, branch)):
                 if not silent: ui.print_color("merging remote branch %s into %s" % (branch, branch))
                 local.run_cmd('git merge %s "refs/remotes/%s/%s"' % (' '.join(args), remote.name, branch),
-                              tgtpath=src)
+                              tgtpath=src, silent=silent)
 
             # update synced/branch. We don't want to check it out, as it would be a
             # fast-forward for sure, we just update the branch ref
             if not silent: ui.print_color("updating local branch %s" % synced_branch)
-            local.run_cmd('git branch -f "%s"' % synced_branch, tgtpath=src, silent=silent)
+            local.run_cmd('git branch -f "%s"' % synced_branch,
+                          tgtpath=src, silent=silent)
 
             # push synced/branch to remote
             if not silent: ui.print_color("pushing branch %s to %s" % (synced_branch, remote.name))
@@ -210,7 +212,8 @@ class GitDir(BaseDir):
 
             # do a merge on the remote if the branches match
             if self._git_current_branch(remote) == branch:
-                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch, tgtpath=tgt, silent=silent)
+                remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch,
+                               tgtpath=tgt, silent=silent)
 
         except CmdError as err:
             raise SyncError("sync failed: %s" % str(err))
