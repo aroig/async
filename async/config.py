@@ -215,6 +215,7 @@ class AsyncConfig(ConfigParser):
             'symlink'         : (None, parse_path),      # the directory is a symlink to this target
             'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
             'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
+            'save_lastsync'   : (True, parse_bool),      # store .async.last with last sync metadata
 
             'subdirs'         : ([], parse_list_path),
             'check'           : ([], parse_list),

@@ -19,6 +19,14 @@
 
 import re
 
+import shlex
+import sys
+if sys.version_info[0] < 3:
+    def shquote(s):
+        return "'" + s.replace("'", "'\"'\"'") + "'"
+else:
+    shquote = shlex.quote
+
 
 def number2human(num, fmt="%(value)3.2f %(symbol)s", suffix=''):
     """

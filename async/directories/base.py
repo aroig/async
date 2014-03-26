@@ -20,8 +20,13 @@
 import os
 import re
 import subprocess
+import json
+
+import dateutil.parser
+from datetime import datetime
 
 import async.archui as ui
+from async.utils import shquote
 
 class DirError(Exception):
     def __init__(self, msg=None):
@@ -56,6 +61,7 @@ class BaseDir(object):
         self.ignore     = []
 
         self.path_rename = conf['path_rename']
+        self.lastsync    = conf['save_lastsync']
 
         self.hooks = {}
         self.hooks_path = conf['conf_path']
@@ -125,7 +131,7 @@ class BaseDir(object):
         elif isinstance(self, RsyncDir):  return 'rsync'
         elif isinstance(self, LocalDir):  return 'local'
         else:
-            raise DirError("Unknown directory class %s" % str(type(self)))
+            raise DirError("unknown directory class %s" % str(type(self)))
 
 
     def fullpath(self, host):
@@ -151,6 +157,26 @@ class BaseDir(object):
 
                     except CmdError as err:
                         raise HookError("error running hook %s: %s" % (name, str(err)))
+
+
+    def read_lastsync(self, host):
+        lsfile = os.path.join(self.fullpath(host), '.async.last')
+        raw = host.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
+                           catchout=True).strip()
+        try:
+            ls = json.loads(raw)
+            return {'remote': ls['remote'],
+                    'timestamp': dateutil.parser.parse(ls['timestamp']),
+                    'success': ls['success']}
+
+        except:
+            return None
+
+
+    def write_lastsync(self, host, data):
+        lsfile = os.path.join(self.fullpath(host), '.async.last')
+        raw = json.dumps(data)
+        host.run_cmd('echo %s > %s' % (shquote(raw), shquote(lsfile)))
 
 
 
@@ -191,6 +217,7 @@ class BaseDir(object):
 
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
+
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
@@ -241,6 +268,41 @@ class BaseDir(object):
 
         if not os.path.exists(path):
             raise CheckError("path does not exist: %s" % path)
+
+
+
+    def check_lastsync(self, local, remote, force):
+        """Check whether last sync failed on a different host"""
+        if force or not self.save_lastsync: return True
+
+        lls = self.read_lastsync(local)
+        rls = self.read_lastsync(remote)
+
+        if lls != None and not lls['success'] and lls['remote'] != remote.name:
+            raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
+
+        if rls != None and not rls['success'] and rls['remote'] != local.name:
+            raise SyncError("failed last sync on '%s' from a different host. Use the --force" % remote.name)
+
+        return True
+
+
+
+    def save_lastsync(self, local, remote, success):
+        """Save sync success state"""
+        if not self.lastsync: return
+
+        now = datetime.today().isoformat()
+
+        data = {'remote': remote.name,
+                'timestamp': now,
+                'success': success}
+        self.write_lastsync(local, data)
+
+        data = {'remote': local.name,
+                'timestamp': now,
+                'success': success}
+        self.write_lastsync(remote, data)
 
 
 

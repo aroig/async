@@ -21,20 +21,14 @@ import re
 import sys
 import subprocess
 import time
-import shlex
 from datetime import datetime
 
 from async.pathdict import PathDict
-from async.utils import number2human, read_keys
+from async.utils import number2human, read_keys, shquote
 
 import async.archui as ui
 import async.cmd as cmd
 
-if sys.version_info[0] < 3:
-    def shquote(s):
-        return "'" + s.replace("'", "'\"'\"'") + "'"
-else:
-    shquote = shlex.quote
 
 class HostError(Exception):
     def __init__(self, msg=None):

@@ -48,8 +48,17 @@ class LocalHost(DirectoryHost):
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
-                    d.sync(self, remote, silent=silent or opts.terse, dryrun=dryrun,
-                           opts=opts)
+                    success=True
+                    try:
+                        d.check_lastsync(self, remote, opts.force)
+                        d.sync(self, remote, silent=silent or opts.terse,
+                               dryrun=dryrun, opts=opts)
+                    except:
+                        success=False
+                        raise
+
+                    finally:
+                        d.save_lastsync(self, remote, success)
 
                 return self.run_on_dirs(dirs, func, "Sync",
                                         desc="%s <-> %s" % (self.name, remote.name),
