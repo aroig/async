@@ -32,8 +32,8 @@ class RsyncDir(BaseDir):
     """Directory synced via rsync"""
     def __init__(self, conf):
         super(RsyncDir, self).__init__(conf)
-        self.ignore = conf['ignore']
         self.rsync_args = conf['rsync_args']
+
 
 
     # Interface

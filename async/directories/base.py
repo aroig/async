@@ -58,7 +58,6 @@ class BaseDir(object):
         self.perms      = int(conf['perms'], base=8)
         self.symlink    = conf['symlink']
         self.subdirs    = conf['subdirs']
-        self.ignore     = []
 
         self.path_rename = conf['path_rename']
         self.lastsync    = conf['save_lastsync']
@@ -74,6 +73,10 @@ class BaseDir(object):
         self.hooks['post_sync']        = conf['post_sync_hook']
         self.hooks['pre_sync_remote']  = conf['pre_sync_remote_hook']
         self.hooks['post_sync_remote'] = conf['post_sync_remote_hook']
+
+        self.asynclast_file = '.async.last'
+        self.ignore = list(conf['ignore'])
+        self.ignore.append(os.path.join(self.relpath, self.asynclast_file))
 
 
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
@@ -118,6 +121,8 @@ class BaseDir(object):
         else:
             return False
 
+
+
     # Utilities
     # ----------------------------------------------------------------
 
@@ -160,7 +165,7 @@ class BaseDir(object):
 
 
     def read_lastsync(self, host):
-        lsfile = os.path.join(self.fullpath(host), '.async.last')
+        lsfile = os.path.join(self.fullpath(host), self.asynclast_file)
         raw = host.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
                            catchout=True).strip()
         try:
@@ -174,7 +179,7 @@ class BaseDir(object):
 
 
     def write_lastsync(self, host, data):
-        lsfile = os.path.join(self.fullpath(host), '.async.last')
+        lsfile = os.path.join(self.fullpath(host), self.asynclast_file)
         raw = json.dumps(data)
         host.run_cmd('echo %s > %s' % (shquote(raw), shquote(lsfile)))
 

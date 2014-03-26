@@ -33,7 +33,7 @@ class UnisonDir(BaseDir):
 
         self.unison_args = conf['unison_args']
         self.unison_profile = conf['unison_profile']
-        self.ignore = conf['ignore']
+
 
 
     # Interface
