@@ -197,6 +197,16 @@ class BaseDir(object):
             'path'     : path,
             'type'     : 'base',
         }
+        lastsync = self.read_lastsync(host)
+        if lastsync:
+            status['ls-timestamp'] = lastsync['timestamp']
+            status['ls-remote'] = lastsync['remote']
+            status['ls-success'] = lastsync['success']
+        else:
+            status['ls-timestamp'] = None
+            status['ls-remote'] = None
+            status['ls-success'] = None
+
         try:
             raw  = host.run_cmd('stat -L -c "%%a %%U:%%G" "%s"' % path, catchout=True)
             m = re.match('^(\d+) ([a-zA-Z]+):([a-zA-Z]+)$', raw)

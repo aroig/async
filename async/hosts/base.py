@@ -527,7 +527,12 @@ class BaseHost(object):
                 for k in keys:
                     d = dirs[k]
                     status = d.status(self, slow=slow)
-                    nameperms = '  #*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
+
+                    if status['ls-success'] == None:    lastsync=' #G√#t '
+                    elif status['ls-success'] == False: lastsync=' #RX#t '
+                    elif status['ls-success'] == True:  lastsync=' #G√#t '
+
+                    nameperms = '#*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
 
                     # directory type
                     dirtype = ''
@@ -572,7 +577,7 @@ class BaseHost(object):
                     else:
                         dirstate = '{0:>6} {1:<6}'.format(numfiles, '')
 
-                    ui.print_color(nameperms + symstate + dirtype + dirstate)
+                    ui.print_color(lastsync + nameperms + symstate + dirtype + dirstate)
 
                 print("")
 
