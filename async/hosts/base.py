@@ -57,9 +57,17 @@ class HostController:
     def __enter__(self):
         self.curstate = self.host.get_state()
 
-        # change state if tgtstate is given
-        if self.tgtstate and not self.host.set_state(self.tgtstate) == self.tgtstate:
-            raise HostError("Could not bring '%s' host to '%s' state" % (self.host.name, self.tgtstate))
+        if self.tgtstate:
+            # change state
+            newstate = self.host.set_state(self.tgtstate)
+            if not newstate == self.tgtstate:
+                raise HostError("Could not bring '%s' host to '%s' state" % (self.host.name, self.tgtstate))
+
+        # notify systemd, in case this is part of a systemd service
+        try:
+            subprocess.call(['systemd-notify', '--ready'])
+        except OSError:
+            pass
 
         return self.host
 
