@@ -20,7 +20,7 @@
 import re
 import sys
 import subprocess
-import systemd
+import systemd.daemon
 import time
 from datetime import datetime
 
