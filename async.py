@@ -105,8 +105,11 @@ Commands:
       shell:  %prog shell <host>
               Launch an interactive shell on host.
 
-        run:  %prog run <host> <script>
+       exec:  %prog exec <host> <script>
               Run a local script on host
+
+        run:  %prog run <host> <cmd>
+              Run a command on host
 
       start:  %prog start <host>
               Start the host.
@@ -300,6 +303,14 @@ try:
                                                silent=opts.quiet)
         elif len(args) == 0:  ui.print_error("Missing script.")
         else:                 ui.print_error("Too many arguments.")
+
+    elif cmd == "cmd":
+        shcmd = ' '.join(args)
+        if len(args) > 0:     ret = remote.cmd(cmd=shcmd,
+                                               state=opts.instate,
+                                               dryrun=opts.dryrun,
+                                               silent=opts.quiet)
+        elif len(args) == 0:  ui.print_error("Missing command.")
 
     elif cmd == "ping":
         if len(args) == 0:    ret = remote.ping()

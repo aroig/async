@@ -604,6 +604,22 @@ class BaseHost(object):
 
 
 
+    def cmd(self, cmd, state=None, silent=False, dryrun=False):
+        """Runs a command on the host"""
+        try:
+            with self.in_state(state, silent=silent, dryrun=dryrun):
+
+                ui.print_color("")
+                self.run_cmd(cmd)
+
+        except HostError as err:
+            ui.print_error(str(err))
+
+        except CmdError as err:
+            ui.print_error("Command error on %s: %s" % (self.name, str(err)))
+
+
+
     def run(self, script, state=None, silent=False, dryrun=False):
         """Runs a local script on the host"""
         try:
