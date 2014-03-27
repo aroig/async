@@ -51,7 +51,6 @@ else:
 if sys.version_info[0] <= 2:
     input = raw_input
 
-
 if _numcolors >= 16:
     for i, k in enumerate("krgybmcw"):
         _cc[k.upper()] = _str(_reset + curses.tparm(_setfg, i))     # dark
@@ -95,6 +94,7 @@ _use_color  = True    # use colors flag
 _last_status = ""     # remember text of last print_status
 
 _logger = None
+_isatty = sys.stdout.isatty()
 
 def start_logging(logfile, level=4):
     path = os.path.expandvars(os.path.expanduser(logfile))
@@ -179,8 +179,10 @@ def strip_color(s):
 
 
 def color(s, use_color=None):
+    global _isatty
     global _use_color
-    if use_color == None: use_color = _use_color
+    if use_color == None:
+        use_color = _use_color and _isatty
 
     ret = s + '#t'
     if use_color:
@@ -238,38 +240,48 @@ def print_enum(i, n, text):
     write_color('%s(%d/%d) #t%s\n' % (_mc, i, n, text), file=sys.stdout, loglevel=3)
 
 
-
 # TODO: get rid of nl where I use it
 def print_status(text=None, flag=None, nl=None):
-    width = min(get_line_width(), _maxwidth)
+    global _isatty, _last_status
 
+    # message part widths
     fwidth = 10
-    mwidth = width - fwidth
+    width = min(get_line_width(), _maxwidth)
+    if flag: mwidth = width - fwidth
+    else:    mwidth = width
 
+    # handle existing newline in text
     if nl == None:
         if re.match("^.*\n\s*$", text, re.MULTILINE): nl = True
         else:                                         nl = False
-
     if text: text = text.strip()
 
-    global _last_status
+    # if changing status, use cached message
     if text == None: text = _last_status
     else:            _last_status = text
 
+    # format string for the message
+    if _isatty:
+        if flag: fmt = '\r%s:: #*w{0:<%s}{1:>%s}' % (_mc, mwidth, fwidth)
+        else:    fmt = '\r%s:: #*w{0:<%s}' % (_mc, mwidth)
+
+    else:
+        if flag: fmt = '%s:: #*w{0} {1}' % (_mc)
+        else:    fmt = '%s:: #*w{0}'    % (_mc)
+        nl = True
+
+    if nl: fmt = fmt + '\n'
+    else:  fmt = fmt + '\r'
+
+    # write the message
     if flag:
         if flag.lower() in fc: col = fc[flag.lower()]
         else:                  col = '#W'
         sta = '%s[%s%s%s]' % (_mc, col, flag, _mc)
 
-        fmt = '\r%s:: #*w{0:<%s}{1:>%s}' % (_mc, mwidth, fwidth)
-        if nl: fmt = fmt + '\n'
-        else: fmt = fmt + '\r'
-
         if nl: write_color(fmt.format(text, sta), file=sys.stdout, loglevel=3)
         else:  write_color(fmt.format(text, sta), file=sys.stdout, loglevel=0)
-
     else:
-        fmt = '\r%s:: #*w{0:<%s}\n' % (_mc, width)
         write_color(fmt.format(text), file=sys.stdout, loglevel=3)
 
 
