@@ -334,7 +334,7 @@ def ask_question_yesno(question, default=None):
     elif default == 'no':   hint = ' [y/N]'
     else:                   hint = ' [y/n]'
     while True:
-        val = ask_question_string(question + + hint)
+        val = ask_question_string(question + hint)
         val = val.strip().lower()
 
         if val == 'y':              return 'yes'
