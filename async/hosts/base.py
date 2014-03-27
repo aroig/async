@@ -65,7 +65,8 @@ class HostController:
                 raise HostError("Could not bring '%s' host to '%s' state" % (self.host.name, self.tgtstate))
 
         # notify systemd, in case this is part of a systemd service
-        systemd.daemon.notify('host %s mounted' % self.host.name)
+        systemd.daemon.notify('\n'.join(['READY=1',
+                                         'STATUS="Host %s is mounted"' % self.host.name]))
 
         return self.host
 
