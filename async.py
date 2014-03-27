@@ -154,6 +154,9 @@ parser.add_option("--ignore", action="store", type="string", default=None, dest=
 parser.add_option("-i", "--instance", action="store", type="string", default=None, dest="itype",
                   help="Instance type. Values: micro (default), small, large")
 
+parser.add_option("--instate", action="store", type="string", default=None, dest="instate",
+                  help="Run action in given state, and then recover")
+
 parser.add_option("--boot", dest="boot", action="store_true", default=False,
                   help="Print boot log instead of journal (ec2 instance only)")
 
@@ -228,15 +231,17 @@ try:
     args = args[2:]
     ret = True
     if cmd == "status":
-        if len(args) == 0:    ret = remote.print_status()
+        if len(args) == 0:    ret = remote.print_status(state=opts.instate)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "log":
-        if len(args) == 0:    ret = remote.print_log(opts=opts)
+        if len(args) == 0:    ret = remote.print_log(state=opts.instate,
+                                                     opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "ls":
-        if len(args) == 0:    ret = remote.print_dirstate(opts=opts)
+        if len(args) == 0:    ret = remote.print_dirstate(state=opts.instate,
+                                                          opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "sync":
@@ -244,18 +249,22 @@ try:
             ui.print_error("Can't sync to local host")
             sys.exit(1)
 
-        if len(args) == 0:    ret = local.sync(remote=remote, dryrun=opts.dryrun,
-                                               silent=opts.quiet, opts=opts)
+        if len(args) == 0:    ret = local.sync(remote=remote,
+                                               dryrun=opts.dryrun,
+                                               silent=opts.quiet,
+                                               opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "init":
         if len(args) == 0:    ret = remote.init(dryrun=opts.dryrun,
-                                                silent=opts.quiet, opts=opts)
+                                                silent=opts.quiet,
+                                                opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "check":
         if len(args) == 0:    ret = remote.check(dryrun=opts.dryrun,
-                                                 silent=opts.quiet, opts=opts)
+                                                 silent=opts.quiet,
+                                                 opts=opts)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "start":
@@ -279,12 +288,15 @@ try:
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "shell":
-        if len(args) == 0:    ret = remote.shell(dryrun=opts.dryrun,
+        if len(args) == 0:    ret = remote.shell(state=opts.instate,
+                                                 dryrun=opts.dryrun,
                                                  silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     elif cmd == "run":
-        if len(args) == 1:    ret = remote.run(script=args[0], dryrun=opts.dryrun,
+        if len(args) == 1:    ret = remote.run(script=args[0],
+                                               state=opts.instate,
+                                               dryrun=opts.dryrun,
                                                silent=opts.quiet)
         elif len(args) == 0:  ui.print_error("Missing script.")
         else:                 ui.print_error("Too many arguments.")
@@ -298,7 +310,8 @@ try:
             ui.print_error("Host %s is not an Ec2 host" % remote.name)
 
         elif len(args) == 0:
-            ret = remote.launch(dryrun=opts.dryrun, silent=opts.quiet,
+            ret = remote.launch(dryrun=opts.dryrun,
+                                silent=opts.quiet,
                                 itype=get_itype(opts.itype))
 
         else:
@@ -309,7 +322,8 @@ try:
             ui.print_error("Host %s is not an Ec2 host" % remote.name)
 
         elif len(args) == 0:
-            ret = remote.terminate(dryrun=opts.dryrun, silent=opts.quiet)
+            ret = remote.terminate(dryrun=opts.dryrun,
+                                   silent=opts.quiet)
 
         else:
             ui.print_error("Too many arguments.")
@@ -318,12 +332,14 @@ try:
         if not isinstance(remote, Ec2Host):
             ui.print_error("Host %s is not an Ec2 host" % remote.name)
 
-        elif len(args) == 0:  ret = remote.snapshot(dryrun=opts.dryrun, silent=opts.quiet)
+        elif len(args) == 0:  ret = remote.snapshot(dryrun=opts.dryrun,
+                                                    silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
 
     elif cmd == "upgrade":
-        if len(args) == 0:    ret = remote.upgrade(dryrun=opts.dryrun, silent=opts.quiet)
+        if len(args) == 0:    ret = remote.upgrade(dryrun=opts.dryrun,
+                                                   silent=opts.quiet)
         else:                 ui.print_error("Too many arguments.")
 
     else:

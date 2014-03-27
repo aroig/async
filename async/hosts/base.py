@@ -445,10 +445,10 @@ class BaseHost(object):
         return ret
 
 
-    def print_status(self, silent=False, dryrun=False):
+    def print_status(self, state=None, silent=False, dryrun=False):
         """Prints a host status information"""
         try:
-            with self.in_state(silent=silent, dryrun=dryrun):
+            with self.in_state(state, silent=silent, dryrun=dryrun):
                 info = self.get_info()
 
                 ui.print_status("Status of #*m%s#t" % self.name)
@@ -488,14 +488,14 @@ class BaseHost(object):
         return True
 
 
-    def print_log(self, silent=False, dryrun=False, opts=None):
+    def print_log(self, state=None, silent=False, dryrun=False, opts=None):
         """Prints host logs"""
         if len(self.log_cmd) == 0:
             ui.print_error("Log retrieval not implemented for host %s" % self.name)
             return False
 
         try:
-            with self.in_state(silent=silent, dryrun=dryrun):
+            with self.in_state(state=state, silent=silent, dryrun=dryrun):
                 if not dryrun:
                     raw = self.run_cmd(self.log_cmd, tgtpath='/', catchout=True)
                     cmd.pager(raw)
@@ -505,7 +505,7 @@ class BaseHost(object):
             ui.print_error(str(err))
 
 
-    def print_dirstate(self, silent=False, dryrun=False, opts=None):
+    def print_dirstate(self, state=None, silent=False, dryrun=False, opts=None):
         """Prints the state of directories in a host"""
         dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
         keys = sorted(dirs.keys())
@@ -522,7 +522,7 @@ class BaseHost(object):
         else:    slow = True
 
         try:
-            with self.in_state(silent=silent, dryrun=dryrun):
+            with self.in_state(state, silent=silent, dryrun=dryrun):
                 ui.print_color("Directories on #*y%s#t (%s)\n" % (self.name, self.path))
                 for k in keys:
                     d = dirs[k]
@@ -588,10 +588,10 @@ class BaseHost(object):
 
 
 
-    def shell(self, silent=False, dryrun=False):
+    def shell(self, state=None, silent=False, dryrun=False):
         """Opens a shell to host"""
         try:
-            with self.in_state(silent=silent, dryrun=dryrun):
+            with self.in_state(state, silent=silent, dryrun=dryrun):
 
                 ui.print_color("")
                 ret = self.interactive_shell()
@@ -604,10 +604,10 @@ class BaseHost(object):
 
 
 
-    def run(self, script, silent=False, dryrun=False):
+    def run(self, script, state=None, silent=False, dryrun=False):
         """Runs a local script on the host"""
         try:
-            with self.in_state(silent=silent, dryrun=dryrun):
+            with self.in_state(state, silent=silent, dryrun=dryrun):
 
                 ui.print_color("")
                 self.run_script(script)
@@ -620,12 +620,12 @@ class BaseHost(object):
 
 
 
-    def backup(self, silent=False, dryrun=False):
+    def backup(self, state=None, silent=False, dryrun=False):
         """Creates a data backup"""
         raise NotImplementedError
 
 
-    def snapshot(self, silent=False, dryrun=False):
+    def snapshot(self, state=None, silent=False, dryrun=False):
         """Creates a server backup"""
         raise NotImplementedError
 
