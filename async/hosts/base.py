@@ -610,7 +610,7 @@ class BaseHost(object):
             with self.in_state(state, silent=silent, dryrun=dryrun):
 
                 ui.print_color("")
-                self.run_cmd(cmd)
+                self.run_cmd(cmd, tgtpath="$HOME")
 
         except HostError as err:
             ui.print_error(str(err))
@@ -626,7 +626,7 @@ class BaseHost(object):
             with self.in_state(state, silent=silent, dryrun=dryrun):
 
                 ui.print_color("")
-                self.run_script(script)
+                self.run_script(script, tgtpath="$HOME")
 
         except HostError as err:
             ui.print_error(str(err))
