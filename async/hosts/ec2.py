@@ -381,7 +381,8 @@ class Ec2Host(SshHost):
 
             cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
             if cont == 'yes':
-                new_ami_name = ui.ask_question_string("Enter the new ami name:")
+                suggested_name = self.suggest_new_ami_name(self, self.name)
+                new_ami_name = ui.ask_question_string("Enter the new ami name:", default=suggested_name).strip()
                 description = "%s %s" % (self.name, date.today().strftime("%Y-%m-%d"))
                 def func():
                     self.make_ami_snapshot(name = new_ami_name, desc = description)
@@ -566,6 +567,18 @@ class Ec2Host(SshHost):
 
     # backup
     # ------------------------------------------------------
+
+    def suggest_new_ami_name(self, basename):
+        names = set([im.name for im in self.conn.get_all_images()])
+
+        for i in range(0,1000):
+            newname = '%s-%d' % (basename, i)
+            if not newname in names:
+                return newname
+
+        return None
+
+
 
     def make_ami_snapshot(self, name, desc):
         """Creates a snapshot of the running image."""
