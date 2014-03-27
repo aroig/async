@@ -20,6 +20,7 @@
 import re
 import sys
 import subprocess
+import systemd
 import time
 from datetime import datetime
 
@@ -64,10 +65,7 @@ class HostController:
                 raise HostError("Could not bring '%s' host to '%s' state" % (self.host.name, self.tgtstate))
 
         # notify systemd, in case this is part of a systemd service
-        try:
-            subprocess.call(['systemd-notify', '--ready'])
-        except OSError:
-            pass
+        systemd.daemon.notify('host %s mounted' % self.host.name)
 
         return self.host
 
