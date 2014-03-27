@@ -376,12 +376,13 @@ class Ec2Host(SshHost):
             # go to online state, with detached data
             self.set_state(state='online', silent=silent, dryrun=dryrun)
 
-            ui.print_status("I'm going create a new ami from the running instance")
+            ui.print_status("I'm going create a new ami from the running instance\n")
             self.print_status()
+
+            suggested_name = self.suggest_new_ami_name(self.name)
 
             cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
             if cont == 'yes':
-                suggested_name = self.suggest_new_ami_name(self, self.name)
                 new_ami_name = ui.ask_question_string("Enter the new ami name:", default=suggested_name).strip()
                 description = "%s %s" % (self.name, date.today().strftime("%Y-%m-%d"))
                 def func():
@@ -569,10 +570,11 @@ class Ec2Host(SshHost):
     # ------------------------------------------------------
 
     def suggest_new_ami_name(self, basename):
-        names = set([im.name for im in self.conn.get_all_images()])
+        ami_list = self.conn.get_all_images(owners=[self.ec2_owner])
+        names = set([im.name for im in ami_list])
 
-        for i in range(0,1000):
-            newname = '%s-%d' % (basename, i)
+        for i in range(1,99):
+            newname = '%s-%02d' % (basename, i)
             if not newname in names:
                 return newname
 
