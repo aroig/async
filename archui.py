@@ -316,20 +316,27 @@ def print_progress(text, r, nl=None):
 
 
 
+def ask_question_string(question, default=None):
+    if default: hint = ' [%s]' % default
+    else:       hint = ''
 
-def ask_question_string(question):
-    write_color('%s ? #*w%s ' % (_mc, question), file=sys.stderr, loglevel=3)
+    write_color('%s ? #*w%s%s ' % (_mc, question, hint), file=sys.stderr, loglevel=3)
     ans = input()
+
+    if default != None and len(ans.strip()) == 0:
+        ans = default
+
     write_log('%s\n' % ans, level=3)
     return ans
 
 def ask_question_yesno(question, default=None):
-    if default == 'yes':    hint = '[Y/n]'
-    elif default == 'no':   hint = '[y/N]'
-    else:                   hint = '[y/n]'
+    if default == 'yes':    hint = ' [Y/n]'
+    elif default == 'no':   hint = ' [y/N]'
+    else:                   hint = ' [y/n]'
     while True:
-        val = ask_question_string(question + ' ' + hint)
+        val = ask_question_string(question + + hint)
         val = val.strip().lower()
+
         if val == 'y':              return 'yes'
         elif val == 'n':            return 'no'
         elif default and val == '': return default
