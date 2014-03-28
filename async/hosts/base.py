@@ -142,9 +142,10 @@ class BaseHost(object):
         B = remote.dirs
 
         # warn about unrecognized directories
-        for k in sorted(dirs):
-            if not k in A:
-                ui.print_warning("Unrecognized directory %s" % k)
+        if dirs != None:
+            for k in sorted(dirs):
+                if not k in A:
+                    ui.print_warning("Unrecognized directory %s" % k)
 
         igA = PathDict({rel: rel for rel in local.ignore})
         igB = PathDict({rel: rel for rel in remote.ignore})
