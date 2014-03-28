@@ -51,7 +51,7 @@ clean:
 #	@make -C man man
 
 install:
-	$(PYTHON) setup.py install --prefix=$(DESTDIR)$(PREFIX)
+	$(PYTHON) setup.py install --prefix="$(PREFIX)" --root="$(DESTDIR)"
 #	@install -Dm644 completion/zsh/_$(NAME) $(DESTDIR)$(ZSHDIR)/_$(NAME)
 #	@install -Dm644 completion/bash/$(NAME) $(DESTDIR)$(BASHDIR)/$(NAME)
 #	@install -Dm644 man/$(NAME).1 $(DESTDIR)$(MANDIR)/$(NAME).1
