@@ -535,9 +535,12 @@ class BaseHost(object):
                     d = dirs[k]
                     status = d.status(self, slow=slow)
 
-                    if status['ls-success'] == None:    lastsync=' #G√#t '
+                    if status['ls-success'] == None:    lastsync=' #G?#t '
                     elif status['ls-success'] == False: lastsync=' #RX#t '
                     elif status['ls-success'] == True:  lastsync=' #G√#t '
+
+                    if status['ls-timestamp']: timestamp=status['ls-timestamp'].strftime('%d %b %H:%M:%S')
+                    else:                      timestamp=""
 
                     nameperms = '#*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
 
@@ -576,15 +579,19 @@ class BaseHost(object):
                         symstate = '  '
 
                     # annex status
-                    dirstate = ''
+                    dirstate = '                 '
                     if status['type'] == 'annex':
                         dircounts = '[#R%s#t/#G%s#t]' % (nummissing, numunused)
-                        dirstate  = '{0:>6} {1:<6}'.format(numfiles, dircounts)
+                        dirstate  = '{0:>8} {1}'.format(numfiles, dircounts)
+                        dclen = len('[%s/%s]' % (nummissing, numunused))
 
                     else:
-                        dirstate = '{0:>6} {1:<6}'.format(numfiles, '')
+                        dirstate = '{0:>8} {1}'.format(numfiles, '')
+                        dclen=0
 
-                    ui.print_color(lastsync + nameperms + symstate + dirtype + dirstate)
+                    dirstate = dirstate + (10 - dclen)*' '
+
+                    ui.print_color(lastsync + nameperms + symstate + dirtype + dirstate + timestamp)
 
                 print("")
 
