@@ -20,7 +20,7 @@
 from distutils.core import setup
 from async import __version__
 
-setup(name         = 'Async',
+setup(name         = 'async',
       version      = __version__,
       license      = 'GNU GPLv3',
       description  = 'A tool to manage and sync different machines',
