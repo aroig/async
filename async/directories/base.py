@@ -175,7 +175,10 @@ class BaseDir(object):
                     'success': ls['success']}
 
         except:
-            return None
+            return {'remote': None,
+                    'timestamp': None,
+                    'success': None}
+
 
 
     def write_lastsync(self, host, data):
@@ -198,14 +201,9 @@ class BaseDir(object):
             'type'     : 'base',
         }
         lastsync = self.read_lastsync(host)
-        if lastsync:
-            status['ls-timestamp'] = lastsync['timestamp']
-            status['ls-remote'] = lastsync['remote']
-            status['ls-success'] = lastsync['success']
-        else:
-            status['ls-timestamp'] = None
-            status['ls-remote'] = None
-            status['ls-success'] = None
+        status['ls-timestamp'] = lastsync['timestamp']
+        status['ls-remote'] = lastsync['remote']
+        status['ls-success'] = lastsync['success']
 
         try:
             raw  = host.run_cmd('stat -L -c "%%a %%U:%%G" "%s"' % path, catchout=True)
@@ -293,10 +291,10 @@ class BaseDir(object):
         lls = self.read_lastsync(local)
         rls = self.read_lastsync(remote)
 
-        if lls != None and not lls['success'] and lls['remote'] != remote.name:
+        if not lls['success'] and lls['remote'] != remote.name:
             raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
 
-        if rls != None and not rls['success'] and rls['remote'] != local.name:
+        if not rls['success'] and rls['remote'] != local.name:
             raise SyncError("failed last sync on '%s' from a different host. Use the --force" % remote.name)
 
         return True

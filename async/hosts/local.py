@@ -45,6 +45,10 @@ class LocalHost(DirectoryHost):
         # ignore LocalDir directores. Don't want to sync them
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
 
+        # select only failed
+        if opts.failed:
+            dirs = {k:d for k, d in dirs.items() if d.read_lastsync(self)['success'] == False}
+
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
