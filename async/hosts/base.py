@@ -134,9 +134,17 @@ class BaseHost(object):
         """Returns a dict of dir objects that are common in local and remote as paths.
            Only allows for directories with name in dirs, if dirs != None.
            Avoid subdirectories ignored by one of the hosts."""
-        if dirs != None: dirs = set(dirs)
+        if dirs != None:
+            dirs = set(dirs)
+
+        # dicts of local and remote dirs
         A = local.dirs
         B = remote.dirs
+
+        # warn about unrecognized directories
+        for k in sorted(dirs):
+            if not k in A:
+                ui.print_warning("Unrecognized directory %s" % k)
 
         igA = PathDict({rel: rel for rel in local.ignore})
         igB = PathDict({rel: rel for rel in remote.ignore})
@@ -148,11 +156,18 @@ class BaseHost(object):
         pdB = PathDict({d.relpath: d for k, d in B.items()})
         pdI = pdA & pdB
 
-        return {d.name: d for p, d in pdI.items()
-                if (dirs==None or d.name in dirs) and
-                not d.relpath in igA and
-                not d.relpath in igB and
-                not d.relpath in igC}
+        dd = {d.name: d for p, d in pdI.items()}
+
+        # remove ignores
+        dd = {k: d for k, d in dd.items() if not d.relpath in igA
+                                         and not d.relpath in igB
+                                         and not d.relpath in igC}
+
+        # only keep dirs listed in dirs
+        if dirs:
+            dd = {k: d for k, d in dd.items() if k in dirs}
+
+        return dd
 
 
 
