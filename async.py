@@ -151,6 +151,9 @@ parser.add_option("-f", "--force", action="store", type="string", default=None, 
 parser.add_option("-d", "--dirs", action="store", type="string", default=None, dest="dirs",
                   help="Only sync the dirs given as a comma separated list.")
 
+parser.add_option("--older", action="store", type="int", default=0, dest="older",
+                  help="Only sync if last sync took place before the given amount of minutes")
+
 parser.add_option("--failed", action="store_true", default=False, dest="failed",
                   help="Only sync the dirs that failed on the last sync.")
 

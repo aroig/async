@@ -23,7 +23,7 @@ from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, InitError, CheckError, LocalDir, HookError
 
 import async.archui as ui
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class LocalHost(DirectoryHost):
@@ -45,9 +45,16 @@ class LocalHost(DirectoryHost):
         # ignore LocalDir directores. Don't want to sync them
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
 
+        lastsync = {k: d.read_lastsync(self) for k, d in dirs.items()}
+
         # select only failed
         if opts.failed:
-            dirs = {k:d for k, d in dirs.items() if d.read_lastsync(self)['success'] == False}
+            dirs = {k:d for k, d in dirs.items() if lastsync[k]['success'] == False}
+
+        if opts.older > 0:
+            threshold = datetime.today() - timedelta(minutes=opts.older)
+            dirs = {k:d for k, d in dirs.items() if not (lastsync[k]['timestamp'] and
+                                                         lastsync[k]['timestamp'] > threshold) }
 
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
