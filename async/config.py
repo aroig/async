@@ -173,6 +173,7 @@ class AsyncConfig(ConfigParser):
             'luks'           : ({}, parse_dict),
             'ecryptfs'       : ({}, parse_dict),
             'vol_keys'       : (None, parse_path),
+            'mount_options'  : (None, parse_string),
 
             'default_remote' : (None, parse_string),
             'path'           : (None, parse_path),

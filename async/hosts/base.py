@@ -103,6 +103,7 @@ class BaseHost(object):
         self.swapfile         = conf['swapfile']
         self.systemd_user     = conf['kill_systemd_user']
         self.default_remote   = conf['default_remote']
+        self.mount_options    = conf['mount_options']
 
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
@@ -208,9 +209,14 @@ class BaseHost(object):
         for dev, mp in self.mounts.items():
             ui.print_debug("mounting device: %s %s" % (dev, mp))
             try:
-                self.run_cmd('grep -qs %s /proc/mounts || ' % shquote(mp) + \
-                             'sudo mount %s %s' % (shquote(dev), shquote(mp)),
+                if self.mount_options:
+                    mount_cmd = 'sudo mount -o %s %s %s' % (self.mount_options, shquote(dev), shquote(mp))
+                else:
+                    mount_cmd = 'sudo mount %s %s' % (shquote(dev), shquote(mp))
+
+                self.run_cmd('grep -qs %s /proc/mounts || %s' % (shquote(mp), mount_cmd),
                              tgtpath='/', catchout=True)
+
             except CmdError as err:
                 raise HostError("Can't mount %s. %s" % (mp, str(err)))
 
@@ -228,10 +234,11 @@ class BaseHost(object):
                           "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
                           "ecryptfs_sig=%s,ecryptfs_fnek_sig=%s" % (sig, sig)
 
-                self.run_cmd('grep -qs %s /proc/mounts || '                % shquote(mp) + \
-                             'sudo mount -i -t ecryptfs -o %s %s.crypt %s' % (shquote(options),
+                mount_cmd = 'sudo mount -i -t ecryptfs -o %s %s.crypt %s' % (shquote(options),
                                                                               shquote(cryp),
                                                                               shquote(mp)),
+
+                self.run_cmd('grep -qs %s /proc/mounts || %s' % (shquote(mp), mount_cmd),
                              tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't mount ecryptfs directory %s. %s" % (mp, str(err)))
