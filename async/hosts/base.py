@@ -209,7 +209,7 @@ class BaseHost(object):
             ui.print_debug("mounting device: %s %s" % (dev, mp))
             try:
                 self.run_cmd('grep -qs %s /proc/mounts || ' % shquote(mp) + \
-                             'sudo mount %s' % shquote(mp),
+                             'sudo mount %s %s' % (shquote(dev), shquote(mp)),
                              tgtpath='/', catchout=True)
             except CmdError as err:
                 raise HostError("Can't mount %s. %s" % (mp, str(err)))
