@@ -38,8 +38,9 @@ class SSHConnectionError(Exception):
         super(SSHConnectionError, self).__init__(msg)
 
 class SSHCmdError(Exception):
-    def __init__(self, msg=None, returncode=None, output=""):
+    def __init__(self, msg=None, cmd=None, returncode=None, output=None):
         super(SSHCmdError, self).__init__(msg)
+        self.cmd = cmd
         self.output = output
         self.returncode = returncode
 
@@ -189,7 +190,7 @@ class SSHConnection(object):
         stdout, stderr = proc.communicate(stdin)
 
         if proc.returncode != 0:
-            raise SSHCmdError("SSH command failed: %s" % cmd, proc.returncode, stdout)
+            raise SSHCmdError("SSH command failed", cmd, proc.returncode, stdout)
 
         if catchout: return stdout
         else:        return None
