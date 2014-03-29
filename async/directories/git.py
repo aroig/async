@@ -46,7 +46,7 @@ class GitDir(BaseDir):
                 host.run_cmd('git init', tgtpath=path, silent=silent)
 
         except CmdError as err:
-            raise InitError("git init failed: %s" % str(err))
+            raise InitError("git init failed. %s" % str(err))
 
 
 
@@ -70,7 +70,7 @@ class GitDir(BaseDir):
                     host.run_cmd('git remote add "%s" "%s"' % (name, url), tgtpath=path, silent=silent)
 
             except CmdError as err:
-                raise InitError("git remote add failed: %s" % str(err))
+                raise InitError("git remote add failed. %s" % str(err))
 
 
 
@@ -93,7 +93,7 @@ class GitDir(BaseDir):
                     host.run_cmd('git remote remove "%s"' % name, tgtpath=path, silent=silent)
 
             except CmdError as err:
-                raise InitError("git remote remove failed: %s" % str(err))
+                raise InitError("git remote remove failed. %s" % str(err))
 
 
 
@@ -111,7 +111,7 @@ class GitDir(BaseDir):
                                  tgtpath=path, stdin=script, silent=silent)
 
         except CmdError as err:
-            raise InitError("hook setup failed: %s" % str(err))
+            raise InitError("configuration of git hook failed. %s" % str(err))
 
         except IOError as err:
             raise InitError("hook setup failed: %s" % str(err))
@@ -127,7 +127,7 @@ class GitDir(BaseDir):
                 ui.print_warning("directory %s on %s contains a nested git repo. It will be ignored." % (self.name, host.name))
 
         except CmdError as err:
-            raise SyncError(str(err))
+            raise SyncError("git pre sync check failed. %s" % str(err))
 
 
 
@@ -137,7 +137,7 @@ class GitDir(BaseDir):
             raw = host.run_cmd('git symbolic-ref HEAD', tgtpath=path, catchout=True)
 
         except CmdError as err:
-            raise SyncError("can't detect current branch: %s" % str(err))
+            raise SyncError("git branch detection failed. %s" % str(err))
 
         m = re.match('^refs/heads/(.*)$', raw)
         if m == None:
@@ -216,7 +216,7 @@ class GitDir(BaseDir):
                                tgtpath=tgt, silent=silent)
 
         except CmdError as err:
-            raise SyncError("sync failed: %s" % str(err))
+            raise SyncError("git sync failed. %s" % str(err))
 
 
 
@@ -229,7 +229,7 @@ class GitDir(BaseDir):
                                tgtpath=path, catchout=True)
 
         except CmdError as err:
-            raise SyncError(str(err))
+            raise SyncError("git status failed. %s" % str(err))
 
         dic = {}
         dic['staged'] = []
@@ -381,7 +381,7 @@ class GitDir(BaseDir):
             if not dryrun: host.run_cmd("git fsck", tgtpath=path, silent=silent)
 
         except CmdError as err:
-            raise CheckError("git fsck failed: %s" % str(err))
+            raise CheckError("git fsck failed. %s" % str(err))
 
         # run async hooks if asked to
         if runhooks:

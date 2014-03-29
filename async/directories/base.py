@@ -161,7 +161,7 @@ class BaseDir(object):
                         if not silent: ui.write_color(ret)
 
                     except CmdError as err:
-                        raise HookError("error running hook %s: %s" % (name, str(err)))
+                        raise HookError("error running hook %s. %s" % (name, str(err)))
 
 
     def read_lastsync(self, host):

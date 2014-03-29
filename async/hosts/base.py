@@ -37,13 +37,17 @@ class HostError(Exception):
 
 
 class CmdError(HostError):
-    def __init__(self, msg=None, returncode=None, output=""):
+    def __init__(self, msg=None, cmd=None, returncode=None, output=None):
         super(CmdError, self).__init__(msg)
-        if output:
-            self.output = output
-        else:
-            self.output = ""
+        self.output = output
+        self.cmd = cmd
         self.returncode = returncode
+
+    def __str__(self):
+        errmsg = super(self, CmdError).__str__(self)
+        if cmd: errmsg = errmsg + '\n  cmd: %s' % cmd
+        if output: errmsg = errmsg + '\n  out: %s' % cmd
+        return errmsg
 
 
 class HostController:
@@ -198,7 +202,7 @@ class BaseHost(object):
                              (shquote(passphrase), shquote(dev), shquote(name)), tgtpath='/', catchout=True)
 
             except CmdError as err:
-                raise HostError("Can't open luks partition %s. Messge: %s" % (name, err.output.strip()))
+                raise HostError("Can't open luks partition. %s" % str(err))
 
         # mount devices
         for dev, mp in self.mounts.items():
@@ -208,7 +212,7 @@ class BaseHost(object):
                              'sudo mount %s' % shquote(mp),
                              tgtpath='/', catchout=True)
             except CmdError as err:
-                raise HostError("Can't mount %s. Message: %s" % (mp, err.output.strip()))
+                raise HostError("Can't mount %s. %s" % (mp, str(err)))
 
         # mount ecryptfs
         # TODO: needs testing
@@ -230,7 +234,7 @@ class BaseHost(object):
                                                                               shquote(mp)),
                              tgtpath='/', catchout=True)
             except CmdError as err:
-                raise HostError("Can't mount ecryptfs directory %s. Message: %s" % (mp, err.output.strip()))
+                raise HostError("Can't mount ecryptfs directory %s. %s" % (mp, str(err)))
 
         # mount swap
         if self.swapfile:
@@ -242,7 +246,7 @@ class BaseHost(object):
                              tgtpath='/', catchout=True)
 
             except CmdError as err:
-                raise HostError("Can't mount swap %s. Message: %s" % (self.swapfile, err.output.strip()))
+                raise HostError("Can't mount swap %s. %s" % (self.swapfile, str(err)))
 
 
     def umount_devices(self):
@@ -253,7 +257,7 @@ class BaseHost(object):
                 self.run_cmd('systemctl --user exit || true', tgtpath='/', catchout=True)
 
             except CmdError as err:
-                raise HostError("Error stopping systemd --user instance" % (err.output.strip()))
+                raise HostError("Error stopping systemd --user instance. %s" % str(err))
 
         # umount swap
         if self.swapfile:
@@ -264,7 +268,7 @@ class BaseHost(object):
                              tgtpath='/', catchout=True)
 
             except CmdError as err:
-                raise HostError("Can't umount %s. Message: %s" % (self.swapfile, err.output.strip()))
+                raise HostError("Can't umount %s. %s" % (self.swapfile, str(err)))
 
         # umount ecryptfs
         for cryp, mp in self.ecryptfs_mounts.items():
@@ -274,7 +278,7 @@ class BaseHost(object):
                              'sudo umount %s' % shquote(mp),
                              tgtpath='/', catchout=True)
             except CmdError as err:
-                raise HostError("Can't umount ecryptfs directory %s. Message: %s" % (mp, err.output.strip()))
+                raise HostError("Can't umount ecryptfs directory %s. %s" % (mp, str(err)))
 
         # umount devices
         for dev, mp in self.mounts.items():
@@ -284,7 +288,7 @@ class BaseHost(object):
                              'sudo umount %s' % shquote(mp),
                              tgtpath='/', catchout=True)
             except CmdError as err:
-                raise HostError("Can't umount %s. Message: %s" % (mp, err.output.strip()))
+                raise HostError("Can't umount %s. %s" % (mp, str(err)))
 
         # close luks partitions
         for dev, name in self.luks_mounts.items():
@@ -292,7 +296,7 @@ class BaseHost(object):
             try:
                 self.run_cmd('sudo cryptsetup close --type luks %s' % shquote(name), tgtpath='/', catchout=True)
             except CmdError as err:
-                raise HostError("Can't close luks partition %s. Message: %s" % (name, err.output.strip()))
+                raise HostError("Can't close luks partition %s. %s" % (name, str(err)))
 
 
     def check_devices(self):
@@ -345,7 +349,7 @@ class BaseHost(object):
             device, size, used, available, percent, mountpoint = out.split("\n")[1].split()
             return (int(size), int(available))
         except CmdError as err:
-            raise HostError("Can't check disk usage")
+            raise HostError("Can't check disk usage. %s" % str(err))
 
 
 
@@ -646,7 +650,7 @@ class BaseHost(object):
             ui.print_error(str(err))
 
         except CmdError as err:
-            ui.print_error("Command error on %s: %s" % (self.name, str(err)))
+            ui.print_error("Command error on %s. %s" % (self.name, str(err)))
 
 
 
@@ -662,7 +666,7 @@ class BaseHost(object):
             ui.print_error(str(err))
 
         except CmdError as err:
-            ui.print_error("Command error on %s: %s" % (self.name, str(err)))
+            ui.print_error("Command error on %s. %s" % (self.name, str(err)))
 
 
 
@@ -724,7 +728,7 @@ class BaseHost(object):
             self.run_cmd('ln -s %s %s' % (shquote(tgt), shquote(path)))
 
         except CmdError as err:
-            raise HostError("Can't create symlink on %s" % self.name)
+            raise HostError("Can't create symlink on %s. %s" % (self.name, str(err)))
 
 
     def path_exists(self, path):
@@ -740,14 +744,14 @@ class BaseHost(object):
         try:
             self.run_cmd('mkdir -m %o %s' % (mode, shquote(path)))
         except CmdError as err:
-            raise HostError("Can't create directory on %s" % self.name)
+            raise HostError("Can't create directory on %s. %s" % (self.name, str(err)))
 
 
     def chmod(self, path, mode):
         try:
             self.run_cmd('chmod %o %s' % (mode, shquote(path)))
         except CmdError as err:
-            raise HostError("Can't chmod directory on %s" % self.name)
+            raise HostError("Can't chmod directory on %s. %s" % (self.name, str(err)))
 
 
 

@@ -93,20 +93,16 @@ class AnnexDir(GitDir):
             raw = host.run_cmd('git ls-tree -r -z HEAD | grep -zZ -e "^120000" | sed "s/\\x00/\\n/g"',
                                tgtpath=path, catchout=True)
 
-        except CmdError as err:
-            raise SyncError("couldn't retrieve keys: %s" % str(err))
+            # this dictionary translates git objects to working tree paths for the
+            # annexed files
+            path_dic = {o: d.strip() for o, d in path_re.findall(raw)}
 
-        # this dictionary translates git objects to working tree paths for the
-        # annexed files
-        path_dic = {o: d.strip() for o, d in path_re.findall(raw)}
-
-        try:
             raw = host.run_cmd('git cat-file --batch',
                                stdin='\n'.join(path_dic.keys()),
                                tgtpath=path, catchout=True)
 
         except CmdError as err:
-            raise SyncError("couldn't retrieve keys: %s" % str(err))
+            raise SyncError("can't retrieve annex keys. %s" % str(err))
 
         key_dic = {o: k.strip() for o, k in key_re.findall(raw)}
 
@@ -171,12 +167,12 @@ class AnnexDir(GitDir):
                 host.run_cmd('git annex init "%s"' % annex_desc, tgtpath=path, silent=silent)
 
         except CmdError as err:
-            raise InitError("git annex init failed: %s" % str(err))
+            raise InitError("git annex initialization failed. %s" % str(err))
 
 
 
     def _push_annexed_files(self, local, remote, slow=False, silent=False, dryrun=False):
-        annex_args = ['copy', '--quiet', '--fast', '--to=%s' % remote.name]
+        annex_cmd = ["git",  "annex",  "copy", "--quiet",  "--fast",  "--to=%s" % remote.name]
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
@@ -190,8 +186,8 @@ class AnnexDir(GitDir):
             # This is much slower than copy --from, since git-annex must go through the
             # location log. We can't stat to decide whether an annexed file is missing
             if method == 'builtin':
-                ui.print_debug('git annex %s' % ' '.join(annex_args))
-                if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
+                ui.print_debug(' '.join(annex_cmd))
+                if not dryrun: local.run_cmd(annex_cmd, tgtpath=src, silent=silent)
 
 
             # Faster method to detect missing files on the remote. Essentially
@@ -211,8 +207,8 @@ class AnnexDir(GitDir):
                 for key, d in keys_head.items():
                     if key in keys_local and not key in keys_remote:
                         ui.print_color('%s' % d)
-                        ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), d))
-                        if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [d], silent=silent)
+                        ui.print_debug('%s "%s"' % (' '.join(annex_cmd), d))
+                        if not dryrun: local.run_cmd(annex_cmd + [d], tgtpath=src, silent=silent)
 
 
             # run code on the remote to get the missing files.
@@ -225,21 +221,18 @@ class AnnexDir(GitDir):
                                          tgtpath=tgt, catchout=True)
                     missing = raw.split('\0')
 
-                except CmdError as err:
-                    raise SyncError("Failed to retrieve dangling symlinks on the remote")
-
                 for key in missing:
                     if len(f.strip()) == 0: continue
-                    ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), key))
-                    if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [key], silent=silent)
+                    ui.print_debug('%s "%s"' % (' '.join(annex_cmd), key))
+                    if not dryrun: local.run_cmd(annex_cmd + [key], tgtpath=src, silent=silent)
 
-        except subprocess.CalledProcessError as err:
-            raise SyncError(str(err))
+        except CmdError as err:
+            raise SyncError("push annexed files failed. %s" % str(err))
 
 
 
     def _pull_annexed_files(self, local, remote, slow=False, silent=False, dryrun=False):
-        annex_args  = ['copy', '--quiet', '--fast', '--from=%s' % remote.name]
+        annex_cmd  = ['git', 'annex', 'copy', '--quiet', '--fast', '--from=%s' % remote.name]
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
@@ -252,8 +245,8 @@ class AnnexDir(GitDir):
             # This is quite fast, since git-annex stats the local annexed files
             # to check availability.
             if method == 'builtin':
-                ui.print_debug('git annex %s' % ' '.join(annex_args))
-                if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
+                ui.print_debug(' '.join(annex_cmd))
+                if not dryrun: local.run_cmd(annex_cmd, tgtpath=src, silent=silent)
 
             # we grep the location log for keys. This is slower than the builtin,
             # but we can do something fun, print the file path being transferred!
@@ -270,22 +263,22 @@ class AnnexDir(GitDir):
                 for key, d in keys_head.items():
                     if key in keys_remote and not key in keys_local:
                         ui.print_color('%s' % d)
-                        ui.print_debug('git annex %s "%s"' % (' '.join(annex_args), d))
-                        if not dryrun: cmd.annex(tgtdir=src, args=annex_args + [d], silent=silent)
+                        ui.print_debug('%s "%s"' % (' '.join(annex_cmd), d))
+                        if not dryrun: local.run_cmd(annex_cmd + [d], tgtpath=src, silent=silent)
 
-        except subprocess.CalledProcessError as err:
-            raise SyncError(str(err))
+        except subprocess.CmdError as err:
+            raise SyncError("pull annexed files failed. %s" % str(err))
 
 
 
     def _annex_sync(self, local, remote, silent=False, dryrun=False):
-        annex_args = ['sync', remote.name]
+        annex_cmd = ['git', 'annex', 'sync', remote.name]
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
-        ui.print_debug('git annex %s' % ' '.join(annex_args))
+        ui.print_debug(' '.join(annex_cmd))
         try:
-            if not dryrun: cmd.annex(tgtdir=src, args=annex_args, silent=silent)
+            if not dryrun: local.run_cmd(annex_cmd, tgtpath=src, silent=silent)
 
         except subprocess.CalledProcessError as err:
             raise SyncError(str(err))
@@ -300,7 +293,7 @@ class AnnexDir(GitDir):
                 host.run_cmd("git annex merge", tgtpath=path, silent=silent)
 
         except CmdError as err:
-            raise SyncError(str(err))
+            raise SyncError("git annex merge failed. %s" % str(err))
 
 
 
@@ -321,7 +314,7 @@ class AnnexDir(GitDir):
                                tgtpath=path, catchout=True).strip()
 
         except CmdError as err:
-            raise SyncError(str(err))
+            raise SyncError("annex_get_conflicts failed. %s" % str(err))
 
         conflicts = con_re.findall(raw)
         return conflicts
@@ -449,7 +442,7 @@ class AnnexDir(GitDir):
                     host.run_cmd("git annex fsck --fast -q", tgtpath=path, silent=silent)
 
         except CmdError as err:
-            raise CheckError("git annex fsck failed: %s" % str(err))
+            raise CheckError("git annex fsck failed. %s" % str(err))
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
