@@ -111,7 +111,7 @@ class DirectoryHost(BaseHost):
         stdout, stderr = proc.communicate(stdin)
 
         if proc.returncode != 0:
-            raise CmdError("Local command failed", cmd, proc.returncode, stdout or "")
+            raise CmdError("Local command failed", cm, proc.returncode, stdout or "")
 
         if catchout: return stdout
         else:        return None

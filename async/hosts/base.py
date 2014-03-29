@@ -37,16 +37,16 @@ class HostError(Exception):
 
 
 class CmdError(HostError):
-    def __init__(self, msg=None, cmd=None, returncode=None, output=None):
+    def __init__(self, msg=None, cm=None, returncode=None, output=None):
         super(CmdError, self).__init__(msg)
         self.output = output
-        self.cmd = cmd
+        self.cmd = cm
         self.returncode = returncode
 
     def __str__(self):
-        errmsg = super(self, CmdError).__str__(self)
-        if cmd: errmsg = errmsg + '\n  cmd: %s' % cmd
-        if output: errmsg = errmsg + '\n  out: %s' % cmd
+        errmsg = super(CmdError, self).__str__()
+        if self.cmd:    errmsg = errmsg + '\n  cmd: %s' % self.cmd
+        if self.output: errmsg = errmsg + '\n  out: %s' % self.output
         return errmsg
 
 

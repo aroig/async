@@ -216,10 +216,9 @@ class AnnexDir(GitDir):
             # not as fast as I'd like on usb disks aws instances...
             # I keep this for a while just in case, but I'll remove it eventually.
             elif method == 'remote':
-                try:
-                    raw = remote.run_cmd("find . -path './.git' -prune -or -type l -xtype l -print0",
-                                         tgtpath=tgt, catchout=True)
-                    missing = raw.split('\0')
+                raw = remote.run_cmd("find . -path './.git' -prune -or -type l -xtype l -print0",
+                                     tgtpath=tgt, catchout=True)
+                missing = raw.split('\0')
 
                 for key in missing:
                     if len(f.strip()) == 0: continue
