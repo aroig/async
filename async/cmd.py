@@ -183,51 +183,6 @@ def rsync(src, tgt, args=[], silent=True):
         subprocess.check_call([rsync_cmd] + rsync_args + [A, B], stderr=out, stdout=out)
 
 
-def annex(tgtdir, args=[], silent=True):
-    git_cmd = 'git'
-    git_args = ['annex'] + args
-
-    with open('/dev/null', 'w') as devnull:
-        if silent: out=devnull
-        else:      out=None
-
-        subprocess.check_call([git_cmd] + git_args, stderr=subprocess.STDOUT, stdout=out, cwd=tgtdir)
-
-
-def git(tgtdir, args, silent=False, catchout=False):
-    git_cmd = 'git'
-    with open('/dev/null', 'w') as devnull:
-        if silent: out=devnull
-        else:      out=None
-
-        if catchout:
-            raw = subprocess.check_output([git_cmd] + args, stderr=out, cwd=tgtdir)
-            return raw
-        else:
-            subprocess.check_call([git_cmd] + args, stderr=out, stdout=out, cwd=tgtdir)
-
-
-def bash_cmd(tgtdir, cmd, silent=False, catchout=False, stdin=None):
-    bash_cmd = 'bash'
-
-    if silent or catchout: sout = subprocess.PIPE
-    else:                  sout = None
-
-    if stdin != None:      sin = subprocess.PIPE
-    else:                  sin = None
-
-    proc = subprocess.Popen([bash_cmd, '-c', cmd], cwd=tgtdir,
-                            stderr=subprocess.STDOUT, stdout=sout, stdin=sin)
-
-    ret = proc.communicate(stdin)
-
-    if proc.returncode != 0:
-        raise subprocess.CalledProcessError(proc.returncode, cmd)
-
-    if catchout: return ret[0]
-    else:        return None
-
-
 def shell(tgtdir):
     shell_cmd = os.environ.get('SHELL')
     subprocess.check_call([shell_cmd], cwd=tgtdir)
