@@ -89,16 +89,32 @@ class DirectoryHost(BaseHost):
 
     def run_cmd(self, cm, tgtpath=None, catchout=False, stdin=None, silent=False):
         """Run a shell command in a given path at host"""
-        path = tgtpath or self.path
-        ui.print_debug("run_cmd. cmd: %s. path: %s" % (cm, path))
+        path = os.path.expandvars(os.path.expanduser(tgtpath or self.path))
 
-        try:
-            raw = cmd.bash_cmd(tgtdir=path, cmd=cm, silent=silent,
-                               catchout=catchout, stdin=stdin)
-            return raw
+        if type(cm) == type([]):
+            ui.print_debug("run_cmd. cmd: %s. path: %s" % (' '.join(cm), path))
+        else:
+            ui.print_debug("run_cmd. cmd: %s. path: %s" % (cm, path))
 
-        except subprocess.CalledProcessError as err:
-            raise CmdError(str(err), err.returncode, err.output)
+        if silent or catchout: sout = subprocess.PIPE
+        else:                  sout = None
+
+        if stdin != None:      sin = subprocess.PIPE
+        else:                  sin = None
+
+        if type(cm) == type([]): qcm = cm
+        else:                    qcm = ['sh', '-c', cm]
+
+        proc = subprocess.Popen(qcm, cwd=path,
+                                stderr=subprocess.STDOUT, stdout=sout, stdin=sin)
+
+        stdout, stderr = proc.communicate(stdin)
+
+        if proc.returncode != 0:
+            raise CmdError("Local command failed", cmd, proc.returncode, stdout or "")
+
+        if catchout: return stdout
+        else:        return None
 
 
     def interactive_shell(self):
