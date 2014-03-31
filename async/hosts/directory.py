@@ -19,6 +19,7 @@
 
 import os
 import subprocess
+from signal import signal, SIGPIPE, SIG_DFL
 
 import async.archui as ui
 import async.cmd as cmd
@@ -105,7 +106,11 @@ class DirectoryHost(BaseHost):
         if type(cm) == type([]): qcm = cm
         else:                    qcm = ['sh', '-c', cm]
 
+        # NOTE: python ignores SIGPIPE. this makes broken pipes error out
+        # instead of letting, say cat, handle the SIGPIPE and terminate
+        # lets disable that.
         proc = subprocess.Popen(qcm, cwd=path,
+                                preexec_fn = lambda: signal(SIGPIPE, SIG_DFL),
                                 stderr=subprocess.STDOUT, stdout=sout, stdin=sin)
 
         stdout, stderr = proc.communicate(stdin)
