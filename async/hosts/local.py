@@ -21,6 +21,7 @@
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, InitError, CheckError, LocalDir, HookError
+from async.utils import save_lastsync, read_lastsync
 
 import async.archui as ui
 from datetime import datetime, timedelta
@@ -56,29 +57,38 @@ class LocalHost(DirectoryHost):
             dirs = {k:d for k, d in dirs.items() if not (lastsync[k]['timestamp'] and
                                                          lastsync[k]['timestamp'] > threshold) }
 
+        ret = False
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
-                    success=True
+                    success=False
                     try:
                         d.check_lastsync(self, remote, opts.force)
                         d.sync(self, remote, silent=silent or opts.terse,
                                dryrun=dryrun, opts=opts)
-                    except:
-                        success=False
-                        raise
+                        success=True
 
                     finally:
-                        d.save_lastsync(self, remote, success)
+                        for h in [self, remote]:
+                            if h.lastsync and d.lastsync:
+                                path = os.path.join(d.fullpath(h), h.asynclast_file)
+                                save_lastsync(h, path, success)
 
-                return self.run_on_dirs(dirs, func, "Sync",
-                                        desc="%s <-> %s" % (self.name, remote.name),
-                                        silent=silent, dryrun=dryrun)
+                ret = self.run_on_dirs(dirs, func, "Sync",
+                                       desc="%s <-> %s" % (self.name, remote.name),
+                                       silent=silent, dryrun=dryrun)
 
         except HostError as err:
             ui.print_error(str(err))
             return False
 
+        finally:
+            for h in [self, remote]:
+                if h.lastsync:
+                    path = os.path.join(h.path, h.asynclast_file)
+                    save_lastsync(h, path, success)
+
+        return ret
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

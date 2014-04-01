@@ -22,11 +22,8 @@ import re
 import subprocess
 import json
 
-import dateutil.parser
-from datetime import datetime
-
 import async.archui as ui
-from async.utils import shquote
+from async.utils import shquote, read_lastsync
 
 class DirError(Exception):
     def __init__(self, msg=None):
@@ -74,7 +71,6 @@ class BaseDir(object):
         self.hooks['pre_sync_remote']  = conf['pre_sync_remote_hook']
         self.hooks['post_sync_remote'] = conf['post_sync_remote_hook']
 
-        self.asynclast_file = '.async.last'
         self.ignore = list(conf['ignore'])
         self.ignore.append(os.path.join(self.relpath, self.asynclast_file))
 
@@ -164,29 +160,6 @@ class BaseDir(object):
                         raise HookError("error running hook %s. %s" % (name, str(err)))
 
 
-    def read_lastsync(self, host):
-        lsfile = os.path.join(self.fullpath(host), self.asynclast_file)
-        raw = host.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
-                           catchout=True).strip()
-        try:
-            ls = json.loads(raw)
-            return {'remote': ls['remote'],
-                    'timestamp': dateutil.parser.parse(ls['timestamp']),
-                    'success': ls['success']}
-
-        except:
-            return {'remote': None,
-                    'timestamp': None,
-                    'success': None}
-
-
-
-    def write_lastsync(self, host, data):
-        lsfile = os.path.join(self.fullpath(host), self.asynclast_file)
-        raw = json.dumps(data)
-        host.run_cmd('echo %s > %s' % (shquote(raw), shquote(lsfile)))
-
-
 
     # Interface
     # ----------------------------------------------------------------
@@ -200,7 +173,7 @@ class BaseDir(object):
             'path'     : path,
             'type'     : 'base',
         }
-        lastsync = self.read_lastsync(host)
+        lastsync = read_lastsync(host, d)
         status['ls-timestamp'] = lastsync['timestamp']
         status['ls-remote'] = lastsync['remote']
         status['ls-success'] = lastsync['success']
@@ -288,8 +261,8 @@ class BaseDir(object):
         """Check whether last sync failed on a different host"""
         if force or not self.save_lastsync: return True
 
-        lls = self.read_lastsync(local)
-        rls = self.read_lastsync(remote)
+        lls = read_lastsync(local, d)
+        rls = read_lastsync(remote, d)
 
         if not lls['success'] and lls['remote'] != remote.name:
             raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
@@ -298,25 +271,6 @@ class BaseDir(object):
             raise SyncError("failed last sync on '%s' from a different host. Use the --force" % remote.name)
 
         return True
-
-
-
-    def save_lastsync(self, local, remote, success):
-        """Save sync success state"""
-        if not self.lastsync: return
-
-        now = datetime.today().isoformat()
-
-        data = {'remote': remote.name,
-                'timestamp': now,
-                'success': success}
-        self.write_lastsync(local, data)
-
-        data = {'remote': local.name,
-                'timestamp': now,
-                'success': success}
-        self.write_lastsync(remote, data)
-
 
 
 

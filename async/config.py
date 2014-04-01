@@ -185,6 +185,8 @@ class AsyncConfig(ConfigParser):
             'annex_push'     : ([], parse_list),         # directories where we push annexed files to remote
 
             'log_cmd'        : ("", parse_path),         # parse as a path to expand shell vars
+
+            'save_lastsync'  : (True, parse_bool),       # store .async.last with last sync metadata
         },
 
         'instance': {

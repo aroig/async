@@ -18,9 +18,14 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import json
+
+from datetime import datetime
+import dateutil.parser
 
 import shlex
 import sys
+
 if sys.version_info[0] < 3:
     def shquote(s):
         return "'" + s.replace("'", "'\"'\"'") + "'"
@@ -66,3 +71,31 @@ def read_keys(path):
             if m: keys[m.group(1).strip()] = m.group(2).strip()
 
     return keys
+
+
+
+def save_lastsync(host, path, success):
+    """Save sync success state"""
+
+    now = datetime.today().isoformat()
+    data = json.dumps({'remote': remote.name,
+                       'timestamp': now,
+                       'success': success})
+    host.run_cmd('echo %s > %s' % (shquote(data), shquote(path)))
+
+
+
+def read_lastsync(host, d):
+    lsfile = os.path.join(d.fullpath(host), d.asynclast_file)
+    raw = host.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
+                       catchout=True).strip()
+    try:
+        ls = json.loads(raw)
+        return {'remote': ls['remote'],
+                'timestamp': dateutil.parser.parse(ls['timestamp']),
+                'success': ls['success']}
+
+    except:
+        return {'remote': None,
+                'timestamp': None,
+                'success': None}

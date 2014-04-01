@@ -89,6 +89,8 @@ class BaseHost(object):
 
         super(BaseHost, self).__init__()
 
+        self.asynclast_file = '.async.last'
+
         self.state = None
 
         # name and path
@@ -108,7 +110,9 @@ class BaseHost(object):
         self.annex_pull = set(conf['annex_pull'])
         self.annex_push = set(conf['annex_push'])
 
-        self.log_cmd = conf['log_cmd']
+        self.log_cmd    = conf['log_cmd']
+
+        self.lastsync   = conf['save_lastsync']
 
         if conf['vol_keys']: self.vol_keys = read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
@@ -133,6 +137,7 @@ class BaseHost(object):
             time_passed = time_passed + step
 
         return func() == status
+
 
 
     def _get_common_dirs(self, local, remote, dirs, ignore=[]):
