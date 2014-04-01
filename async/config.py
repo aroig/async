@@ -187,6 +187,7 @@ class AsyncConfig(ConfigParser):
             'log_cmd'        : ("", parse_path),         # parse as a path to expand shell vars
 
             'save_lastsync'  : (True, parse_bool),       # store .async.last with last sync metadata
+            'asynclast_file'  : (".async.last", parse_string),
         },
 
         'instance': {
@@ -219,6 +220,7 @@ class AsyncConfig(ConfigParser):
             'path'            : (None, parse_path),      # relative path of the dir. None means same as name.
             'path_rename'     : ({},   parse_dict_path), # rename path on specific hosts
             'save_lastsync'   : (True, parse_bool),      # store .async.last with last sync metadata
+            'asynclast_file'  : (".async.last", parse_string),
 
             'subdirs'         : ([], parse_list_path),
             'check'           : ([], parse_list),
@@ -236,7 +238,6 @@ class AsyncConfig(ConfigParser):
             'post_sync_remote_hook'  : ([], parse_list_path),  # scripts to run on the remote after sync
             'pre_check_hook'         : ([], parse_list_path),  # scripts to run before check
             'post_check_hook'        : ([], parse_list_path),  # scripts to run after check
-
         },
 
         'async': {

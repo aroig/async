@@ -46,7 +46,7 @@ class LocalHost(DirectoryHost):
         # ignore LocalDir directores. Don't want to sync them
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
 
-        lastsync = {k: d.read_lastsync(self) for k, d in dirs.items()}
+        lastsync = {k: read_lastsync(self, d.fullpath(self)) for k, d in dirs.items()}
 
         # select only failed
         if opts.failed:
@@ -71,8 +71,7 @@ class LocalHost(DirectoryHost):
                     finally:
                         for h in [self, remote]:
                             if h.lastsync and d.lastsync:
-                                path = os.path.join(d.fullpath(h), h.asynclast_file)
-                                save_lastsync(h, path, success)
+                                save_lastsync(h, d.fullpath(h), success)
 
                 ret = self.run_on_dirs(dirs, func, "Sync",
                                        desc="%s <-> %s" % (self.name, remote.name),
@@ -85,8 +84,7 @@ class LocalHost(DirectoryHost):
         finally:
             for h in [self, remote]:
                 if h.lastsync:
-                    path = os.path.join(h.path, h.asynclast_file)
-                    save_lastsync(h, path, success)
+                    save_lastsync(h, h.path, ret)
 
         return ret
 

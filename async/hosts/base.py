@@ -89,8 +89,6 @@ class BaseHost(object):
 
         super(BaseHost, self).__init__()
 
-        self.asynclast_file = '.async.last'
-
         self.state = None
 
         # name and path
@@ -107,12 +105,13 @@ class BaseHost(object):
         self.default_remote   = conf['default_remote']
         self.mount_options    = conf['mount_options']
 
-        self.annex_pull = set(conf['annex_pull'])
-        self.annex_push = set(conf['annex_push'])
+        self.annex_pull       = set(conf['annex_pull'])
+        self.annex_push       = set(conf['annex_push'])
 
-        self.log_cmd    = conf['log_cmd']
+        self.log_cmd          = conf['log_cmd']
 
-        self.lastsync   = conf['save_lastsync']
+        self.lastsync         = conf['save_lastsync']
+        self.asynclast_file   = conf['asynclast_file']
 
         if conf['vol_keys']: self.vol_keys = read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
@@ -124,6 +123,9 @@ class BaseHost(object):
 
         # ignore paths
         self.ignore = conf['ignore']
+        self.ignore.append(self.asynclast_file)
+
+
 
     # Utilities
     # ----------------------------------------------------------------

@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 import json
 
@@ -76,17 +77,17 @@ def read_keys(path):
 
 def save_lastsync(host, path, success):
     """Save sync success state"""
-
+    lsfile = os.path.join(path, host.asynclast_file)
     now = datetime.today().isoformat()
-    data = json.dumps({'remote': remote.name,
+    data = json.dumps({'remote': host.name,
                        'timestamp': now,
                        'success': success})
-    host.run_cmd('echo %s > %s' % (shquote(data), shquote(path)))
+    host.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
 
 
 
-def read_lastsync(host, d):
-    lsfile = os.path.join(d.fullpath(host), d.asynclast_file)
+def read_lastsync(host, path):
+    lsfile = os.path.join(path, host.asynclast_file)
     raw = host.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
                        catchout=True).strip()
     try:

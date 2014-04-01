@@ -58,6 +58,7 @@ class BaseDir(object):
 
         self.path_rename = conf['path_rename']
         self.lastsync    = conf['save_lastsync']
+        self.asynclast_file = conf['asynclast_file']
 
         self.hooks = {}
         self.hooks_path = conf['conf_path']
@@ -73,6 +74,7 @@ class BaseDir(object):
 
         self.ignore = list(conf['ignore'])
         self.ignore.append(os.path.join(self.relpath, self.asynclast_file))
+
 
 
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
@@ -173,7 +175,7 @@ class BaseDir(object):
             'path'     : path,
             'type'     : 'base',
         }
-        lastsync = read_lastsync(host, d)
+        lastsync = read_lastsync(host, d.fullpath(host))
         status['ls-timestamp'] = lastsync['timestamp']
         status['ls-remote'] = lastsync['remote']
         status['ls-success'] = lastsync['success']
@@ -259,10 +261,10 @@ class BaseDir(object):
 
     def check_lastsync(self, local, remote, force):
         """Check whether last sync failed on a different host"""
-        if force or not self.save_lastsync: return True
+        if force or not self.lastsync: return True
 
-        lls = read_lastsync(local, d)
-        rls = read_lastsync(remote, d)
+        lls = read_lastsync(local, self.fullpath(local))
+        rls = read_lastsync(remote, self.fullpath(remote))
 
         if not lls['success'] and lls['remote'] != remote.name:
             raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
