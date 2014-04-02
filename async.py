@@ -157,6 +157,9 @@ parser.add_option("--older", action="store", type="int", default=0, dest="older"
 parser.add_option("--failed", action="store_true", default=False, dest="failed",
                   help="Only sync the dirs that failed on the last sync.")
 
+parser.add_option("--needed", action="store_true", default=False, dest="needed",
+                  help="Only sync the dirs that are needed, either because they failed, or last synced to a different host.")
+
 parser.add_option("--ignore", action="store", type="string", default=None, dest="ignore",
                   help="Ignore these paths, given as a comma separated list.")
 

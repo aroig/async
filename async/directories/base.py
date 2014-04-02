@@ -22,8 +22,12 @@ import re
 import subprocess
 import json
 
+from datetime import datetime, timedelta
+
 import async.archui as ui
 from async.utils import shquote, read_lastsync
+
+
 
 class DirError(Exception):
     def __init__(self, msg=None):
@@ -44,6 +48,11 @@ class InitError(Exception):
 class HookError(Exception):
     def __init__(self, msg=None):
         super(HookError, self).__init__(msg)
+
+class SkipError(Exception):
+    def __init__(self, msg=None):
+        super(SkipError, self).__init__(msg)
+
 
 
 class BaseDir(object):
@@ -259,18 +268,35 @@ class BaseDir(object):
 
 
 
-    def check_lastsync(self, local, remote, force):
+    def check_lastsync(self, local, remote, opts):
         """Check whether last sync failed on a different host"""
-        if force or not self.lastsync: return True
 
         lls = read_lastsync(local, self.fullpath(local))
         rls = read_lastsync(remote, self.fullpath(remote))
 
-        if not lls['success'] and lls['remote'] != remote.name:
-            raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
+        # only sync if last sync failed
+        if opts.failed:
+            if lls['success']:
+                raise SkipError("last sync succeeded")
 
-        if not rls['success'] and rls['remote'] != local.name:
-            raise SyncError("failed last sync on '%s' from a different host. Use the --force" % remote.name)
+        # only sync if older than opts.older
+        if opts.older > 0:
+            threshold = datetime.today() - timedelta(minutes=opts.older)
+            if lls['timestamp'] and lls['timestamp'] > threshold:
+                raise SkipError("last sync less than %d minutes ago" % opts.older)
+
+        # only sync if last sync failed or done from a different host
+        if opts.needed:
+            if lls['success'] and rls['success'] and lls['remote'] == remote.name and rls['remote'] == local.name:
+                raise SkipError("last sync was from the same host and succeeded")
+
+        # fail if last sync failed from a different host
+        if not opts.force and self.lastsync:
+            if not lls['success'] and lls['remote'] != remote.name:
+                raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
+
+            if not rls['success'] and rls['remote'] != local.name:
+                raise SyncError("failed last sync on '%s' from a different host. Use the --force" % remote.name)
 
         return True
 

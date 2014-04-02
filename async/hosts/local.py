@@ -20,11 +20,10 @@
 
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
-from async.directories import SyncError, InitError, CheckError, LocalDir, HookError
+from async.directories import SyncError, InitError, CheckError, LocalDir, HookError, SkipError
 from async.utils import save_lastsync, read_lastsync
 
 import async.archui as ui
-from datetime import datetime, timedelta
 
 
 class LocalHost(DirectoryHost):
@@ -46,26 +45,19 @@ class LocalHost(DirectoryHost):
         # ignore LocalDir directores. Don't want to sync them
         dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
 
-        lastsync = {k: read_lastsync(self, d.fullpath(self)) for k, d in dirs.items()}
-
-        # select only failed
-        if opts.failed:
-            dirs = {k:d for k, d in dirs.items() if lastsync[k]['success'] == False}
-
-        if opts.older > 0:
-            threshold = datetime.today() - timedelta(minutes=opts.older)
-            dirs = {k:d for k, d in dirs.items() if not (lastsync[k]['timestamp'] and
-                                                         lastsync[k]['timestamp'] > threshold) }
-
         ret = False
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
                     success=False
                     try:
-                        d.check_lastsync(self, remote, opts.force)
+                        d.check_lastsync(self, remote, opts)
                         d.sync(self, remote, silent=silent or opts.terse,
                                dryrun=dryrun, opts=opts)
+                        success=True
+
+                    except SkipError as err:
+                        ui.print_color("skipping: %s" % str(err))
                         success=True
 
                     finally:

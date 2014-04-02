@@ -23,7 +23,7 @@ from async.directories.git import GitDir
 from async.directories.annex import AnnexDir
 from async.directories.local import LocalDir
 
-from async.directories.base import DirError, SyncError, InitError, HookError, CheckError
+from async.directories.base import DirError, SyncError, InitError, HookError, CheckError, SkipError
 
 def get_directory(dconf, unison_as_rsync=False):
     typ = dconf['type']
