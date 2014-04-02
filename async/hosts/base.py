@@ -23,6 +23,7 @@ import subprocess
 import systemd.daemon
 import time
 from datetime import datetime
+from collections import OrderedDict
 
 from async.pathdict import PathDict
 from async.utils import number2human, read_keys, shquote
@@ -117,7 +118,7 @@ class BaseHost(object):
         else:                self.vol_keys = {}
 
         # directories
-        self.dirs = {}
+        self.dirs = OrderedDict()
         for name, dconf in conf['dirs'].items():
             self.dirs[name] = get_directory(dconf, unison_as_rsync=conf['unison_as_rsync'])
 
@@ -146,18 +147,20 @@ class BaseHost(object):
         """Returns a dict of dir objects that are common in local and remote as paths.
            Only allows for directories with name in dirs, if dirs != None.
            Avoid subdirectories ignored by one of the hosts."""
-        if dirs != None:
-            dirs = set(dirs)
+
+        # get list of dir names. Order matters.
+        if dirs != None: dirs = list(dirs)
+        else:            dirs = list(local.dirs.keys())
 
         # dicts of local and remote dirs
         A = local.dirs
         B = remote.dirs
 
         # warn about unrecognized directories
-        if dirs != None:
-            for k in sorted(dirs):
-                if not k in A:
-                    ui.print_warning("Unrecognized directory %s" % k)
+        for k in dirs:
+            for h in [local, remote]:
+                if not k in h.dirs:
+                    ui.print_warning("Unrecognized directory %s on host %s" % (k, h.name))
 
         igA = PathDict({rel: rel for rel in local.ignore})
         igB = PathDict({rel: rel for rel in remote.ignore})
@@ -176,11 +179,7 @@ class BaseHost(object):
                                          and not d.relpath in igB
                                          and not d.relpath in igC}
 
-        # only keep dirs listed in dirs
-        if dirs:
-            dd = {k: d for k, d in dd.items() if k in dirs}
-
-        return dd
+        return OrderedDict([(k, dd[k]) for k in dirs if k in dd])
 
 
 
@@ -373,7 +372,7 @@ class BaseHost(object):
         from async.directories import InitError, HookError, SyncError, CheckError
 
         failed = []
-        keys = sorted(dirs.keys())
+        keys = list(dirs.keys())
         num = len(keys)
         ret = True
 

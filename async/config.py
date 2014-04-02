@@ -22,6 +22,7 @@ import re
 import glob
 import shlex
 
+from collections import OrderedDict
 from ConfigParser import ConfigParser
 
 class AsyncConfigError(Exception):
@@ -335,7 +336,7 @@ class AsyncConfig(ConfigParser):
                     if not k in self.directory:
                         raise AsyncConfigError("Unknown directory: %s" % k)
 
-                val['dirs'] = {k: dict(self.directory[k]) for k in dirs}
+                val['dirs'] = OrderedDict([(k, dict(self.directory[k])) for k in dirs])
 
 
 

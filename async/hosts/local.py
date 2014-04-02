@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections import OrderedDict
+
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, InitError, CheckError, LocalDir, HookError, SkipError
@@ -43,7 +45,7 @@ class LocalHost(DirectoryHost):
         dirs = self._get_common_dirs(self, remote, dirs=opts.dirs, ignore=opts.ignore)
 
         # ignore LocalDir directores. Don't want to sync them
-        dirs = {k: d for k, d in dirs.items() if not isinstance(d, LocalDir)}
+        dirs = OrderedDict([(k, d) for k, d in dirs.items() if not isinstance(d, LocalDir)])
 
         ret = False
         try:
