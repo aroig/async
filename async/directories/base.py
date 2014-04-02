@@ -288,7 +288,7 @@ class BaseDir(object):
         # only sync if last sync failed or done from a different host
         if opts.needed:
             if lls['success'] and rls['success'] and lls['remote'] == remote.name and rls['remote'] == local.name:
-                raise SkipError("last sync was from the same host and succeeded")
+                raise SkipError("successful last sync from the same host")
 
         # fail if last sync failed from a different host
         if not opts.force and self.lastsync:
