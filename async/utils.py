@@ -75,11 +75,11 @@ def read_keys(path):
 
 
 
-def save_lastsync(host, path, success):
+def save_lastsync(host, path, rname, success):
     """Save sync success state"""
     lsfile = os.path.join(path, host.asynclast_file)
     now = datetime.today().isoformat()
-    data = json.dumps({'remote': host.name,
+    data = json.dumps({'remote': rname,
                        'timestamp': now,
                        'success': success})
     host.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))

@@ -61,9 +61,9 @@ class LocalHost(DirectoryHost):
                         success=True
 
                     finally:
-                        for h in [self, remote]:
+                        for h, r in [(self, remote), (remote, self)]:
                             if h.lastsync and d.lastsync:
-                                save_lastsync(h, d.fullpath(h), success)
+                                save_lastsync(h, d.fullpath(h), r.name, success)
 
                 ret = self.run_on_dirs(dirs, func, "Sync",
                                        desc="%s <-> %s" % (self.name, remote.name),
@@ -74,9 +74,9 @@ class LocalHost(DirectoryHost):
             return False
 
         finally:
-            for h in [self, remote]:
+            for h, r in [(self, remote), (remote, self)]:
                 if h.lastsync:
-                    save_lastsync(h, h.path, ret)
+                    save_lastsync(h, h.path, r.name, ret)
 
         return ret
 
