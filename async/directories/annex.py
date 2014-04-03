@@ -265,7 +265,7 @@ class AnnexDir(GitDir):
                         ui.print_debug('%s "%s"' % (' '.join(annex_cmd), d))
                         if not dryrun: local.run_cmd(annex_cmd + [d], tgtpath=src, silent=silent)
 
-        except subprocess.CmdError as err:
+        except CmdError as err:
             raise SyncError("pull annexed files failed. %s" % str(err))
 
 
