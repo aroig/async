@@ -148,36 +148,35 @@ class BaseHost(object):
            Only allows for directories with name in dirs, if dirs != None.
            Avoid subdirectories ignored by one of the hosts."""
 
-        # get list of dir names. Order matters.
-        if dirs != None: dirs = list(dirs)
-        else:            dirs = list(local.dirs.keys())
-
         # dicts of local and remote dirs
         A = local.dirs
         B = remote.dirs
-
-        # warn about unrecognized directories
-        for k in dirs:
-            for h in [local, remote]:
-                if not k in h.dirs:
-                    ui.print_warning("Unrecognized directory %s on host %s" % (k, h.name))
-
-        igA = PathDict({rel: rel for rel in local.ignore})
-        igB = PathDict({rel: rel for rel in remote.ignore})
-        igC = PathDict({rel: rel for rel in ignore})
 
         # A pathdict has paths as keys. the we can do intersections or unions of the keys
         # and chooses the value for the most specific of the keys.
         pdA = PathDict({d.relpath: d for k, d in A.items()})
         pdB = PathDict({d.relpath: d for k, d in B.items()})
         pdI = pdA & pdB
+        dd = OrderedDict([(d.name, d) for p, d in pdI.items()])
 
-        dd = {d.name: d for p, d in pdI.items()}
+        # get ignored paths
+        igA = PathDict({rel: rel for rel in local.ignore})
+        igB = PathDict({rel: rel for rel in remote.ignore})
+        igC = PathDict({rel: rel for rel in ignore})
 
         # remove ignores
-        dd = {k: d for k, d in dd.items() if not d.relpath in igA
-                                         and not d.relpath in igB
-                                         and not d.relpath in igC}
+        dd = OrderedDict([(k, d) for k, d in dd.items() if not d.relpath in igA
+                                                           and not d.relpath in igB
+                                                           and not d.relpath in igC])
+
+        # get list of dir names. Order matters.
+        if dirs != None: dirs = list(dirs)
+        else:            dirs = list(dd.keys())
+
+        # warn about unrecognized directories
+        for k in dirs:
+            if not k in dd:
+                ui.print_warning("Unrecognized directory %s" % k)
 
         return OrderedDict([(k, dd[k]) for k in dirs if k in dd])
 
