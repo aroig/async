@@ -184,7 +184,7 @@ class BaseDir(object):
             'path'     : path,
             'type'     : 'base',
         }
-        lastsync = read_lastsync(host, d.fullpath(host))
+        lastsync = read_lastsync(host, self.fullpath(host))
         status['ls-timestamp'] = lastsync['timestamp']
         status['ls-remote'] = lastsync['remote']
         status['ls-success'] = lastsync['success']
