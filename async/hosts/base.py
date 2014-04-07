@@ -154,8 +154,8 @@ class BaseHost(object):
 
         # A pathdict has paths as keys. the we can do intersections or unions of the keys
         # and chooses the value for the most specific of the keys.
-        pdA = PathDict({d.relpath: d for k, d in A.items()})
-        pdB = PathDict({d.relpath: d for k, d in B.items()})
+        pdA = PathDict([(d.relpath, d) for k, d in A.items()])
+        pdB = PathDict([(d.relpath, d) for k, d in B.items()])
         pdI = pdA & pdB
         dd = OrderedDict([(d.name, d) for p, d in pdI.items()])
 

@@ -19,20 +19,26 @@
 
 import os
 
+from collections import OrderedDict
+
 class PathDict(object):
     """A dictionary that maps data objects to paths. Every subpath inherits the data
     object from its parent."""
     class _node(object):
         def __init__(self, path):
             self.path = path
-            self.sub = {}
+            self.sub = OrderedDict()
             self.data = None
             self.leaf = False    # If leaf if true, the node implicitly contains all its subdirectories
 
 
     def __init__(self, dic={}):
         self.tree = PathDict._node(path="")
-        for p, d in dic.items(): self._setdata(self.tree, p, d)
+        if type(dic) == type([]):
+            for p, d in dic: self._setdata(self.tree, p, d)
+
+        else:
+            for p, d in dic.items(): self._setdata(self.tree, p, d)
 
 
     def _splitpath(self, p):
