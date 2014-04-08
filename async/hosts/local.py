@@ -67,18 +67,19 @@ class LocalHost(DirectoryHost):
                             if h.lastsync and d.lastsync:
                                 save_lastsync(h, d.fullpath(h), r.name, success)
 
-                ret = self.run_on_dirs(dirs, func, "Sync",
-                                       desc="%s <-> %s" % (self.name, remote.name),
-                                       silent=silent, dryrun=dryrun)
+                try:
+                    ret = self.run_on_dirs(dirs, func, "Sync",
+                                           desc="%s <-> %s" % (self.name, remote.name),
+                                           silent=silent, dryrun=dryrun)
+
+                finally:
+                    for h, r in [(self, remote), (remote, self)]:
+                        if h.lastsync: save_lastsync(h, h.path, r.name, ret)
 
         except HostError as err:
             ui.print_error(str(err))
             return False
 
-        finally:
-            for h, r in [(self, remote), (remote, self)]:
-                if h.lastsync:
-                    save_lastsync(h, h.path, r.name, ret)
 
         return ret
 
