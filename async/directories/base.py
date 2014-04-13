@@ -89,16 +89,19 @@ class BaseDir(object):
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
         """Creates a directory or symlink. Returns false if it already existed"""
 
-        # if nonexistent symlink, create it
-        if self.symlink and not host.path_exists(path):
+        # if symlink, (re)create it
+        if self.symlink:
             tgtlink = os.path.join(host.path, self.symlink)
+
             if not silent:
                 ui.print_color("symlink: %s -> %s" % (path, tgtlink))
 
             try:
-                if not dryrun: host.symlink(tgtlink, path)
+                if not dryrun: host.symlink(tgtlink, path, force=True)
+
             except Exception as err:
                 raise InitError(str(err))
+
             return True
 
         # if nonexistent directory, create it
@@ -112,7 +115,7 @@ class BaseDir(object):
                 raise InitError(str(err))
             return True
 
-        # if existent directory, set perms
+        # if directory exists, set perms
         elif not self.symlink and host.path_exists(path):
             if not silent:
                 ui.print_color("chmod %o: %s" % (mode, path))
@@ -236,19 +239,16 @@ class BaseDir(object):
         if runhooks:
             self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
 
-        if not host.path_exists(path):
-            if not silent:
-                ui.print_color("creating %s with permissions %o" % (path, self.perms))
-            self._create_directory(host, path, self.perms, silent, dryrun)
-        else:
+        if host.path_exists(path):
             ui.print_warning("path already exists: %s" % path)
+
+        self._create_directory(host, path, self.perms, silent, dryrun)
 
         # create subdirs
         perms = 0o755
         for sd in self.subdirs:
             sdpath = os.path.join(path, sd)
-            if not host.path_exists(sdpath):
-                self._create_directory(host, sdpath, perms, silent, dryrun)
+            self._create_directory(host, sdpath, perms, silent, dryrun)
 
         # run async hooks if asked to
         if runhooks:
