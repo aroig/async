@@ -93,10 +93,15 @@ class AnnexDir(GitDir):
             raw = host.run_cmd('git ls-tree -r -z HEAD | grep -zZ -e "^120000" | sed "s/\\x00/\\n/g"',
                                tgtpath=path, catchout=True)
 
-            # this dictionary translates git objects to working tree paths for the
-            # annexed files
-            path_dic = {o: d.strip() for o, d in path_re.findall(raw)}
+        except CmdError as err:
+            raise SyncError("can't retrieve annex keys. %s" % str(err))
 
+
+        # this dictionary translates git objects to working tree paths for the
+        # symlinks in the working dir. May be annexed files, or just commited symlinks.
+        path_dic = {o: d.strip() for o, d in path_re.findall(raw)}
+
+        try:
             raw = host.run_cmd('git cat-file --batch',
                                stdin='\n'.join(path_dic.keys()),
                                tgtpath=path, catchout=True)
@@ -104,13 +109,20 @@ class AnnexDir(GitDir):
         except CmdError as err:
             raise SyncError("can't retrieve annex keys. %s" % str(err))
 
+        # this dictionary translates git objects to git annex keys used to identify annexed files.
         key_dic = {o: k.strip() for o, k in key_re.findall(raw)}
 
-        if len(path_dic) != len(key_dic):
-            raise SyncError("something odd happened in annex._get_keys_working_dir." + \
-                            "path_dic and key_dic have different length")
 
-        self.keys_wd = {key: path_dic.get(o, None) for o, key in key_dic.items()}
+        self.keys_wd = {}
+        for o, key in key_dic.items():
+
+            if o in path_dic:
+                self.keys_wd[key] = path_dic[o]
+
+            else:
+                raise SyncError("something odd happened in annex._get_keys_working_dir. " + \
+                            "Found a git object in key_dic not in path_dic.")
+
         return self.keys_wd
 
 
