@@ -55,6 +55,9 @@ class GitDir(BaseDir):
         name = rmt['name']
         url = rmt['url'].replace('%d', self.relpath)
 
+        # if remote is dead, we are done
+        if rmt['dead']: return
+
         # get currently configured url for the remote
         try:
             cur_url = host.run_cmd('git config remote.%s.url' % name,
@@ -62,8 +65,9 @@ class GitDir(BaseDir):
         except CmdError:
             cur_url = ""
 
-        # add remote if not configured and not marked as dead
-        if len(cur_url) == 0 and not rmt['dead']:
+
+        # add remote if not configured
+        if len(cur_url) == 0:
             if not silent: ui.print_color("adding remote '%s'" % name)
             try:
                 if not dryrun:
@@ -71,6 +75,16 @@ class GitDir(BaseDir):
 
             except CmdError as err:
                 raise InitError("git remote add failed. %s" % str(err))
+
+        # update url if changed
+        elif len(cur_url) > 0 and cur_url != url:
+            if not silent: ui.print_color("updating url for remote '%s'" % name)
+            try:
+                if not dryrun:
+                    host.run_cmd('git remote set-url "%s" "%s"' % (name, url), tgtpath=path, silent=silent)
+
+            except CmdError as err:
+                raise InitError("git remote set-url failed. %s" % str(err))
 
 
 
@@ -345,8 +359,11 @@ class GitDir(BaseDir):
             # discard remotes named as the host or dead
             if r['name'] == host.name: continue
 
-            if r['dead']: self._remove_git_remote(host, r, silent=silent, dryrun=dryrun)
-            else:         self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
+            if r['dead']:
+                self._remove_git_remote(host, r, silent=silent, dryrun=dryrun)
+
+            else:
+                self._configure_git_remote(host, r, silent=silent, dryrun=dryrun)
 
         # symlink git hooks, even if it does not exist
         if len(self.git_hooks_dir) > 0:
