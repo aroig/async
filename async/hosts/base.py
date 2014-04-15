@@ -534,7 +534,7 @@ class BaseHost(object):
             return False
 
         try:
-            with self.in_state(state=state, silent=silent, dryrun=dryrun):
+            with self.in_state(state, silent=silent, dryrun=dryrun):
                 if not dryrun:
                     raw = self.run_cmd(self.log_cmd, tgtpath='/', catchout=True)
                     cmd.pager(raw)
