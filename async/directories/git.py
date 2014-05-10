@@ -145,6 +145,18 @@ class GitDir(BaseDir):
 
 
 
+    def _git_post_sync_check(self, host, silent=False, dryrun=False):
+        st = self._parse_git_status(host)
+
+        if len(st['conflicts']) > 0:
+            raise SyncError("git post sync check failed: Conflicts detected")
+
+        elif (len(st['staged']) + len(st['changed']) + len(st['deleted']) +
+             len(st['untracked']) + len(st['unknown'])) > 0:
+            raise SyncError("git post sync check failed: Working directory is not clean")
+
+
+
     def _git_current_branch(self, host):
         path = self.fullpath(host)
         try:
@@ -331,6 +343,9 @@ class GitDir(BaseDir):
 
         # do the sync
         self._git_sync(local, remote, silent=silent, dryrun=dryrun, batch=batch, force=force)
+
+        # post sync check
+        self._git_post_sync_check(local, silent=silent, dryrun=dryrun)
 
         # post-sync hook
         if runhooks:

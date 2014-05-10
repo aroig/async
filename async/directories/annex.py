@@ -309,11 +309,26 @@ class AnnexDir(GitDir):
 
 
     def _annex_pre_sync_check(self, host, silent=False, dryrun=False):
+
+        self._git_pre_sync_check(host, silent=silent, dryrun=dryrun)
+
+        path = self.fullpath(host)
+        conflicts = self._annex_get_conflicts(host)
+        if len(conflicts) > 0:
+            raise SyncError("There are unresolved annex conflicts in %s: \n%s" % (self.name, '\n'.join(conflicts)))
+
+
+
+    def _annex_post_sync_check(self, host, silent=False, dryrun=False):
+
+        self._git_post_sync_check(host, silent=silent, dryrun=dryrun)
+
         path = self.fullpath(host)
         conflicts = self._annex_get_conflicts(host)
 
         if len(conflicts) > 0:
-            raise SyncError("There are unresolved conflicts in %s: \n%s" % (self.name, '\n'.join(conflicts)))
+            raise SyncError("There are unresolved annex conflicts in %s: \n%s" % (self.name, '\n'.join(conflicts)))
+
 
 
     def _annex_get_conflicts(self, host):
@@ -374,11 +389,14 @@ class AnnexDir(GitDir):
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
             self.run_hook(remote, 'pre_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
-        #pre sync check
+        # pre sync check
         self._annex_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # sync
         self._annex_sync(local, remote, silent=silent, dryrun=dryrun)
+
+        # post sync check
+        self._annex_post_sync_check(local, silent=silent, dryrun=dryrun)
 
         # merge on the remote if current local and remote branches match
         if self._git_current_branch(remote) == self._git_current_branch(local):
