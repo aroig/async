@@ -455,7 +455,7 @@ class AnnexDir(GitDir):
 
         # run async hooks if asked to
         if runhooks:
-            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
+            self.run_hook(host, 'pre_check', tgt=path, silent=silent, dryrun=dryrun)
 
         # call check on the parent
         super(AnnexDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
@@ -472,6 +472,10 @@ class AnnexDir(GitDir):
 
         except CmdError as err:
             raise CheckError("git annex fsck failed. %s" % str(err))
+
+        # run async hooks if asked to
+        if runhooks:
+            self.run_hook(host, 'post_check', tgt=path, silent=silent, dryrun=dryrun)
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
