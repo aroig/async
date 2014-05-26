@@ -50,6 +50,11 @@ class LocalDir(BaseDir):
 
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
+
+        # do basic checks
+        self.check_paths(local)
+        self.check_paths(remote)
+
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
@@ -82,6 +87,9 @@ class LocalDir(BaseDir):
 
     def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
+
+        # do basic checks
+        self.check_paths(host)
 
         # run async hooks if asked to
         if runhooks:

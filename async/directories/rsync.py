@@ -60,6 +60,10 @@ class RsyncDir(BaseDir):
         src = '%s/' % self.fullpath(local)
         args = [] + self.rsync_args
 
+        # do basic checks
+        self.check_paths(local)
+        self.check_paths(remote)
+
         # handle ignores
         ignore = set(self.ignore) | set(opts.ignore) | set(local.ignore) | set(remote.ignore)
         for p in ignore:
@@ -116,6 +120,9 @@ class RsyncDir(BaseDir):
 
     def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
+
+        # do basic checks
+        self.check_paths(host)
 
         # run async hooks if asked to
         if runhooks:

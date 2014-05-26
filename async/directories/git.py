@@ -357,6 +357,10 @@ class GitDir(BaseDir):
     def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
 
+        # do basic checks
+        self.check_paths(local)
+        self.check_paths(remote)
+
         # run async hooks if asked to
         if runhooks:
             self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
@@ -401,6 +405,9 @@ class GitDir(BaseDir):
 
     def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
+
+        # do basic checks
+        self.check_paths(host)
 
         # run async hooks if asked to
         if runhooks:

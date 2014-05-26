@@ -97,7 +97,7 @@ class BaseHost(object):
         self.path = conf['path']
 
         # mounts
-        self.check_mounts     = conf['check']
+        self.check_mounts_list = conf['check_mounts']
         self.mounts           = conf['mounts']
         self.luks_mounts      = conf['luks']
         self.ecryptfs_mounts  = conf['ecryptfs']
@@ -334,7 +334,7 @@ class BaseHost(object):
         if not check_devices():
             raise HostException("There are unmounted devices")
 
-        for p in self.check_mounts:
+        for p in self.check_mounts_list:
             path = os.path.join(self.path, p)
             if not self.path_exists(path):
                 ui.print_debug("path %s does nit exist" % path)
@@ -368,7 +368,7 @@ class BaseHost(object):
     def run_on_dirs(self, dirs, func, action, desc=None, silent=False, dryrun=False):
         """Utility function to run a function on a set of directories.
            func(d) operates on a dir object d."""
-        from async.directories import InitError, HookError, SyncError, CheckError
+        from async.directories import InitError, HookError, SyncError, CheckError, DirError
 
         failed = []
         keys = list(dirs.keys())
@@ -389,7 +389,7 @@ class BaseHost(object):
                 try:
                     func(d)
 
-                except (CheckError, InitError, SyncError) as err:
+                except (CheckError, InitError, SyncError, DirError) as err:
                     ui.print_error("%s failed: %s" % (action.lower(), str(err)))
                     failed.append(d.name)
 

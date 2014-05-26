@@ -384,6 +384,10 @@ class AnnexDir(GitDir):
         if opts: slow = opts.slow
         else:    slow = False
 
+        # do basic checks
+        self.check_paths(local)
+        self.check_paths(remote)
+
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
@@ -452,6 +456,9 @@ class AnnexDir(GitDir):
 
         if opts: slow = opts.slow
         else:    slow = False
+
+        # do basic checks
+        self.check_paths(host)
 
         # run async hooks if asked to
         if runhooks:

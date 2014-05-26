@@ -178,7 +178,7 @@ class AsyncConfig(ConfigParser):
 
             'default_remote' : (None, parse_string),
             'path'           : (None, parse_path),
-            'check'          : ([], parse_list),
+            'check_mounts'   : ([], parse_list),
             'type'           : (None, parse_string),
             'instance'       : (None, parse_string),
 
@@ -224,7 +224,7 @@ class AsyncConfig(ConfigParser):
             'asynclast_file'  : (".async.last", parse_string),
 
             'subdirs'         : ([], parse_list_path),
-            'check'           : ([], parse_list),
+            'check_paths'     : ([], parse_list),
             'ignore'          : ([], parse_list_path),
             'unison_profile'  : (None, parse_string),
             'unison_args'     : ([], parse_list_args),

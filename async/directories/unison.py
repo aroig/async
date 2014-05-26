@@ -59,6 +59,10 @@ class UnisonDir(BaseDir):
     def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
         src = '%s/' % local.path
 
+        # do basic checks
+        self.check_paths(local)
+        self.check_paths(remote)
+
         # get the target dir
         if isinstance(remote, SshHost):
             tgt = 'ssh://%s@%s/%s/' % (remote.user, remote.hostname, remote.path)
@@ -141,6 +145,9 @@ class UnisonDir(BaseDir):
 
     def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
         path = self.fullpath(host)
+
+        # do basic checks
+        self.check_paths(host)
 
         # run async hooks if asked to
         if runhooks:

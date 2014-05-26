@@ -69,6 +69,8 @@ class BaseDir(object):
         self.lastsync    = conf['save_lastsync']
         self.asynclast_file = conf['asynclast_file']
 
+        self.check_paths_list = conf['check_paths']
+
         self.hooks = {}
         self.hooks_path = conf['conf_path']
 
@@ -172,6 +174,20 @@ class BaseDir(object):
 
                     except CmdError as err:
                         raise HookError("error running hook %s. %s" % (name, str(err)))
+
+
+    def check_paths(self, host):
+        """Checks directories that are required to be present. Returns true if all checks
+        pass, or raises an exception with information about what failed."""
+
+        for p in self.check_paths_list:
+            path = os.path.join(host.path, p)
+            if not host.path_exists(path):
+                ui.print_debug("path %s does not exist on '%s'" % (path, host.name))
+                raise DirError("path %s does not exist on '%s'" % (path, host.name))
+                return False
+
+        return True
 
 
 
