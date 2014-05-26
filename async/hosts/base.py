@@ -332,13 +332,13 @@ class BaseHost(object):
         pass, or raises an exception with information about what failed."""
 
         if not check_devices():
-            raise HostException("There are unmounted devices")
+            raise HostError("There are unmounted devices")
 
         for p in self.check_mounts_list:
             path = os.path.join(self.path, p)
             if not self.path_exists(path):
                 ui.print_debug("path %s does nit exist" % path)
-                raise HostException("path %s does nit exist" % path)
+                raise HostError("path %s does nit exist" % path)
                 return False
 
         return True
