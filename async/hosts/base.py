@@ -204,8 +204,8 @@ class BaseHost(object):
             passphrase = self.vol_keys[name]
             try:
                 self.run_cmd('! (sudo cryptsetup status %s | grep -qs inactive) || ' % shquote(name) +
-                             'echo -n %s | sudo cryptsetup --key-file=- open --type luks %s %s' % \
-                             (shquote(passphrase), shquote(dev), shquote(name)), tgtpath='/', catchout=True)
+                             'sudo cryptsetup --key-file=- open --type luks %s %s' % \
+                             (shquote(dev), shquote(name)), tgtpath='/', catchout=True, stdin=passphrase)
 
             except CmdError as err:
                 raise HostError("Can't open luks partition. %s" % str(err))
@@ -232,8 +232,8 @@ class BaseHost(object):
             passphrase = self.vol_keys[mp]
 
             try:
-                raw = self.run_cmd('echo -n %s | sudo ecryptfs-add-passphrase -' % shquote(passphrase),
-                                   catchout=True)
+                raw = self.run_cmd('sudo ecryptfs-add-passphrase -',
+                                   catchout=True, stdin=passphrase)
                 sig = re.search("\[(.*?)\]", raw).group(1)
                 options = "no_sig_cache,ecryptfs_unlink_sigs,key=passphrase,ecryptfs_cipher=aes," + \
                           "ecryptfs_key_bytes=16,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y," + \
