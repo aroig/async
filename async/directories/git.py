@@ -358,8 +358,7 @@ class GitDir(BaseDir):
         path = self.fullpath(host)
 
         # do basic checks
-        self.check_paths(local)
-        self.check_paths(remote)
+        self.check_paths(host)
 
         # run async hooks if asked to
         if runhooks:
