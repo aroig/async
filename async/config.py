@@ -209,6 +209,7 @@ class AsyncConfig(ConfigParser):
 
         'remote': {
             'url'            : (None, parse_string),
+            'host'           : (None, parse_string),
             'dead'           : (False, parse_bool),
             'git_hooks\..*'  : ({}, parse_keyval_path),
             'uuid\..*'       : ({}, parse_keyval),
@@ -322,6 +323,15 @@ class AsyncConfig(ConfigParser):
                     val['instance'] = dict(self.instance[k])
                 else:
                     raise AsyncConfigError("Unknown instance for host: %s" % k)
+
+        # match hosts to remotes
+        for k, val in self.remote.items():
+            host = val['host']
+            if host != None:
+                if host in self.host:
+                    val['host'] = self.host[host]
+                else:
+                    raise AsyncConfigError("Unknown host %s in remote %s" % (host, k))
 
         # match remotes to git or annex dirs
         for k, val in self.directory.items():

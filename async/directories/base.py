@@ -152,12 +152,16 @@ class BaseDir(object):
 
 
     def fullpath(self, host):
-        if host.name in self.path_rename:
-            rpath = self.path_rename[host.name]
+        return self.hostpath(host.name, host.path)
+
+
+    def hostpath(self, hostname, path):
+        if hostname in self.path_rename:
+            rpath = self.path_rename[hostname]
         else:
             rpath = self.relpath
 
-        return os.path.join(host.path, rpath)
+        return os.path.join(path, rpath)
 
 
     def run_hook(self, host, name, tgt=None, silent=False, dryrun=False):
