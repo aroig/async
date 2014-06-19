@@ -58,12 +58,14 @@ class GitDir(BaseDir):
             url = rmt['url'].replace('%d', self.relpath)
 
         elif rmt['host'] != None:
-            if rmt['host']['type'] == 'directory':
+            if rmt['host']['type'] in set(['directory']):
                 url = self.hostpath(rmt['host']['name'], rmt['host']['path'])
 
-            else:
+            elif rmt['host']['type'] in set(['ssh', 'ec2']):
                 url = '%s:%s' % (rmt['host']['hostname'], self.hostpath(rmt['host']['name'], rmt['host']['path']))
 
+            else:
+                raise InitError("Can't configure remote url. Unknown host type for %s" % rmt['host']['name'])
 
         else:
             raise InitError("Can't configure remote url. Missing url or host field")
