@@ -131,8 +131,6 @@ class AnnexDir(GitDir):
         path = self.fullpath(host)
         name = rmt['name']
 
-        url = rmt['url'].replace('%d', self.relpath)
-
         # get the uuid for current host from config
         if 'uuid' in rmt: uuid = rmt['uuid'].get(self.name, None)
         else:             uuid = None
@@ -153,7 +151,7 @@ class AnnexDir(GitDir):
                                    tgtpath=path, catchout=True).strip()
 
         except CmdError:
-            cur_uuid = ""
+            cur_url = ""
 
         # update uuid only if missing and repo exists
         if len(cur_uuid) == 0 and len(cur_url) > 0:

@@ -58,7 +58,7 @@ class GitDir(BaseDir):
             url = rmt['url'].replace('%d', self.relpath)
 
         elif rmt['host'] != None:
-            url = '%s:%s' % (rmt['host'].hostname, self.hostpath(rmt['host']['name'], rmt['host']['path']))
+            url = '%s:%s' % (rmt['host']['hostname'], self.hostpath(rmt['host']['name'], rmt['host']['path']))
 
         else:
             raise InitError("Can't configure remote url. Missing url or host field")
