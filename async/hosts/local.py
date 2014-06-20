@@ -52,7 +52,7 @@ class LocalHost(DirectoryHost):
                 def func(d):
                     success=False
                     try:
-                        d.check_lastsync(self, remote, opts)
+                        self.checkdir_lastsync(remote, d, opts)
 
                         for h, r in [(self, remote), (remote, self)]:
                             if h.lastsync and d.lastsync:

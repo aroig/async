@@ -288,45 +288,4 @@ class BaseDir(object):
 
 
 
-    def check_lastsync(self, local, remote, opts):
-        """Check whether last sync failed on a different host"""
-
-        lls = local.read_lastsync(self.fullpath(local))
-        rls = remote.read_lastsync(self.fullpath(remote))
-
-        # fail if an ongoing sync
-        if lls['busy']:
-            raise SkipError("There is an ongoing sync on %s" % local.name)
-
-        if rls['busy']:
-            raise SkipError("There is an ongoing sync on %s" % remote.name)
-
-        # only sync if last sync failed
-        if opts.failed:
-            if lls['success']:
-                raise SkipError("last sync succeeded")
-
-        # only sync if older than opts.older
-        if opts.older > 0:
-            threshold = datetime.today() - timedelta(minutes=opts.older)
-            if lls['timestamp'] and lls['timestamp'] > threshold:
-                raise SkipError("last sync less than %d minutes ago" % opts.older)
-
-        # only sync if last sync failed or done from a different host
-        if opts.needed:
-            if lls['success'] and rls['success'] and lls['remote'] == remote.name and rls['remote'] == local.name:
-                raise SkipError("successful last sync from the same host")
-
-        # fail if last sync failed from a different host
-        if not opts.force and self.lastsync:
-            if not lls['success'] and lls['remote'] != remote.name:
-                raise SyncError("failed last sync on '%s' from a different host. Use the --force" % local.name)
-
-            if not rls['success'] and rls['remote'] != local.name:
-                raise SyncError("failed last sync on '%s' from a different host. Use the --force" % remote.name)
-
-        return True
-
-
-
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80
