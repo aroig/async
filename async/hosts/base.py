@@ -17,12 +17,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 import sys
+import json
 import subprocess
 import systemd.daemon
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+import dateutil.parser
 from collections import OrderedDict
 
 from async.pathdict import PathDict
@@ -416,6 +419,55 @@ class BaseHost(object):
             return False
 
         ui.print_color("\n")
+
+
+    # Last sync state
+    # ----------------------------------------------------------------
+
+
+    def save_lastsync(self, path, rname, success):
+        """Save sync success state"""
+        lsfile = os.path.join(path, self.asynclast_file)
+        now = datetime.today().isoformat()
+        data = json.dumps({'remote': rname,
+                           'timestamp': now,
+                           'success': success,
+                           'busy': False})
+        self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
+
+
+
+    def read_lastsync(self, path):
+        lsfile = os.path.join(path, self.asynclast_file)
+        raw = self.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
+                           catchout=True).strip()
+
+        try:
+            ls = json.loads(raw)
+            return {'remote': ls.get('remote', None),
+                    'timestamp': dateutil.parser.parse(ls['timestamp']),
+                    'success': ls.get('success', False),
+                    'busy': ls.get('busy', False)}
+
+        except:
+            return {'remote': None,
+                    'timestamp': None,
+                    'success': False,
+                    'busy': False}
+
+
+
+    def signal_lastsync(self, path, rname):
+        """Signal there is an ongoing sync"""
+        lsfile = os.path.join(path, self.asynclast_file)
+        now = datetime.today().isoformat()
+        data = json.dumps({'remote': rname,
+                           'timestamp': now,
+                           'success': False,
+                           'busy': True})
+        self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
+
+
 
 
     # Interface

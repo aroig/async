@@ -19,10 +19,6 @@
 
 import os
 import re
-import json
-
-from datetime import datetime
-import dateutil.parser
 
 import shlex
 import sys
@@ -72,31 +68,3 @@ def read_keys(path):
             if m: keys[m.group(1).strip()] = m.group(2).strip()
 
     return keys
-
-
-
-def save_lastsync(host, path, rname, success):
-    """Save sync success state"""
-    lsfile = os.path.join(path, host.asynclast_file)
-    now = datetime.today().isoformat()
-    data = json.dumps({'remote': rname,
-                       'timestamp': now,
-                       'success': success})
-    host.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
-
-
-
-def read_lastsync(host, path):
-    lsfile = os.path.join(path, host.asynclast_file)
-    raw = host.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
-                       catchout=True).strip()
-    try:
-        ls = json.loads(raw)
-        return {'remote': ls['remote'],
-                'timestamp': dateutil.parser.parse(ls['timestamp']),
-                'success': ls['success']}
-
-    except:
-        return {'remote': None,
-                'timestamp': None,
-                'success': None}

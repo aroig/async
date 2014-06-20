@@ -25,7 +25,7 @@ import json
 from datetime import datetime, timedelta
 
 import async.archui as ui
-from async.utils import shquote, read_lastsync
+from async.utils import shquote
 
 
 
@@ -207,7 +207,7 @@ class BaseDir(object):
             'path'     : path,
             'type'     : 'base',
         }
-        lastsync = read_lastsync(host, self.fullpath(host))
+        lastsync = host.read_lastsync(self.fullpath(host))
         status['ls-timestamp'] = lastsync['timestamp']
         status['ls-remote'] = lastsync['remote']
         status['ls-success'] = lastsync['success']
@@ -291,8 +291,15 @@ class BaseDir(object):
     def check_lastsync(self, local, remote, opts):
         """Check whether last sync failed on a different host"""
 
-        lls = read_lastsync(local, self.fullpath(local))
-        rls = read_lastsync(remote, self.fullpath(remote))
+        lls = local.read_lastsync(self.fullpath(local))
+        rls = remote.read_lastsync(self.fullpath(remote))
+
+        # fail if an ongoing sync
+        if lls['busy']:
+            raise SkipError("There is an ongoing sync on %s" % local.name)
+
+        if rls['busy']:
+            raise SkipError("There is an ongoing sync on %s" % remote.name)
 
         # only sync if last sync failed
         if opts.failed:

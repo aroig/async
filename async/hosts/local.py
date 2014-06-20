@@ -23,7 +23,6 @@ from collections import OrderedDict
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, InitError, CheckError, LocalDir, HookError, SkipError
-from async.utils import save_lastsync, read_lastsync
 
 import async.archui as ui
 
@@ -54,8 +53,14 @@ class LocalHost(DirectoryHost):
                     success=False
                     try:
                         d.check_lastsync(self, remote, opts)
+
+                        for h, r in [(self, remote), (remote, self)]:
+                            if h.lastsync and d.lastsync:
+                                h.signal_lastsync(d.fullpath(h), r.name)
+
                         d.sync(self, remote, silent=silent or opts.terse,
                                dryrun=dryrun, opts=opts)
+
                         success=True
 
                     except SkipError as err:
@@ -65,7 +70,7 @@ class LocalHost(DirectoryHost):
                     finally:
                         for h, r in [(self, remote), (remote, self)]:
                             if h.lastsync and d.lastsync:
-                                save_lastsync(h, d.fullpath(h), r.name, success)
+                                h.save_lastsync(d.fullpath(h), r.name, success)
 
                 try:
                     ret = self.run_on_dirs(dirs, func, "Sync",
@@ -74,7 +79,7 @@ class LocalHost(DirectoryHost):
 
                 finally:
                     for h, r in [(self, remote), (remote, self)]:
-                        if h.lastsync: save_lastsync(h, h.path, r.name, ret)
+                        if h.lastsync: h.save_lastsync(h.path, r.name, ret)
 
         except HostError as err:
             ui.print_error(str(err))
