@@ -132,6 +132,9 @@ Commands:
    snapshot:  %prog snapshot <host>
               Create a snapshot of a running ec2 instance.
 
+    upgrade:  %prog upgrade <host>
+              Do a system upgrade of the host.
+
 
 """
 parser = OptionParser(usage=usage)

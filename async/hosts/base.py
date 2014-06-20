@@ -110,6 +110,7 @@ class BaseHost(object):
         self.annex_push       = set(conf['annex_push'])
 
         self.log_cmd          = conf['log_cmd']
+        self.update_cmd       = conf['update_cmd']
 
         self.lastsync         = conf['save_lastsync']
         self.asynclast_file   = conf['asynclast_file']
@@ -529,7 +530,7 @@ class BaseHost(object):
 
     def print_log(self, state=None, silent=False, dryrun=False, opts=None):
         """Prints host logs"""
-        if len(self.log_cmd) == 0:
+        if self.log_cmd == None:
             ui.print_error("Log retrieval not implemented for host %s" % self.name)
             return False
 
@@ -687,9 +688,27 @@ class BaseHost(object):
         raise NotImplementedError
 
 
+
     def snapshot(self, state=None, silent=False, dryrun=False):
         """Creates a server backup"""
         raise NotImplementedError
+
+
+
+    def upgrade(self, state=None, silent=False, dryrun=False, opts=None):
+        """Update host"""
+        if self.update_cmd == None:
+            ui.print_error("System update not implemented for host %s" % self.name)
+            return False
+
+        try:
+            with self.in_state(state, silent=silent, dryrun=dryrun):
+                if not dryrun:
+                    self.run_cmd(self.update_cmd, tgtpath='/', catchout=False)
+                    return True
+
+        except HostError as err:
+            ui.print_error(str(err))
 
 
 
