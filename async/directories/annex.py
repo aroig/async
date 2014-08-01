@@ -288,7 +288,8 @@ class AnnexDir(GitDir):
         remote_branch = self._git_current_branch(remote)
 
         if branch != remote_branch:
-            SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
+            SyncError("Remote branch %s is different from local branch %s" %
+                      (remote_branch, branch))
 
         if not silent: ui.print_color("checking local repo")
         if not self._git_is_working_dir_clean(local):
@@ -310,20 +311,27 @@ class AnnexDir(GitDir):
             if not dryrun: local.run_cmd('git annex sync %s' % remote.name,
                                          tgtpath=src, silent=silent)
 
+            # do a merge on the remote if the branches match
+            if remote_branch == branch:
+                if not dryrun: remote.run_cmd("git annex merge",
+                                              tgtpath=tgt, silent=silent)
+            else:
+                raise SyncError("Remote branch %s is different from local branch %s" %
+                                (remote_branch, branch))
+
+
         except CmdError as err:
             raise SyncError(str(err))
 
 
+    def _annex_sync_files(self, local, remote, set_origin=True, silent=False, dryrun=False, batch=False, force=None, slow=False):
+        # copy annexed files from the remote. This is fast as it uses mtimes
+        if not force == 'up' and self.name in local.annex_pull and self.name in remote.annex_push:
+            self._pull_annexed_files(local, remote, slow=slow, silent=silent, dryrun=dryrun)
 
-    def _annex_merge(self, host, silent=False, dryrun=False):
-        """ do an annex merge on the host """
-        path = self.fullpath(host)
-        try:
-            if not dryrun:
-                host.run_cmd("git annex merge", tgtpath=path, silent=silent)
-
-        except CmdError as err:
-            raise SyncError("git annex merge failed. %s" % str(err))
+        # copy annexed files to the remote
+        if not force == 'down' and self.name in local.annex_push and self.name in remote.annex_pull:
+            self._push_annexed_files(local, remote, slow=slow, silent=silent, dryrun=dryrun)
 
 
 
@@ -423,22 +431,15 @@ class AnnexDir(GitDir):
         self._annex_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # sync
-        self._annex_sync(local, remote, set_origin=True, silent=silent, dryrun=dryrun, batch=batch, force=force)
+        self._annex_sync(local, remote, set_origin=True, silent=silent, dryrun=dryrun,
+                         batch=batch, force=force)
 
         # post sync check
         self._annex_post_sync_check(local, silent=silent, dryrun=dryrun)
 
-        # merge on the remote if current local and remote branches match
-        if self._git_current_branch(remote) == self._git_current_branch(local):
-            self._annex_merge(remote, silent=silent, dryrun=dryrun)
-
-        # copy annexed files from the remote. This is fast as it uses mtimes
-        if not opts.force == 'up' and self.name in local.annex_pull and self.name in remote.annex_push:
-            self._pull_annexed_files(local, remote, slow=slow, silent=silent, dryrun=dryrun)
-
-        # copy annexed files to the remote
-        if not opts.force == 'down' and self.name in local.annex_push and self.name in remote.annex_pull:
-            self._push_annexed_files(local, remote, slow=slow, silent=silent, dryrun=dryrun)
+        # sync annexed files
+        self._annex_sync_files(local, remote, silent=silent, dryrun=dryrun,
+                               batch=batch, force=force, slow=slow)
 
         # post-sync hook
         if runhooks:
