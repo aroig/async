@@ -290,6 +290,10 @@ class AnnexDir(GitDir):
         if branch != remote_branch:
             SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
 
+        if not silent: ui.print_color("checking local repo")
+        if not self._git_is_working_dir_clean(local):
+            SyncError("Local working directory is not clean")
+
         try:
             # fetch from remote
             if not silent: ui.print_color("fetching from %s" % remote.name)

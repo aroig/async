@@ -160,6 +160,20 @@ class GitDir(BaseDir):
 
 
 
+    def _git_is_working_dir_clean(self, host):
+        st = self._parse_git_status(host)
+
+        if len(st['conflicts']) > 0:
+            return False
+
+        elif (len(st['staged']) + len(st['changed']) + len(st['deleted']) +
+             len(st['untracked']) + len(st['unknown'])) > 0:
+            return False
+
+        return True
+
+
+
     def _git_post_sync_check(self, host, silent=False, dryrun=False):
         st = self._parse_git_status(host)
 
@@ -210,6 +224,10 @@ class GitDir(BaseDir):
 
         if branch != remote_branch:
             SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
+
+        if not silent: ui.print_color("checking local repo")
+        if not self._git_is_working_dir_clean(local):
+            SyncError("Local working directory is not clean")
 
         args = ['--strategy=recursive']
         if batch: args.append('--ff-only')
