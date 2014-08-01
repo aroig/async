@@ -200,12 +200,16 @@ class GitDir(BaseDir):
 
 
 
-    def _git_sync(self, local, remote, silent=False, dryrun=False, batch=False, force=None):
+    def _git_sync(self, local, remote, set_origin=False, silent=False, dryrun=False, batch=False, force=None):
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
         branch = self._git_current_branch(local)
         synced_branch = 'synced/%s' % branch
+        remote_branch = self._git_current_branch(remote)
+
+        if branch != remote_branch:
+            SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
 
         args = ['--strategy=recursive']
         if batch: args.append('--ff-only')
@@ -213,10 +217,16 @@ class GitDir(BaseDir):
         elif force == 'down': args.append('--strategy-option=theirs')
 
         try:
-            # fetch from remote into branch
+            # fetch from remote
             if not silent: ui.print_color("fetching from %s" % remote.name)
             if not dryrun: local.run_cmd('git fetch "%s"' % remote.name,
                                          tgtpath=src, silent=silent)
+
+            # set current branch origin if it exists on the remote
+            if set_origin and self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, branch)):
+                if not silent: ui.print_color("setting current branch origin")
+                if not dryrun: local.run_cmd('git branch -u %s/%s' % (remote.name, branch),
+                                             tgtpath=src, silent=silent)
 
             # if local synced_branch does not exist, create it
             if not self._git_ref_exists(local, 'refs/heads/%s' % synced_branch):
@@ -255,9 +265,16 @@ class GitDir(BaseDir):
                                          tgtpath=src, silent=silent)
 
             # do a merge on the remote if the branches match
-            if self._git_current_branch(remote) == branch:
+            if remote_branch == branch:
                 if not dryrun: remote.run_cmd('git merge --ff-only "refs/heads/%s"' % synced_branch,
                                               tgtpath=tgt, silent=silent)
+            else:
+                raise SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
+
+            # fetch from remote
+            if not silent: ui.print_color("fetching from %s" % remote.name)
+            if not dryrun: local.run_cmd('git fetch "%s"' % remote.name,
+                                         tgtpath=src, silent=silent)
 
         except CmdError as err:
             raise SyncError("git sync failed. %s" % str(err))
@@ -357,7 +374,7 @@ class GitDir(BaseDir):
         self._git_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # do the sync
-        self._git_sync(local, remote, silent=silent, dryrun=dryrun, batch=batch, force=force)
+        self._git_sync(local, remote, set_origin=True, silent=silent, dryrun=dryrun, batch=batch, force=force)
 
         # post sync check
         self._git_post_sync_check(local, silent=silent, dryrun=dryrun)

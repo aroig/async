@@ -280,16 +280,33 @@ class AnnexDir(GitDir):
 
 
 
-    def _annex_sync(self, local, remote, silent=False, dryrun=False):
-        annex_cmd = ['git', 'annex', 'sync', remote.name]
+    def _annex_sync(self, local, remote, set_origin=True, silent=False, dryrun=False, batch=False, force=None):
         src = self.fullpath(local)
         tgt = self.fullpath(remote)
 
-        ui.print_debug(' '.join(annex_cmd))
-        try:
-            if not dryrun: local.run_cmd(annex_cmd, tgtpath=src, silent=silent)
+        branch = self._git_current_branch(local)
+        remote_branch = self._git_current_branch(remote)
 
-        except subprocess.CalledProcessError as err:
+        if branch != remote_branch:
+            SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
+
+        try:
+            # fetch from remote
+            if not silent: ui.print_color("fetching from %s" % remote.name)
+            if not dryrun: local.run_cmd('git fetch "%s"' % remote.name,
+                                         tgtpath=src, silent=silent)
+
+            # set current branch origin if it exists on the remote
+            if set_origin and self._git_ref_exists(local, 'refs/remotes/%s/%s' % (remote.name, branch)):
+                if not silent: ui.print_color("setting current branch origin")
+                if not dryrun: local.run_cmd('git branch -u %s/%s' % (remote.name, branch),
+                                             tgtpath=src, silent=silent)
+
+            # sync git annex
+            if not dryrun: local.run_cmd('git annex sync %s' % remote.name,
+                                         tgtpath=src, silent=silent)
+
+        except CmdError as err:
             raise SyncError(str(err))
 
 
@@ -379,8 +396,15 @@ class AnnexDir(GitDir):
         # TODO: implement ignore
         # TODO: implement force to resolve merge conflicts
 
-        if opts: slow = opts.slow
-        else:    slow = False
+        if opts:
+            slow = opts.slow
+            batch = opts.batch
+            force = opts.force
+        else:
+            slow = False
+            batch = False
+            force = None
+
 
         # do basic checks
         self.check_paths(local)
@@ -395,7 +419,7 @@ class AnnexDir(GitDir):
         self._annex_pre_sync_check(local, silent=silent, dryrun=dryrun)
 
         # sync
-        self._annex_sync(local, remote, silent=silent, dryrun=dryrun)
+        self._annex_sync(local, remote, set_origin=True, silent=silent, dryrun=dryrun, batch=batch, force=force)
 
         # post sync check
         self._annex_post_sync_check(local, silent=silent, dryrun=dryrun)
