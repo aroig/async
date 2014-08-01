@@ -160,20 +160,6 @@ class GitDir(BaseDir):
 
 
 
-    def _git_is_working_dir_clean(self, host):
-        st = self._parse_git_status(host)
-
-        if len(st['conflicts']) > 0:
-            return False
-
-        elif (len(st['staged']) + len(st['changed']) + len(st['deleted']) +
-             len(st['untracked']) + len(st['unknown'])) > 0:
-            return False
-
-        return True
-
-
-
     def _git_post_sync_check(self, host, silent=False, dryrun=False):
         st = self._parse_git_status(host)
 
@@ -226,7 +212,7 @@ class GitDir(BaseDir):
             SyncError("Remote branch %s is different from local branch %s" % (remote_branch, branch))
 
         if not silent: ui.print_color("checking local repo")
-        if not self._git_is_working_dir_clean(local):
+        if not self.is_clean(local):
             SyncError("Local working directory is not clean")
 
         args = ['--strategy=recursive']
@@ -338,6 +324,29 @@ class GitDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
+    def is_initialized(self, host):
+        path = self.fullpath(host)
+
+        if not os.path.exists(os.path.join(path, '.git')):
+            return False
+
+        return True
+
+
+    def is_clean(self, host):
+        st = self._parse_git_status(host)
+
+        if len(st['conflicts']) > 0:
+            return False
+
+        elif (len(st['staged']) + len(st['changed']) + len(st['deleted']) +
+             len(st['untracked']) + len(st['unknown'])) > 0:
+            return False
+
+        return True
+
+
+
     def status(self, host, slow=False):
         status = super(GitDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
@@ -382,6 +391,13 @@ class GitDir(BaseDir):
             batch = False
             force = None
 
+        # initialize local directory if needed
+        if not self.is_initialized(local):
+            self.init(local, silent=silent, dryrun=dryrun, opts=opts)
+
+        # initialize remote directory if needed
+        if not self.is_initialized(remote):
+            self.init(remote, silent=silent, dryrun=dryrun, opts=opts)
 
         # pre-sync hook
         if runhooks:

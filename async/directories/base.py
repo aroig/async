@@ -198,6 +198,10 @@ class BaseDir(object):
     # Interface
     # ----------------------------------------------------------------
 
+    def is_initialized(self, host):
+        return True
+
+
     def status(self, host, slow=False):
         """Returns a dict of the status of the directory on host"""
         path = os.path.join(host.path, self.relpath)

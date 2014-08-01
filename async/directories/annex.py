@@ -292,7 +292,7 @@ class AnnexDir(GitDir):
                       (remote_branch, branch))
 
         if not silent: ui.print_color("checking local repo")
-        if not self._git_is_working_dir_clean(local):
+        if not self.is_clean(local):
             SyncError("Local working directory is not clean")
 
         try:
@@ -417,6 +417,13 @@ class AnnexDir(GitDir):
             batch = False
             force = None
 
+        # initialize local directory if needed
+        if not self.is_initialized(local):
+            self.init(local, silent=silent, dryrun=dryrun, opts=opts)
+
+        # initialize remote directory if needed
+        if not self.is_initialized(remote):
+            self.init(remote, silent=silent, dryrun=dryrun, opts=opts)
 
         # do basic checks
         self.check_paths(local)
