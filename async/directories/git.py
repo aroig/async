@@ -327,10 +327,11 @@ class GitDir(BaseDir):
     def is_initialized(self, host):
         path = self.fullpath(host)
 
-        if not os.path.exists(os.path.join(path, '.git')):
+        if not host.path_exists(os.path.join(path, '.git')):
             return False
 
         return True
+
 
 
     def is_clean(self, host):
