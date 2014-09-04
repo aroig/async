@@ -453,6 +453,8 @@ class GitDir(BaseDir):
         # symlink git hooks, even if it does not exist
         if len(self.git_hooks_dir) > 0:
             if not silent: ui.print_color("symlinking git hooks")
+            if not host.path_exists(os.path.join(path, self.git_hooks_dir)):
+                host.mkdir(os.path.join(path, self.git_hooks_dir), mode=0o755)
             host.symlink('../%s' % self.git_hooks_dir, os.path.join(path, '.git/hooks'), force=True)
 
         # setup git hooks without symlinking
