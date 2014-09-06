@@ -27,6 +27,53 @@ from async.directories import SyncError, InitError, CheckError, LocalDir, HookEr
 import async.archui as ui
 
 
+class LastSync:
+    def __init__(self, local, remote, directory, checkopts):
+        self.local = local
+        self.remote = remote
+        self.directory = directory
+        self.checkopts = checkopts
+        self.success = False
+
+        # check paths
+        if self.directory != None:
+            self.directory.check_paths(self.local)
+            self.directory.check_paths(self.remote)
+
+    def __enter__(self):
+        # perform check to lastsync data
+        if self.directory != None:
+            self.local.checkdir_lastsync(self.remote, self.directory, self.checkopts)
+
+        # signal begining of sync
+        for h, r in [(self.local, self.remote), (self.remote, self.local)]:
+            if self.directory != None:
+                dirpath = self.directory.fullpath(h)
+                do_lastsync = h.lastsync and self.directory.lastsync
+            else:
+                dirpath = h.path
+                do_lastsync = h.lastsync
+
+            if do_lastsync: h.signal_lastsync(dirpath, r.name)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if isinstance(value, SkipError):
+            self.success = True
+
+        for h, r in [(self.local, self.remote), (self.remote, self.local)]:
+            if self.directory != None:
+                dirpath = self.directory.fullpath(h)
+                do_lastsync = h.lastsync and self.directory.lastsync
+
+            else:
+                dirpath = h.path
+                do_lastsync = h.lastsync
+
+            if do_lastsync: h.save_lastsync(dirpath, r.name, self.success)
+
+
+
 class LocalHost(DirectoryHost):
     """Represents the localhost. Does not sync, only useful for initial setup and status."""
 
@@ -50,47 +97,25 @@ class LocalHost(DirectoryHost):
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
-                    success=False
-
-                    # check paths
-                    d.check_paths(self)
-                    d.check_paths(remote)
-
                     try:
-                        # handle lastsync files
-                        self.checkdir_lastsync(remote, d, opts)
-                        for h, r in [(self, remote), (remote, self)]:
-                            if h.lastsync and d.lastsync:
-                                h.signal_lastsync(d.fullpath(h), r.name)
-
-                        # synchronze
-                        d.sync(self, remote, silent=silent or opts.terse,
-                               dryrun=dryrun, opts=opts)
-
-                        success=True
+                        with LastSync(self, remote, d, opts) as ls:
+                            # synchronze
+                            d.sync(self, remote, silent=silent or opts.terse,
+                                   dryrun=dryrun, opts=opts)
+                            ls.success=True
 
                     except SkipError as err:
                         ui.print_color("skipping: %s" % str(err))
-                        success=True
 
-                    finally:
-                        for h, r in [(self, remote), (remote, self)]:
-                            if h.lastsync and d.lastsync:
-                                h.save_lastsync(d.fullpath(h), r.name, success)
-
-                try:
+                with LastSync(self, remote, None, None) as rls:
                     ret = self.run_on_dirs(dirs, func, "Sync",
                                            desc="%s <-> %s" % (self.name, remote.name),
                                            silent=silent, dryrun=dryrun)
-
-                finally:
-                    for h, r in [(self, remote), (remote, self)]:
-                        if h.lastsync: h.save_lastsync(h.path, r.name, ret)
+                    rls.success = ret
 
         except HostError as err:
             ui.print_error(str(err))
             return False
-
 
         return ret
 
