@@ -158,7 +158,7 @@ class AsyncConfig(ConfigParser):
         'host': {
             'dirs'           : ([], parse_list),
             'ignore'         : ([], parse_list_path),
-            'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' relative dir is symlinked to 'val'
+            'symlinks'       : ({}, parse_dict_path),    # key:val. 'key' is dirname, 'val' target path.
 
             'hostname'       : (None, parse_string),
             'user'           : (None, parse_string),
@@ -344,12 +344,17 @@ class AsyncConfig(ConfigParser):
         for k, val in self.host.items():
             dirs = val['dirs']
             if dirs:
+                # check that all dirs are known
                 for k in dirs:
-                    if not k in self.directory:
-                        raise AsyncConfigError("Unknown directory: %s" % k)
+                    if not k in self.directory: raise AsyncConfigError("Unknown directory: %s" % k)
 
+                # copy dirs objects to the host
                 val['dirs'] = OrderedDict([(k, dict(self.directory[k])) for k in dirs])
 
+                # override symlink settings from host
+                for k, p in val['symlinks'].items():
+                    if k in val['dirs']:
+                        val['dirs'][k]['symlink'] = p
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

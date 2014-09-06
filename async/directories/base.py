@@ -91,45 +91,39 @@ class BaseDir(object):
     def _create_directory(self, host, path, mode, silent=False, dryrun=False):
         """Creates a directory or symlink. Returns false if it already existed"""
 
-        # if symlink, (re)create it
-        if self.symlink:
-            tgtlink = os.path.join(host.path, self.symlink)
+        # Note, if either path or symlink are absolute, the join operation returns
+        # the second argument, so all is good!
+        if self.symlink: dirpath = os.path.join(host.path, self.symlink)
+        else:            dirpath = os.path.join(host.path, path)
 
-            if not silent:
-                ui.print_color("symlink: %s -> %s" % (path, tgtlink))
+        if host.path_exists(dirpath):
+            if not silent: ui.print_color("chmod %o: %s" % (mode, dirpath))
 
             try:
-                if not dryrun: host.symlink(tgtlink, path, force=True)
+                if not dryrun: host.chmod(dirpath, mode)
+            except Exception as err:
+                raise InitError(str(err))
 
+        else:
+            if not silent: ui.print_color("mkdir: %s" % dirpath)
+
+            try:
+                if not dryrun: host.mkdir(dirpath, mode=mode)
+            except Exception as err:
+                raise InitError(str(err))
+
+        # if symlink, (re)create it!
+        if self.symlink and not host.path_exists(path):
+            if not silent: ui.print_color("symlink: %s -> %s" % (path, dirpath))
+
+            try:
+                if not dryrun: host.symlink(dirpath, path, force=True)
             except Exception as err:
                 raise InitError(str(err))
 
             return True
 
-        # if nonexistent directory, create it
-        elif not self.symlink and not host.path_exists(path):
-            if not silent:
-                ui.print_color("mkdir: %s" % path)
-
-            try:
-                if not dryrun: host.mkdir(path, mode=mode)
-            except Exception as err:
-                raise InitError(str(err))
-            return True
-
-        # if directory exists, set perms
-        elif not self.symlink and host.path_exists(path):
-            if not silent:
-                ui.print_color("chmod %o: %s" % (mode, path))
-
-            try:
-                if not dryrun: host.chmod(path, mode)
-            except Exception as err:
-                raise InitError(str(err))
-
-            return True
-
-        # if existent directory that should be a symlinks, do nothing
+        # if path exists, silently do nothing
         else:
             return False
 
