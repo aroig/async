@@ -422,6 +422,8 @@ class BaseHost(object):
         if len(failed) > 0:  ui.print_color("  failed dirs: %s" % ', '.join(failed))
         if len(skipped) > 0: ui.print_color("  skipped dirs: %s" % ', '.join(skipped))
 
+        ui.print_color("")
+
         return len(failed) == 0
 
 
