@@ -374,9 +374,10 @@ class BaseHost(object):
     def run_on_dirs(self, dirs, func, action, desc=None, silent=False, dryrun=False):
         """Utility function to run a function on a set of directories.
            func(d) operates on a dir object d."""
-        from async.directories import InitError, HookError, SyncError, CheckError, DirError
+        from async.directories import InitError, HookError, SyncError, CheckError, DirError, SkipError
 
         failed = []
+        skipped = []
         keys = list(dirs.keys())
         num = len(keys)
         ret = True
@@ -407,20 +408,22 @@ class BaseHost(object):
                     ui.print_error("host error: %s" % str(err))
                     failed.append(d.name)
 
+                except SkipError as err:
+                    ui.print_warning("skipping: %s" % str(err))
+                    skipped.append(d.name)
+
                 ret = False
 
                 ui.print_color("")
 
-        if len(failed) == 0:
-            ui.print_color("#*w%s #Gsuceeded#*w.#t" % action)
-            return True
+        if len(failed) == 0: ui.print_color("#*w%s #Gsuceeded#*w.#t" % action)
+        else:                ui.print_color("#*w%s #Rfailed#*w.#t" % action)
 
-        elif len(failed) > 0:
-            ui.print_color("#*w%s #Rfailed#*w.#t" % action)
-            ui.print_color("  directories: %s" % ', '.join(failed))
-            return False
+        if len(failed) > 0:  ui.print_color("  failed dirs: %s" % ', '.join(failed))
+        if len(skipped) > 0: ui.print_color("  skipped dirs: %s" % ', '.join(skipped))
 
-        ui.print_color("\n")
+        return len(failed) == 0
+
 
 
     # Last sync state

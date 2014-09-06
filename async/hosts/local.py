@@ -97,15 +97,11 @@ class LocalHost(DirectoryHost):
         try:
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
-                    try:
-                        with LastSync(self, remote, d, opts) as ls:
-                            # synchronze
-                            d.sync(self, remote, silent=silent or opts.terse,
-                                   dryrun=dryrun, opts=opts)
-                            ls.success=True
-
-                    except SkipError as err:
-                        ui.print_warning("skipping: %s" % str(err))
+                    with LastSync(self, remote, d, opts) as ls:
+                        # synchronze
+                        d.sync(self, remote, silent=silent or opts.terse,
+                               dryrun=dryrun, opts=opts)
+                        ls.success=True
 
                 with LastSync(self, remote, None, None) as rls:
                     ret = self.run_on_dirs(dirs, func, "Sync",
