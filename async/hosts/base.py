@@ -335,15 +335,15 @@ class BaseHost(object):
         """Checks directories that are required to be present. Returns true if all checks
         pass, or raises an exception with information about what failed."""
 
+        # check whether all devices are mounted
         if not check_devices():
             raise HostError("There are unmounted devices")
 
+        # perform mount checks
         for p in self.check_mounts_list:
             path = os.path.join(self.path, p)
             if not self.path_exists(path):
-                ui.print_debug("path %s does nit exist" % path)
-                raise HostError("path %s does nit exist" % path)
-                return False
+                raise HostError("path %s does not exist" % path)
 
         return True
 
@@ -433,16 +433,18 @@ class BaseHost(object):
                            'timestamp': now,
                            'success': success,
                            'busy': False})
-        self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
-
+        try:
+            self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)), catchout=True)
+        except:
+            ui.print_warning("Can't save '%s'" % path)
 
 
     def read_lastsync(self, path):
         lsfile = os.path.join(path, self.asynclast_file)
-        raw = self.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
-                           catchout=True).strip()
 
         try:
+            raw = self.run_cmd('[ -f %s ] && cat %s || true' % (shquote(lsfile), shquote(lsfile)),
+                               catchout=True).strip()
             ls = json.loads(raw)
             return {'remote': ls.get('remote', None),
                     'timestamp': dateutil.parser.parse(ls['timestamp']),
@@ -450,6 +452,7 @@ class BaseHost(object):
                     'busy': ls.get('busy', False)}
 
         except:
+            ui.print_warning("Can't read '%s'" % path)
             return {'remote': None,
                     'timestamp': None,
                     'success': False,
@@ -465,7 +468,10 @@ class BaseHost(object):
                            'timestamp': now,
                            'success': False,
                            'busy': True})
-        self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
+        try:
+            self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
+        except:
+            ui.print_warning("Can't save '%s'" % path)
 
 
 
@@ -865,6 +871,15 @@ class BaseHost(object):
             return True
         except CmdError as err:
             return False
+
+
+    def realpath(self, path):
+        """Returns the real path after dereferencing symlinks, or none if dangling"""
+        try:
+            rp = self.run_cmd('realpath %s' % shquote(path), tgtpath='/', catchout=True)
+            return rp.strip()
+        except CmdError as err:
+            return None
 
 
     def mkdir(self, path, mode):

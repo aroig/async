@@ -184,12 +184,10 @@ class BaseDir(object):
         """Checks directories that are required to be present. Returns true if all checks
         pass, or raises an exception with information about what failed."""
 
-        for p in self.check_paths_list:
+        for p in [self.fullpath(host)] + self.check_paths_list:
             path = os.path.join(host.path, p)
             if not host.path_exists(path):
-                ui.print_debug("path %s does not exist on '%s'" % (path, host.name))
                 raise DirError("path %s does not exist on '%s'" % (path, host.name))
-                return False
 
         return True
 

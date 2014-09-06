@@ -51,13 +51,19 @@ class LocalHost(DirectoryHost):
             with remote.in_state('mounted', silent=silent, dryrun=dryrun):
                 def func(d):
                     success=False
-                    try:
-                        self.checkdir_lastsync(remote, d, opts)
 
+                    # check paths
+                    d.check_paths(self)
+                    d.check_paths(remote)
+
+                    try:
+                        # handle lastsync files
+                        self.checkdir_lastsync(remote, d, opts)
                         for h, r in [(self, remote), (remote, self)]:
                             if h.lastsync and d.lastsync:
                                 h.signal_lastsync(d.fullpath(h), r.name)
 
+                        # synchronze
                         d.sync(self, remote, silent=silent or opts.terse,
                                dryrun=dryrun, opts=opts)
 
