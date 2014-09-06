@@ -187,7 +187,9 @@ class BaseDir(object):
         for p in [self.fullpath(host)] + self.check_paths_list:
             path = os.path.join(host.path, p)
             if not host.path_exists(path):
-                raise DirError("path %s does not exist on '%s'" % (path, host.name))
+                err_msg = "path %s does not exist on '%s'" % (path, host.name)
+                if host.skip_missing: raise SkipError(err_msg)
+                else:                 raise DirError(err_msg)
 
         return True
 

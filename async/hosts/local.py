@@ -105,7 +105,7 @@ class LocalHost(DirectoryHost):
                             ls.success=True
 
                     except SkipError as err:
-                        ui.print_color("skipping: %s" % str(err))
+                        ui.print_warning("skipping: %s" % str(err))
 
                 with LastSync(self, remote, None, None) as rls:
                     ret = self.run_on_dirs(dirs, func, "Sync",

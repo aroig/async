@@ -189,7 +189,8 @@ class AsyncConfig(ConfigParser):
             'update_cmd'     : (None, parse_path),         # parse as a path to expand shell vars
 
             'save_lastsync'  : (True, parse_bool),       # store .async.last with last sync metadata
-            'asynclast_file'  : (".async.last", parse_string),
+            'asynclast_file' : (".async.last", parse_string),
+            'skip_missing'   : (False, parse_bool),
         },
 
         'instance': {

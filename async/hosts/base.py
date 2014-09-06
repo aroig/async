@@ -118,6 +118,8 @@ class BaseHost(object):
         self.lastsync         = conf['save_lastsync']
         self.asynclast_file   = conf['asynclast_file']
 
+        self.skip_missing     = conf['skip_missing']
+
         if conf['vol_keys']: self.vol_keys = read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
 
