@@ -443,7 +443,7 @@ class BaseHost(object):
         try:
             self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)), catchout=True)
         except:
-            ui.print_warning("Can't save '%s'" % path)
+            ui.print_warning("Can't save '%s'" % lsfile)
 
 
     def read_lastsync(self, path):
@@ -459,7 +459,7 @@ class BaseHost(object):
                     'busy': ls.get('busy', False)}
 
         except:
-            ui.print_warning("Can't read '%s'" % path)
+            ui.print_warning("Can't read '%s'" % lsfile)
             return {'remote': None,
                     'timestamp': None,
                     'success': False,
@@ -478,7 +478,7 @@ class BaseHost(object):
         try:
             self.run_cmd('echo %s > %s' % (shquote(data), shquote(lsfile)))
         except:
-            ui.print_warning("Can't save '%s'" % path)
+            ui.print_warning("Can't save '%s'" % lsfile)
 
 
 
