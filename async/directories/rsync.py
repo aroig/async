@@ -79,6 +79,16 @@ class RsyncDir(BaseDir):
         else:
             raise DirError("Unsuported type %s for remote directory %s" % (remote.type, self.relpath))
 
+        # chose sync direction
+        if opts.force == 'down':
+            src, tgt = tgt, src
+
+        elif opts.force == 'up':
+            pass
+
+        else:
+            raise SyncError("rsync directories need a direction. Use the --force")
+
         # pre-sync hook
         if runhooks:
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
