@@ -874,7 +874,28 @@ class BaseHost(object):
     def path_exists(self, path):
         """Returns true if given path exists"""
         try:
-            self.run_cmd('[ -e %s ]' % shquote(path), tgtpath='/')
+            self.run_cmd('[ -e %s ] || [ -h %s ]' % (shquote(path), shquote(path)),
+                         tgtpath='/')
+            return True
+        except CmdError as err:
+            return False
+
+
+    def path_is_directory(self, path):
+        """Returns true if given path exists"""
+        try:
+            self.run_cmd('[ -d %s ]' % shquote(path),
+                         tgtpath='/')
+            return True
+        except CmdError as err:
+            return False
+
+
+    def path_is_symlink(self, path):
+        """Returns true if given path exists"""
+        try:
+            self.run_cmd('[ -h %s ]' % shquote(path),
+                         tgtpath='/')
             return True
         except CmdError as err:
             return False

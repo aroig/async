@@ -93,10 +93,15 @@ class BaseDir(object):
 
         # Note, if either path or symlink are absolute, the join operation returns
         # the second argument, so all is good!
-        if self.symlink: dirpath = os.path.join(host.path, self.symlink)
-        else:            dirpath = os.path.join(host.path, path)
+        if self.symlink:
+            dirpath  = os.path.join(host.path, self.symlink)
+            linkpath = os.path.join(host.path, path)
+        else:
+            dirpath  = os.path.join(host.path, path)
+            linkpath = dirpath
 
-        if host.path_exists(dirpath):
+        # if target path is a directory, just chmod it.
+        if host.path_is_directory(dirpath):
             if not silent: ui.print_color("chmod %o: %s" % (mode, dirpath))
 
             try:
@@ -104,7 +109,8 @@ class BaseDir(object):
             except Exception as err:
                 raise InitError(str(err))
 
-        else:
+        # if neither dirpath nor the link exist, create dirpath
+        elif not host.path_exists(dirpath) and not host.path_exists(linkpath):
             if not silent: ui.print_color("mkdir: %s" % dirpath)
 
             try:
@@ -112,20 +118,24 @@ class BaseDir(object):
             except Exception as err:
                 raise InitError(str(err))
 
-        # if symlink, (re)create it!
-        if self.symlink and not host.path_exists(path):
-            if not silent: ui.print_color("symlink: %s -> %s" % (path, dirpath))
+        # In any other case, give up!
+        else:
+            raise SkipError("can't initialize '%s'" % path)
+
+        # if symlink, create it
+        if self.symlink and (host.path_is_symlink(linkpath) or not host.path_exists(linkpath)):
+            if not silent: ui.print_color("symlink: %s -> %s" % (linkpath, dirpath))
 
             try:
-                if not dryrun: host.symlink(dirpath, path, force=True)
+                if not dryrun: host.symlink(dirpath, linkpath, force=True)
             except Exception as err:
                 raise InitError(str(err))
 
             return True
 
-        # if path exists, silently do nothing
+        # and if path exists and is not a symlink, give up
         else:
-            return False
+            raise SkipError("path '%s' already exists. Can't create a symlink" % linkpath)
 
 
 
