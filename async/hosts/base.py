@@ -494,10 +494,10 @@ class BaseHost(object):
 
         # fail if an ongoing sync
         if lls['busy']:
-            raise SkipError("There is an ongoing sync on %s" % local.name)
+            raise SyncError("There is an ongoing sync on %s" % local.name)
 
         if rls['busy']:
-            raise SkipError("There is an ongoing sync on %s" % remote.name)
+            raise SyncError("There is an ongoing sync on %s" % remote.name)
 
         # only sync if last sync failed
         if opts.failed:

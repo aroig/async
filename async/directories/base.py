@@ -120,7 +120,7 @@ class BaseDir(object):
 
         # In any other case, give up!
         else:
-            raise SkipError("can't initialize '%s'" % path)
+            raise InitError("can't initialize '%s'" % path)
 
         # if symlink, create it
         if self.symlink and (host.path_is_symlink(linkpath) or not host.path_exists(linkpath)):
@@ -135,7 +135,7 @@ class BaseDir(object):
 
         # and if path exists and is not a symlink, give up
         else:
-            raise SkipError("path '%s' already exists. Can't create a symlink" % linkpath)
+            raise InitError("path '%s' already exists. Can't create a symlink" % linkpath)
 
 
 
