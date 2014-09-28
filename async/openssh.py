@@ -24,7 +24,7 @@ import time
 import shlex
 import signal
 import subprocess
-
+import socket
 
 if sys.version_info[0] < 3:
     def shquote(s):
@@ -119,14 +119,14 @@ class SSHConnection(object):
             dic = hosts[hostname]
             if "HostName" in dic: hostname = dic['HostName']
 
-        try:
-            raw = subprocess.check_output(['host', '-4', hostname])
-            m = re.match("^(.*) has address (\d+.\d+.\d+.\d+)\s*$", raw)
-            return (m.group(1).strip(), m.group(2).strip())
+        hostname = hostname.strip()
+        if re.match("^(\d+.\d+.\d+.\d+)$", hostname):
+            return (None, hostname)
 
+        try:
+            return (hostname, socket.gethostbyname(hostname))
         except:
-            if re.match("^(\d+.\d+.\d+.\d+)$", hostname): return (None, hostname)
-            else:                                         return (None, None)
+            return (None, None)
 
 
     def connect(self, hostname, user=None, keyfile=None, alt_hostname=None, timeout=30, args=[]):
