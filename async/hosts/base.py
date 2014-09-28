@@ -904,7 +904,9 @@ class BaseHost(object):
     def realpath(self, path):
         """Returns the real path after dereferencing symlinks, or none if dangling"""
         try:
-            rp = self.run_cmd('realpath %s' % shquote(path), tgtpath='/', catchout=True)
+            # run realpath if available on the host, otherwise just return the path as is
+            rp = self.run_cmd('if type realpath >/dev/null 2>&1; then realpath %s; else echo %s; fi' % (shquote(path), shquote(path)),
+                              tgtpath='/', catchout=True)
             return rp.strip()
         except CmdError as err:
             return None
