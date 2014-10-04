@@ -24,6 +24,7 @@ from async.hosts import Ec2Host, SshHost, DirectoryHost, LocalHost
 import async.archui as ui
 import socket
 import sys
+import re
 
 def get_remote_host(hostname, conf):
     if hostname in conf.host:
@@ -60,10 +61,10 @@ def get_remote_host(hostname, conf):
 
 
 def get_local_host(conf):
-    localhostname = socket.getfqdn()
+    localhostname = socket.gethostname()
     local = None
     for k, h in conf.host.items():
-        if h['hostname'] == localhostname:
+        if h['hostname'] and h['hostname'].startswith(localhostname):
             return LocalHost(conf.host[k])
 
     ui.print_error("Local host %s not configured" % localhostname)
