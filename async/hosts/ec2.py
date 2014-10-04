@@ -168,8 +168,8 @@ class Ec2Host(SshHost):
     def aws_connect(self):
         if self.conn == None:
             self.conn = ec2.connect_to_region(region_name = self.ec2_region,
-                                              aws_access_key_id = self.aws_keys['access_key_id'],
-                                              aws_secret_access_key = self.aws_keys['secret_access_key'])
+                                              aws_access_key_id = self.aws_keys['aws_access_key_id'],
+                                              aws_secret_access_key = self.aws_keys['aws_secret_access_key'])
 
             self.load_volumes()
             self.load_ami()
