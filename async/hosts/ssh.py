@@ -72,10 +72,6 @@ class SshHost(BaseHost):
 
 
 
-    def __del__(self):
-        self.ssh_disconnect()
-
-
 
     # Utilities
     # ----------------------------------------------------------------
@@ -206,6 +202,11 @@ class SshHost(BaseHost):
     def connect(self):
         """Establish a connection to the server"""
         self.ssh_connect()
+
+
+    def disconnect(self):
+        """Close connection to the server"""
+        self.ssh_disconnect()
 
 
     def get_state(self):

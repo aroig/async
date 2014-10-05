@@ -83,6 +83,13 @@ class HostController:
         if self.curstate and self.tgtstate:
             self.host.set_state(self.curstate)
 
+        # disconnect from host
+        try:
+            self.host.disconnect()
+        except AttributeError:
+            pass
+
+
 
 
 class BaseHost(object):

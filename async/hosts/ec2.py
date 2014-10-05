@@ -65,10 +65,6 @@ class Ec2Host(SshHost):
         self.instance = None
 
 
-    def __del__(self):
-        self.ssh_disconnect()
-        self.aws_disconnect()
-
 
 
     # Utilities
@@ -268,6 +264,12 @@ class Ec2Host(SshHost):
         """Establish a connection to the server"""
         self.aws_connect()
         self.ssh_connect(alt_hostname=self.hostname)
+
+
+    def disconnect(self):
+        """Close a connection to the server"""
+        self.aws_disconnect()
+        self.ssh_disconnect()
 
 
     def launch(self, itype=None, silent=False, dryrun=False):
