@@ -122,19 +122,20 @@ class BaseDir(object):
             raise InitError("can't initialize '%s'" % path)
 
         # if symlink, create it
-        if self.symlink and (host.path_is_symlink(linkpath) or not host.path_exists(linkpath)):
-            if not silent: ui.print_color("symlink: %s -> %s" % (linkpath, dirpath))
+        if self.symlink:
+            if host.path_is_symlink(linkpath) or not host.path_exists(linkpath):
+                if not silent: ui.print_color("symlink: %s -> %s" % (linkpath, dirpath))
 
-            try:
-                if not dryrun: host.symlink(dirpath, linkpath, force=True)
-            except Exception as err:
-                raise InitError(str(err))
+                try:
+                    if not dryrun: host.symlink(dirpath, linkpath, force=True)
+                except Exception as err:
+                    raise InitError(str(err))
 
-            return True
+                return True
 
-        # and if path exists and is not a symlink, give up
-        else:
-            raise InitError("path '%s' already exists. Can't create a symlink" % linkpath)
+            # and if path exists and is not a symlink, warn and give up
+            else:
+                raise InitError("path '%s' already exists. Can't create a symlink" % linkpath)
 
 
 
