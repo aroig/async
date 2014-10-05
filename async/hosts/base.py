@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # async - A tool to manage and sync different machines
@@ -82,6 +82,13 @@ class HostController:
         # do not get to current state if target state was not specified
         if self.curstate and self.tgtstate:
             self.host.set_state(self.curstate)
+
+        # disconnect from host
+        try:
+            self.host.disconnect()
+        except AttributeError:
+            pass
+
 
 
 

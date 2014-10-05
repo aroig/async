@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # async - A tool to manage and sync different machines
@@ -70,10 +70,6 @@ class SshHost(BaseHost):
         if self.ssh_key:
             self.ssh_args = self.ssh_args + ['-i', self.ssh_key]
 
-
-
-    def __del__(self):
-        self.ssh_disconnect()
 
 
 
@@ -206,6 +202,11 @@ class SshHost(BaseHost):
     def connect(self):
         """Establish a connection to the server"""
         self.ssh_connect()
+
+
+    def disconnect(self):
+        """Close connection to the server"""
+        self.ssh_disconnect()
 
 
     def get_state(self):

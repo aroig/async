@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # async - A tool to manage and sync different machines
@@ -23,7 +23,7 @@ import glob
 import shlex
 
 from collections import OrderedDict
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 
 class AsyncConfigError(Exception):
     def __init__(self, msg=None):

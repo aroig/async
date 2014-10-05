@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # async - A tool to manage and sync different machines
@@ -118,7 +118,7 @@ class DirectoryHost(BaseHost):
         if proc.returncode != 0:
             raise CmdError("Local command failed", cm, proc.returncode, stdout or "")
 
-        if catchout: return stdout
+        if catchout: return stdout.decode()
         else:        return None
 
 

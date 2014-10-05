@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # async - A tool to manage and sync different machines
@@ -45,6 +45,7 @@ class SSHCmdError(Exception):
         self.returncode = returncode
 
 
+
 class SSHConnection(object):
     """A ssh connection through a socket"""
 
@@ -56,11 +57,6 @@ class SSHConnection(object):
         self.master_proc = None
         self.decorated_host = None
         self.args = []
-
-
-    def __del__(self):
-        self.close()
-
 
 
     def _ssh(self, args, timeout=30, stdout=None, stderr=None, stdin=None):
@@ -192,7 +188,7 @@ class SSHConnection(object):
         if proc.returncode != 0:
             raise SSHCmdError("SSH command failed", cmd, proc.returncode, stdout)
 
-        if catchout: return stdout
+        if catchout: return stdout.decode()
         else:        return None
 
     def close(self):
