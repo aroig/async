@@ -113,6 +113,7 @@ class DirectoryHost(BaseHost):
                                 preexec_fn = lambda: signal(SIGPIPE, SIG_DFL),
                                 stderr=subprocess.STDOUT, stdout=sout, stdin=sin)
 
+        if stdin: stdin = stdin.encode()
         stdout, stderr = proc.communicate(stdin)
 
         if proc.returncode != 0:

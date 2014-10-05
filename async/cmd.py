@@ -222,6 +222,8 @@ def ping(host, timeout=10, num=1):
 
 def pager(st):
     proc = subprocess.Popen(_pager_cmd, shell=True, stdin=subprocess.PIPE)
+
+    if st: st = st.encode()
     proc.communicate(st)
 
 

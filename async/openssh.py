@@ -183,6 +183,7 @@ class SSHConnection(object):
                          stdout=stdo, stderr=stde, stdin=stdi)
 
         # stderr is piped to stdout
+        if stdin: stdin = stdin.encode()
         stdout, stderr = proc.communicate(stdin)
 
         if proc.returncode != 0:
