@@ -209,11 +209,12 @@ def wake_on_lan(mac):
 def ping(host, timeout=10, num=1):
     try:
         raw = subprocess.check_output(["ping", "-q", "-c", str(num), "-w", str(timeout), host])
+        raw = raw.decode()
 
     except subprocess.CalledProcessError:
         return (None, None, None, None)
 
-    m = re.search("min/avg/max/mdev = (\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)", raw.decode())
+    m = re.search("min/avg/max/mdev = (\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)", raw)
     if m:
         return (float(t) / 1000 for t in m.groups())
     else:

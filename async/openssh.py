@@ -185,11 +185,12 @@ class SSHConnection(object):
         # stderr is piped to stdout
         if stdin: stdin = stdin.encode()
         stdout, stderr = proc.communicate(stdin)
+        stdout = (stdout or b"").decode()
 
         if proc.returncode != 0:
             raise SSHCmdError("SSH command failed", cmd, proc.returncode, stdout)
 
-        if catchout: return stdout.decode()
+        if catchout: return stdout
         else:        return None
 
     def close(self):
