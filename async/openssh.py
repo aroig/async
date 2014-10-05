@@ -192,7 +192,7 @@ class SSHConnection(object):
         if proc.returncode != 0:
             raise SSHCmdError("SSH command failed", cmd, proc.returncode, stdout)
 
-        if catchout: return stdout
+        if catchout: return stdout.decode()
         else:        return None
 
     def close(self):

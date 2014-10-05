@@ -213,7 +213,7 @@ def ping(host, timeout=10, num=1):
     except subprocess.CalledProcessError:
         return (None, None, None, None)
 
-    m = re.search("min/avg/max/mdev = (\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)", raw)
+    m = re.search("min/avg/max/mdev = (\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)", raw.decode())
     if m:
         return (float(t) / 1000 for t in m.groups())
     else:
