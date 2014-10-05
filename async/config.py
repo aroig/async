@@ -23,7 +23,7 @@ import glob
 import shlex
 
 from collections import OrderedDict
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 
 class AsyncConfigError(Exception):
     def __init__(self, msg=None):
