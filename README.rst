@@ -13,10 +13,10 @@ backup media. Some of its features include:
 
 Dependencies
 ------------
-- python2
-- python2-dateutil
-- python2-boto: for amazon ec2 interaction
-- python2-systemd: for startup notification when running async in a systemd
+- python
+- python-dateutil
+- python-boto: for amazon ec2 interaction
+- systemd: for startup notification when running async in a systemd
   service
 - openssh
 - git-annex
