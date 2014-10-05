@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 SHELL = bash
-PYTHON = python2
+PYTHON = python
 
 NAME = async
 VERSION=$(shell $(PYTHON) $(NAME).py --version)
@@ -28,6 +28,7 @@ MANDIR ?= $(PREFIX)/share/man/man1
 DOCDIR ?= $(PREFIX)/share/doc/$(NAME)
 ZSHDIR ?= $(PREFIX)/share/zsh/site-functions
 BASHDIR ?= /etc/bash_completion.d
+SHEBANG ?= /usr/bin/env $(PYTHON)
 
 .PHONY: all man install clean build
 
