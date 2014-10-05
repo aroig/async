@@ -92,12 +92,12 @@ class BaseDir(object):
 
         # Note, if either path or symlink are absolute, the join operation returns
         # the second argument, so all is good!
-        if self.symlink:
+        if self.symlink and path == self.fullpath(host):
             dirpath  = os.path.join(host.path, self.symlink)
             linkpath = os.path.join(host.path, path)
         else:
             dirpath  = os.path.join(host.path, path)
-            linkpath = dirpath
+            linkpath = None
 
         # if target path is a directory, just chmod it.
         if host.path_is_directory(dirpath):
@@ -109,7 +109,7 @@ class BaseDir(object):
                 raise InitError(str(err))
 
         # if neither dirpath nor the link exist, create dirpath
-        elif not host.path_exists(dirpath) and not host.path_exists(linkpath):
+        elif not host.path_exists(dirpath) and not (linkpath and host.path_exists(linkpath)):
             if not silent: ui.print_color("mkdir: %s" % dirpath)
 
             try:
@@ -122,7 +122,7 @@ class BaseDir(object):
             raise InitError("can't initialize '%s'" % path)
 
         # if symlink, create it
-        if self.symlink:
+        if linkpath:
             if host.path_is_symlink(linkpath) or not host.path_exists(linkpath):
                 if not silent: ui.print_color("symlink: %s -> %s" % (linkpath, dirpath))
 
