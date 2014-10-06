@@ -441,7 +441,7 @@ class Ec2Host(SshHost):
         super(Ec2Host, self).ping()
 
 
-    def print_log(self, silent=False, dryrun=False, opts=None):
+    def print_log(self, state=None, silent=False, dryrun=False, opts=None):
         """Prints host logs"""
         if opts and opts.boot:
             self.connect()
@@ -450,7 +450,7 @@ class Ec2Host(SshHost):
                 print(cout.output)
 
         else:
-            super(Ec2Host, self).print_log(silent=silent, dryrun=dryrun, opts=opts)
+            super(Ec2Host, self).print_log(state=state, silent=silent, dryrun=dryrun, opts=opts)
 
 
 
