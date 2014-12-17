@@ -52,12 +52,12 @@ class SshHost(BaseHost):
         self._hostname        = None
         self._ip              = None
 
-#        socketfile="ssh-%s.socket" % str(os.getpid())
-#        socket = os.path.expandvars('$XDG_RUNTIME_DIR/async/%s' % socketfile)
-#        try:
-#            os.makedirs(os.path.dirname(socket))
-#        except:
-#            pass
+        socketfile="ssh-%s.socket" % str(os.getpid())
+        socket = os.path.expandvars('$XDG_RUNTIME_DIR/async/%s' % socketfile)
+        # try:
+        #    os.makedirs(os.path.dirname(socket))
+        # except:
+        #     pass
 
         self.ssh = SSHConnection(socket=None)
 

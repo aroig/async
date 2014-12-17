@@ -208,6 +208,9 @@ class SSHConnection(object):
             except OSError:
                 pass
 
+            if self.socket and os.path.exists(self.socket):
+                os.remove(self.socket)
+
             self.master_proc = None
             self.decorated_host = None
 
