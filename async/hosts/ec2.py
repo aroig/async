@@ -187,6 +187,8 @@ class Ec2Host(SshHost):
 
     def load_instance(self):
         """Updates running instance"""
+        if not self.conn: raise Ec2Error("No connection to EC2")
+
         L = [ins for res in self.conn.get_all_instances() for ins in res.instances
              if ins.image_id == self.ami.id and ins.state != 'terminated']
         if len(L) == 0:
@@ -198,6 +200,9 @@ class Ec2Host(SshHost):
 
 
     def load_ami(self):
+        """Loads an ami"""
+        if not self.conn: raise Ec2Error("No connection to EC2")
+
         L = [a for a in self.conn.get_all_images(owners = self.ec2_owner)
              if self.ec2_ami == a.name]
         if len(L) == 0:
@@ -209,6 +214,8 @@ class Ec2Host(SshHost):
 
 
     def load_volumes(self):
+        if not self.conn: raise Ec2Error("No connection to EC2")
+
         for dev, vol in self.ec2_vol.items():
             L = self.conn.get_all_volumes(volume_ids = [vol])
             if len(L) == 0:
@@ -572,6 +579,9 @@ class Ec2Host(SshHost):
     # ------------------------------------------------------
 
     def suggest_new_ami_name(self, basename):
+        """Get a new ami name suggestion"""
+        if not self.conn: raise Ec2Error("No connection to EC2")
+
         ami_list = self.conn.get_all_images(owners=[self.ec2_owner])
         names = set([im.name for im in ami_list])
 
@@ -586,6 +596,7 @@ class Ec2Host(SshHost):
 
     def make_ami_snapshot(self, name, desc):
         """Creates a snapshot of the running image."""
+        if not self.conn: raise Ec2Error("No connection to EC2")
 
         self.conn.create_image(instance_id = self.instance.id,
                                name = name,
@@ -601,6 +612,8 @@ class Ec2Host(SshHost):
 
     def make_data_snapshot(self, dev, desc):
         """Creates a snapshot of the data volume."""
+        if not self.conn: raise Ec2Error("No connection to EC2")
+
         if dev in self.volumes:
             id = self.volumes[dev].id
             self.conn.create_snapshot(volume_id = id,
