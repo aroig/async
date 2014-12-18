@@ -388,6 +388,8 @@ class Ec2Host(SshHost):
             ui.print_status("I'm going create a new ami from the running instance\n")
             self.print_status()
 
+            self.set_state(state='online', silent=silent, dryrun=dryrun)
+
             suggested_name = self.suggest_new_ami_name(self.name)
 
             cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
@@ -421,6 +423,8 @@ class Ec2Host(SshHost):
 
             ui.print_status("I'm going create snapshots for all data volumes")
             self.print_status()
+
+            self.set_state(state='online', silent=silent, dryrun=dryrun)
 
             cont = ui.ask_question_yesno("Do you want to continue?", default='yes')
             if cont == 'yes':
