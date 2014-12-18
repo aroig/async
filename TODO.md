@@ -7,3 +7,7 @@ TODO
   sure next ssh calls will use it. I don't know how to fix it, yet.
   - We need a reliable way to check whether the ssh connection is alive!
   - Alternatively, a way to guess the connection socket when establishing the connection
+
+* Handle connection lifetime properly. Every use of a remote host should be inside a with
+  statement. We can either specify a target stat in which to run commands, or none to do
+  it in current state (like status).
