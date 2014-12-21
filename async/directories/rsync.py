@@ -38,6 +38,11 @@ class RsyncDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
+
+    def is_syncable(self):
+        return True
+
+
     def status(self, host, slow=False):
         status = super(RsyncDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)

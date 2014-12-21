@@ -378,6 +378,11 @@ class AnnexDir(GitDir):
     # Interface
     # ----------------------------------------------------------------
 
+
+    def is_syncable(self):
+        return True
+
+
     def status(self, host, slow=False):
         status = super(AnnexDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)

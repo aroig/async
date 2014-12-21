@@ -88,10 +88,13 @@ class LocalHost(DirectoryHost):
 
     def sync(self, remote, silent=False, dryrun=False, opts=None):
         """Syncs local machine to this host"""
-        dirs = self._get_common_dirs(self, remote, dirs=opts.dirs, ignore=opts.ignore)
+        dirs = (self.dirs & remote.dirs).data(keys=opts.dirs, ignore=opts.ignore)
 
-        # ignore LocalDir directores. Don't want to sync them
-        dirs = OrderedDict([(k, d) for k, d in dirs.items() if not isinstance(d, LocalDir)])
+        # keep actual directories which are syncable, and indexed by name.
+        filtdirs = OrderedDict()
+        for k, d in dirs.items():
+            if d == None:         ui.print_warning("Unknown directory '%s'" % k)
+            elif d.is_syncable(): filtdirs[d.name] = d
 
         ret = False
         try:
@@ -104,7 +107,7 @@ class LocalHost(DirectoryHost):
                         ls.success=True
 
                 with LastSync(self, remote, None, None) as rls:
-                    ret = self.run_on_dirs(dirs, func, "Sync",
+                    ret = self.run_on_dirs(filtdirs, func, "Sync",
                                            desc="%s <-> %s" % (self.name, remote.name),
                                            silent=silent, dryrun=dryrun)
                     rls.success = ret

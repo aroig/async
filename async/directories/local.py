@@ -31,6 +31,11 @@ class LocalDir(BaseDir):
 
     # Interface
     # ----------------------------------------------------------------
+
+    def is_syncable(self):
+        return False
+
+
     def status(self, host, slow=False):
         status = super(LocalDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)

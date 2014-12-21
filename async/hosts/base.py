@@ -130,14 +130,18 @@ class BaseHost(object):
         if conf['vol_keys']: self.vol_keys = read_keys(conf['vol_keys'])
         else:                self.vol_keys = {}
 
-        # directories
-        self.dirs = OrderedDict()
-        for name, dconf in conf['dirs'].items():
-            self.dirs[name] = get_directory(dconf, unison_as_rsync=conf['unison_as_rsync'])
-
         # ignore paths
-        self.ignore = conf['ignore']
+        self.ignore = [self.relativepath(p) for p in conf['ignore']]
         self.ignore.append(self.asynclast_file)
+
+        # directories indexed by relative paths
+        self.dirs = PathDict()
+        for name, dconf in conf['dirs'].items():
+            d = get_directory(dconf, unison_as_rsync=conf['unison_as_rsync'])
+            self.dirs[d.relpath] = d
+
+        for p in self.ignore:
+            self.dirs.remove(p)
 
 
 
@@ -153,46 +157,6 @@ class BaseHost(object):
             time_passed = time_passed + step
 
         return func() == status
-
-
-
-    def _get_common_dirs(self, local, remote, dirs, ignore=[]):
-        """Returns a dict of dir objects that are common in local and remote as paths.
-           Only allows for directories with name in dirs, if dirs != None.
-           Avoid subdirectories ignored by one of the hosts."""
-
-        # dicts of local and remote dirs
-        A = local.dirs
-        B = remote.dirs
-
-        # A pathdict has paths as keys. the we can do intersections or unions of the keys
-        # and chooses the value for the most specific of the keys.
-        pdA = PathDict([(d.relpath, d) for k, d in A.items()])
-        pdB = PathDict([(d.relpath, d) for k, d in B.items()])
-        pdI = pdA & pdB
-        dd = OrderedDict([(d.name, d) for p, d in pdI.items()])
-
-        # get ignored paths
-        igA = PathDict({rel: rel for rel in local.ignore})
-        igB = PathDict({rel: rel for rel in remote.ignore})
-        igC = PathDict({rel: rel for rel in ignore})
-
-        # remove ignores
-        dd = OrderedDict([(k, d) for k, d in dd.items() if not d.relpath in igA
-                                                           and not d.relpath in igB
-                                                           and not d.relpath in igC])
-
-        # get list of dir names. Order matters.
-        if dirs != None: dirs = list(dirs)
-        else:            dirs = list(dd.keys())
-
-        # warn about unrecognized directories
-        for k in dirs:
-            if not k in dd:
-                ui.print_warning("Unrecognized directory %s" % k)
-
-        return OrderedDict([(k, dd[k]) for k in dirs if k in dd])
-
 
 
 
@@ -398,6 +362,7 @@ class BaseHost(object):
 
             for i, k in enumerate(keys):
                 d = dirs[k]
+
                 if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
 
                 try:
@@ -437,15 +402,6 @@ class BaseHost(object):
 
     # Last sync state
     # ----------------------------------------------------------------
-
-
-    def path_is_synced(self, path):
-        """Check whether a given path is synced on that host."""
-        if path in self.dirs:
-            return not self.dirs[path].type in set(['local'])
-        else:
-            return False
-
 
     def save_lastsync(self, path, rname, success):
         """Save sync success state"""
@@ -671,8 +627,6 @@ class BaseHost(object):
 
     def print_dirstate(self, state=None, silent=False, dryrun=False, opts=None):
         """Prints the state of directories in a host"""
-        dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
-        keys = sorted(dirs.keys())
 
         types={
             'local' : '#Mlocal#t',
@@ -688,8 +642,7 @@ class BaseHost(object):
         try:
             with self.in_state(state, silent=silent, dryrun=dryrun):
                 ui.print_color("Directories on #*m%s#t (%s)\n" % (self.name, self.path))
-                for k in keys:
-                    d = dirs[k]
+                for k, d in self.directories().items():
                     status = d.status(self, slow=slow)
 
                     # sync status
@@ -835,13 +788,12 @@ class BaseHost(object):
 
     def init(self, silent=False, dryrun=False, opts=None):
         """Prepares a host for the initial sync. sets up directories, and git annex repos"""
-        dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
 
         try:
             def func(d):
                 d.init(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
-            return self.run_on_dirs(dirs, func, "Init", silent=silent, dryrun=dryrun)
+            return self.run_on_dirs(self.directories(), func, "Init", silent=silent, dryrun=dryrun)
 
         except HostError as err:
             ui.print_error(str(err))
@@ -851,17 +803,32 @@ class BaseHost(object):
 
     def check(self, silent=False, dryrun=False, opts=None):
         """Check directories for local machine"""
-        dirs = self._get_common_dirs(self, self, dirs=opts.dirs, ignore=opts.ignore)
 
         try:
             def func(d):
                 d.check(self, silent=silent or opts.terse, dryrun=dryrun, opts=opts)
 
-            return self.run_on_dirs(dirs, func, "Check", silent=silent, dryrun=dryrun)
+            return self.run_on_dirs(self.directories(), func, "Check", silent=silent, dryrun=dryrun)
 
         except HostError as err:
             ui.print_error(str(err))
             return False
+
+
+
+    # Data access
+    # ----------------------------------------------------------------
+
+    def directories(self, keys=None, ignore=[]):
+        """Extract an OrderedDict of directories that are not ignored, indexed by name"""
+        dirs = self.dirs.data(keys=keys, ignore=ignore)
+        return OrderedDict([(d.name, d) for p, d in dirs.items() if d != None])
+
+
+    def get_directory(self, path):
+        prel = self.relativepath(path)
+        return self.dirs.get(prel, None)
+
 
 
 
@@ -906,6 +873,11 @@ class BaseHost(object):
             return True
         except CmdError as err:
             return False
+
+
+    def relativepath(self, path):
+        """Returns the relative path from host root"""
+        return os.path.relpath(path, self.path)
 
 
     def realpath(self, path):

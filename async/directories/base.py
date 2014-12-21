@@ -206,6 +206,10 @@ class BaseDir(object):
         return True
 
 
+    def is_syncable(self):
+        return False
+
+
     def status(self, host, slow=False):
         """Returns a dict of the status of the directory on host"""
         path = os.path.join(host.path, self.relpath)

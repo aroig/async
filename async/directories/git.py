@@ -333,6 +333,9 @@ class GitDir(BaseDir):
         return True
 
 
+    def is_syncable(self):
+        return True
+
 
     def is_clean(self, host):
         st = self._parse_git_status(host)
