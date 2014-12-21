@@ -23,55 +23,9 @@ from collections import OrderedDict
 from async.hosts.base import HostError
 from async.hosts.directory import DirectoryHost
 from async.directories import SyncError, InitError, CheckError, LocalDir, HookError, SkipError
+from async.lastsync import LastSync
 
 import async.archui as ui
-
-
-class LastSync:
-    def __init__(self, local, remote, directory, checkopts):
-        self.local = local
-        self.remote = remote
-        self.directory = directory
-        self.checkopts = checkopts
-        self.success = False
-
-        # check paths
-        if self.directory != None:
-            self.directory.check_paths(self.local)
-            self.directory.check_paths(self.remote)
-
-    def __enter__(self):
-        # perform check to lastsync data
-        if self.directory != None:
-            self.local.checkdir_lastsync(self.remote, self.directory, self.checkopts)
-
-        # signal begining of sync
-        for h, r in [(self.local, self.remote), (self.remote, self.local)]:
-            if self.directory != None:
-                dirpath = self.directory.fullpath(h)
-                do_lastsync = h.lastsync and self.directory.lastsync
-            else:
-                dirpath = h.path
-                do_lastsync = h.lastsync
-
-            if do_lastsync: h.signal_lastsync(dirpath, r.name)
-        return self
-
-    def __exit__(self, type, value, traceback):
-        if isinstance(value, SkipError):
-            self.success = True
-
-        for h, r in [(self.local, self.remote), (self.remote, self.local)]:
-            if self.directory != None:
-                dirpath = self.directory.fullpath(h)
-                do_lastsync = h.lastsync and self.directory.lastsync
-
-            else:
-                dirpath = h.path
-                do_lastsync = h.lastsync
-
-            if do_lastsync: h.save_lastsync(dirpath, r.name, self.success)
-
 
 
 class LocalHost(DirectoryHost):
