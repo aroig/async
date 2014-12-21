@@ -1,6 +1,4 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-#
+
 # async - A tool to manage and sync different machines
 # Copyright 2012,2013 Abdó Roig-Maranges <abdo.roig@gmail.com>
 #
@@ -59,3 +57,6 @@ install:
 	@install -Dm644 README.rst $(DESTDIR)$(DOCDIR)/README.rst
 #	@cp -R docs/* $(DESTDIR)$(DOCDIR)
 #	@cp -R conf $(DESTDIR)$(DOCDIR)/config
+
+test:
+	$(PYTHON) -m unittest
