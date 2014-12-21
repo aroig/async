@@ -439,6 +439,14 @@ class BaseHost(object):
     # ----------------------------------------------------------------
 
 
+    def path_is_synced(self, path):
+        """Check whether a given path is synced on that host."""
+        if path in self.dirs:
+            return not self.dirs[path].type in set(['local'])
+        else:
+            return False
+
+
     def save_lastsync(self, path, rname, success):
         """Save sync success state"""
         lsfile = os.path.join(path, self.asynclast_file)

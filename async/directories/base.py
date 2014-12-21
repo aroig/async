@@ -215,10 +215,16 @@ class BaseDir(object):
             'path'     : path,
             'type'     : 'base',
         }
-        lastsync = host.read_lastsync(self.fullpath(host))
-        status['ls-timestamp'] = lastsync['timestamp']
-        status['ls-remote'] = lastsync['remote']
-        status['ls-success'] = lastsync['success']
+
+        if self.lastsync:
+            lastsync = host.read_lastsync(self.fullpath(host))
+            status['ls-timestamp'] = lastsync['timestamp']
+            status['ls-remote'] = lastsync['remote']
+            status['ls-success'] = lastsync['success']
+        else:
+            status['ls-timestamp'] = None
+            status['ls-remote'] = None
+            status['ls-success'] = None
 
         try:
             raw  = host.run_cmd('stat -L -c "%%a %%U:%%G" "%s"' % path, catchout=True)

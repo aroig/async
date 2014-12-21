@@ -26,7 +26,7 @@ class LocalDir(BaseDir):
     """Local directory that will not be synced."""
     def __init__(self, conf):
         super(LocalDir, self).__init__(conf)
-
+        self.lastsync = False
 
 
     # Interface
