@@ -232,8 +232,8 @@ class BaseDir(object):
         except:
             status['path'] = None
             status['perms'] = '???'
-            status['user']  = 'unknown'
-            status['group'] = 'unknown'
+            status['user']  = '???'
+            status['group'] = '???'
 
 # NOTE: this is awfully slow
 #        size   = 0
