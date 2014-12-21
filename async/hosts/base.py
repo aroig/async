@@ -687,68 +687,60 @@ class BaseHost(object):
 
         try:
             with self.in_state(state, silent=silent, dryrun=dryrun):
-                ui.print_color("Directories on #*y%s#t (%s)\n" % (self.name, self.path))
+                ui.print_color("Directories on #*m%s#t (%s)\n" % (self.name, self.path))
                 for k in keys:
                     d = dirs[k]
                     status = d.status(self, slow=slow)
 
-                    if status['ls-success'] == None:    lastsync=' #G?#t '
-                    elif status['ls-success'] == False: lastsync=' #RX#t '
-                    elif status['ls-success'] == True:  lastsync=' #G√#t '
+                    # sync status
+                    if status['ls-success'] == None:    lastsync='  '
+                    elif status['ls-success'] == False: lastsync=' #RX#t'
+                    elif status['ls-success'] == True:  lastsync=' #G√#t'
 
-                    if status['ls-timestamp']: timestamp=status['ls-timestamp'].strftime('%d %b %H:%M:%S')
-                    else:                      timestamp=""
+                    # last sync timestamp
+                    if status['ls-timestamp']: timestamp=status['ls-timestamp'].strftime(' %d %b %H:%M ')
+                    else:                      timestamp="              "
 
-                    nameperms = '#*b{0[relpath]:<10}#t   #G{0[perms]} #Y{0[user]:<10}#t'.format(status)
+                    dirname = ' #*b{0[relpath]:<10}#t'.format(status)
+                    perms = ' #G{0[perms]} #Y{0[user]:<6}#t'.format(status)
 
                     # directory type
-                    dirtype = ''
-                    if status['path']:
-                        dirtype = '{0:<15}'.format(types[status['type']])
-                    else:
-                        dirtype = '{0:<15}'.format('#Rgone!#t')
+                    dirtype = ' '
+                    if status['path']: dirtype = ' {0:<12}'.format(types[status['type']])
+                    else:              dirtype = ' {0:<12}'.format('#Rgone!#t')
 
                     # number of files
                     numfiles = '--'
                     if 'numfiles' in status:
-                        numfiles = number2human(status['numfiles'], fmt='%(value).3G %(symbol)s')
+                        numfiles = number2human(status['numfiles'], fmt='%(value).3G%(symbol)s')
+                    numfiles = '#C{0:>6}#t'.format(numfiles)
 
-                    numchanged = ''
+                    numchanged = '--'
                     if 'changed' in status:
                         numchanged = number2human(status.get('changed', 0) + status.get('staged', 0),
-                                                  fmt='%(value).3G %(symbol)s')
+                                                  fmt='%(value).3G%(symbol)s')
+                    numchanged = '#Y{0:>6}#t'.format(numchanged)
 
-                    nummissing = ''
+                    nummissing = '--'
                     if 'missing' in status:
-                        nummissing = number2human(status['missing'], fmt='%(value).3G %(symbol)s')
+                        nummissing = number2human(status['missing'], fmt='%(value).3G%(symbol)s')
+                    nummissing = '#R{0:>6}#t'.format(nummissing)
 
-                    numunused = ''
+                    numunused = '--'
                     if 'unused' in status:
-                        numunused = number2human(status['unused'], fmt='%(value).3G %(symbol)s')
+                        numunused = number2human(status['unused'], fmt='%(value).3G%(symbol)s')
+                    numunused = '#G{0:>6}#t'.format(numunused)
 
                     # git status
-                    if status['type'] == 'annex' or status['type'] == 'git':
-                        if status['conflicts'] > 0:  symstate = '#RX#t '
-                        elif status['changed'] > 0:  symstate = '#R*#t '
-                        elif status['staged'] > 0:   symstate = '#G*#t '
-                        else:                        symstate = '#G√#t '
-                    else:
-                        symstate = '  '
+                    if status['type'] in set(['annex', 'git']):
+                        if status['conflicts'] > 0:  symstate = ' #RX#t'
+                        elif status['changed'] > 0:  symstate = ' #R*#t'
+                        elif status['staged'] > 0:   symstate = ' #G*#t'
+                        else:                        symstate = ' #G√#t'
+                    else:                            symstate = ' ·'
 
-                    # annex status
-                    dirstate = '                 '
-                    if status['type'] == 'annex':
-                        dircounts = '[#R%s#t/#G%s#t]' % (nummissing, numunused)
-                        dirstate  = '{0:>8} {1}'.format(numfiles, dircounts)
-                        dclen = len('[%s/%s]' % (nummissing, numunused))
-
-                    else:
-                        dirstate = '{0:>8} {1}'.format(numfiles, '')
-                        dclen=0
-
-                    dirstate = dirstate + (10 - dclen)*' '
-
-                    ui.print_color(lastsync + nameperms + symstate + dirtype + dirstate + timestamp)
+                    ui.print_color(perms + lastsync + timestamp + symstate + dirtype + \
+                                   numfiles + numchanged + nummissing + numunused + " " + dirname)
 
                 print("")
 
