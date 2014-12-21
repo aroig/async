@@ -20,7 +20,8 @@
 import os
 import subprocess
 
-from async.directories.base import BaseDir, DirError, SyncError, InitError, HookError, CheckError
+from async.directories.base import DirError, SyncError, InitError, HookError, CheckError
+from async.directories.local import LocalDir
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd
@@ -28,7 +29,7 @@ import async.archui as ui
 
 import subprocess
 
-class RsyncDir(BaseDir):
+class RsyncDir(LocalDir):
     """Directory synced via rsync"""
     def __init__(self, conf):
         super(RsyncDir, self).__init__(conf)
@@ -39,25 +40,13 @@ class RsyncDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
+    def type(self):
+        """Returns the type of the directory as a string"""
+        return 'rsync'
+
+
     def is_syncable(self):
         return True
-
-
-    def status(self, host, slow=False):
-        status = super(RsyncDir, self).status(host, slow=slow)
-        path = os.path.join(host.path, self.relpath)
-        status['type'] = 'rsync'
-
-        # number of files
-        if slow:
-            try:
-                raw = host.run_cmd("find . -not -type d -and -print | wc -l",
-                                   tgtpath=path, catchout=True).strip()
-                status['numfiles'] = int(raw)
-            except:
-                status['numfiles'] = -1
-
-        return status
 
 
 
@@ -99,9 +88,6 @@ class RsyncDir(BaseDir):
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
             self.run_hook(remote, 'pre_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
-        # call sync on the parent
-        super(RsyncDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-
         # sync
         ui.print_debug('rsync %s %s %s' % (' '.join(args), src, tgt))
         try:
@@ -115,36 +101,6 @@ class RsyncDir(BaseDir):
         if runhooks:
             self.run_hook(local, 'post_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
             self.run_hook(remote, 'post_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
-
-
-
-    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
-        path = self.fullpath(host)
-
-        # run async hooks if asked to
-        if runhooks:
-            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
-
-        super(RsyncDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-
-        # run hooks
-        if runhooks:
-            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)
-
-
-
-    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
-        path = self.fullpath(host)
-
-        # do basic checks
-        self.check_paths(host)
-
-        # run async hooks if asked to
-        if runhooks:
-            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
-
-        super(RsyncDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-
 
 
 # vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=4:textwidth=80

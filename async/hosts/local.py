@@ -83,6 +83,25 @@ class LocalHost(DirectoryHost):
 
 
 
+    def _baseobject(self, d1, d2):
+        """Returns the object whose type is less specialized, or None if they are not
+        specialization of one another
+
+        """
+        if isinstance(d1, type(d2)) and isinstance(d2, type(d1)):
+            return d1
+
+        elif isinstance(d2, type(d1)) and not isinstance(d1, type(d2)):
+            return d1
+
+        elif isinstance(d1, type(d2)) and not isinstance(d2, type(d1)):
+            return d2
+
+        else:
+            return None
+
+
+
     # Interface
     # ----------------------------------------------------------------
 
@@ -93,8 +112,23 @@ class LocalHost(DirectoryHost):
         # keep actual directories which are syncable, and indexed by name.
         filtdirs = OrderedDict()
         for k, d in dirs.items():
-            if d == None:         ui.print_warning("Unknown directory '%s'" % k)
-            elif d.is_syncable(): filtdirs[d.name] = d
+            dloc = self.directory(k)
+            if dloc == None:
+                ui.print_warning("Unknown directory '%s' on host '%s'" % (k, self.name))
+                continue
+
+            drem = remote.directory(k)
+            if drem == None:
+                ui.print_warning("Unknown directory '%s' on host '%s'" % (k, remote.name))
+                continue
+
+            dd = self._baseobject(dloc, drem)
+            if dd == None:
+                ui.print_warning("Incompatible directory types for '%s': %s, %s" % (k, dloc.type(), drem.type()))
+                continue
+
+            if dd.is_syncable():
+                filtdirs[dd.name] = dd
 
         ret = False
         try:

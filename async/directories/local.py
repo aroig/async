@@ -32,6 +32,11 @@ class LocalDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
+    def type(self):
+        """Returns the type of the directory as a string"""
+        return 'local'
+
+
     def is_syncable(self):
         return False
 
@@ -39,7 +44,6 @@ class LocalDir(BaseDir):
     def status(self, host, slow=False):
         status = super(LocalDir, self).status(host, slow=slow)
         path = os.path.join(host.path, self.relpath)
-        status['type'] = 'local'
 
         # number of files
         if slow:
@@ -66,7 +70,7 @@ class LocalDir(BaseDir):
             self.run_hook(remote, 'pre_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
         # call sync on the parent
-        super(GitDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
+        super(LocalDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
         # post-sync hook
         if runhooks:

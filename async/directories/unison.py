@@ -20,13 +20,14 @@
 import os
 import subprocess
 
-from async.directories.base import BaseDir, DirError, SyncError, InitError, HookError, CheckError
+from async.directories.base import DirError, SyncError, InitError, HookError, CheckError
+from async.directories.rsync import RsyncDir
 from async.hosts import SshHost, DirectoryHost
 
 import async.cmd as cmd
 import async.archui as ui
 
-class UnisonDir(BaseDir):
+class UnisonDir(RsyncDir):
     """Directory synced via unison"""
     def __init__(self, conf):
         super(UnisonDir, self).__init__(conf)
@@ -39,26 +40,13 @@ class UnisonDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
+    def type(self):
+        """Returns the type of the directory as a string"""
+        return 'unison'
+
+
     def is_syncable(self):
         return True
-
-
-    def status(self, host, slow=False):
-        status = super(UnisonDir, self).status(host, slow=slow)
-        path = os.path.join(host.path, self.relpath)
-        status['type'] = 'unison'
-
-        # number of files
-        if slow:
-            try:
-                raw = host.run_cmd("find . -not -type d -and -print | wc -l",
-                               tgtpath=path, catchout=True).strip()
-                status['numfiles'] = int(raw)
-            except:
-                status['numfiles'] = -1
-
-        return status
-
 
 
     def sync(self, local, remote, silent=False, dryrun=False, opts=None, runhooks=True):
@@ -116,9 +104,6 @@ class UnisonDir(BaseDir):
             self.run_hook(local, 'pre_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
             self.run_hook(remote, 'pre_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
-        # call sync on the parent
-        super(UnisonDir, self).sync(local, remote, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-
         # sync
         ui.print_debug('unison %s' % ' '.join(args))
         try:
@@ -131,34 +116,6 @@ class UnisonDir(BaseDir):
             self.run_hook(local, 'post_sync', tgt=self.fullpath(local), silent=silent, dryrun=dryrun)
             self.run_hook(remote, 'post_sync_remote', tgt=self.fullpath(remote), silent=silent, dryrun=dryrun)
 
-
-
-    def init(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
-        path = self.fullpath(host)
-
-        # run async hooks if asked to
-        if runhooks:
-            self.run_hook(host, 'pre_init', tgt=path, silent=silent, dryrun=dryrun)
-
-        super(UnisonDir, self).init(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
-
-        # run async hooks if asked to
-        if runhooks:
-            self.run_hook(host, 'post_init', tgt=path, silent=silent, dryrun=dryrun)
-
-
-
-    def check(self, host, silent=False, dryrun=False, opts=None, runhooks=True):
-        path = self.fullpath(host)
-
-        # do basic checks
-        self.check_paths(host)
-
-        # run async hooks if asked to
-        if runhooks:
-            self.run_hook(host, 'check', tgt=path, silent=silent, dryrun=dryrun)
-
-        super(UnisonDir, self).check(host, silent=silent, dryrun=dryrun, opts=opts, runhooks=False)
 
 
 

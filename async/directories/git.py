@@ -324,6 +324,11 @@ class GitDir(BaseDir):
     # Interface
     # ----------------------------------------------------------------
 
+    def type(self):
+        """Returns the type of the directory as a string"""
+        return 'git'
+
+
     def is_initialized(self, host):
         path = self.fullpath(host)
 

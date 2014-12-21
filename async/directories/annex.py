@@ -378,6 +378,10 @@ class AnnexDir(GitDir):
     # Interface
     # ----------------------------------------------------------------
 
+    def type(self):
+        """Returns the type of the directory as a string"""
+        return 'annex'
+
 
     def is_syncable(self):
         return True

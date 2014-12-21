@@ -142,19 +142,6 @@ class BaseDir(object):
     # Utilities
     # ----------------------------------------------------------------
 
-    @property
-    def type(self):
-        """Returns the type of the directory as a string"""
-        from async.directories import AnnexDir, UnisonDir, RsyncDir, LocalDir, GitDir
-        if isinstance(self, AnnexDir):    return 'annex'
-        if isinstance(self, GitDir):      return 'git'
-        elif isinstance(self, UnisonDir): return 'unison'
-        elif isinstance(self, RsyncDir):  return 'rsync'
-        elif isinstance(self, LocalDir):  return 'local'
-        else:
-            raise DirError("unknown directory class %s" % str(type(self)))
-
-
     def fullpath(self, host):
         return self.hostpath(host.name, host.path)
 
@@ -202,6 +189,11 @@ class BaseDir(object):
     # Interface
     # ----------------------------------------------------------------
 
+    def type(self):
+        """Returns the type of the directory as a string"""
+        raise NotImplementedError
+
+
     def is_initialized(self, host):
         return True
 
@@ -217,7 +209,7 @@ class BaseDir(object):
             'name'     : self.name,
             'relpath'  : self.relpath,
             'path'     : path,
-            'type'     : 'base',
+            'type'     : self.type(),
         }
 
         if self.lastsync:

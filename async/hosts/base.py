@@ -363,7 +363,7 @@ class BaseHost(object):
             for i, k in enumerate(keys):
                 d = dirs[k]
 
-                if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type))
+                if not silent: ui.print_enum(i+1, num, "%s #*y%s#t (%s)" % (action.lower(), d.name, d.type()))
 
                 try:
                     func(d)
@@ -825,7 +825,7 @@ class BaseHost(object):
         return OrderedDict([(d.name, d) for p, d in dirs.items() if d != None])
 
 
-    def get_directory(self, path):
+    def directory(self, path):
         prel = self.relativepath(path)
         return self.dirs.get(prel, None)
 
@@ -877,7 +877,7 @@ class BaseHost(object):
 
     def relativepath(self, path):
         """Returns the relative path from host root"""
-        return os.path.relpath(path, self.path)
+        return os.path.relpath(os.path.join(self.path, path), self.path)
 
 
     def realpath(self, path):
