@@ -60,8 +60,9 @@ class RsyncDir(LocalDir):
 
         # handle ignores
         ignore = set(self.ignore) | set(opts.ignore) | set(local.ignore) | set(remote.ignore)
-        for p in ignore:
-            args = args + ['--exclude=%s' % p]
+        ignore = set([p[len(self.relpath):] for p in ignore if p.startswith(self.relpath) ])
+
+        args = args + ['--exclude=%s' % p for p in ignore]
 
         # get target path
         if isinstance(remote, SshHost):
